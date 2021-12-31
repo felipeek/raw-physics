@@ -22,7 +22,7 @@ static boolean is_mouse_bound_to_entity_movement;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
-	vec3 camera_position = (vec3) { 0.0f, 0.0f, 5.0f };
+	vec3 camera_position = (vec3) { 0.0f, 5.0f, 15.0f };
 	r32 camera_near_plane = -0.01f;
 	r32 camera_far_plane = -1000.0f;
 	r32 camera_fov = 45.0f;
@@ -59,25 +59,20 @@ int core_init() {
 	Entity e;
 	Mesh m = graphics_mesh_create_from_obj("./res/floor.obj", COLLIDER_TYPE_CONVEX_HULL);
 	graphics_entity_create_with_color_fixed(&e, m, (vec3){0.0f, -2.0f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
-		(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f});
+		(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
 	array_push(entities, e);
 
-	Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
-	graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 0.2f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
-		(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
-	//e.world_position = (vec3){-0.00442977389, -0.00000148999368, -0.00440690573};
-	//e.world_rotation = (Quaternion){-5.01812707E-8, -0.000298452913, -2.50019269E-7, 1.0};
-	array_push(entities, e);
+	r32 y = -2.0f;
 
-	Mesh m3 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
-	graphics_entity_create_with_color(&e, m3, (vec3){0.0f, 2.4f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
-		(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
-	array_push(entities, e);
-
-	Mesh m4 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
-	graphics_entity_create_with_color(&e, m4, (vec3){0.0f, 4.7f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
-		(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
-	array_push(entities, e);
+	for (u32 i = 0; i < 1; ++i) {
+		y += 2.1f;
+		Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
+		graphics_entity_create_with_color(&e, m2, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
+			(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
+		//e.world_position = (vec3){-0.000944963249, -0.0000153643723, -0.00111608475};
+		//e.world_rotation = (Quaternion){0.00000165915253, -0.00146911771, -9.74293812E-7, 0.999998986};
+		array_push(entities, e);
+	}
 
 	menu_register_dummy_callback(menu_dummy_callback);
 
@@ -91,19 +86,21 @@ void core_destroy() {
 boolean paused = false;
 
 void core_update(r32 delta_time) {
-	//printf("e1: <%f, %f, %f>\n", e1->world_position.x, e1->world_position.y, e1->world_position.z);
-	//printf("e1 rot: <%f, %f, %f, %f>\n", e1->world_rotation.x, e1->world_rotation.y, e1->world_rotation.z, e1->world_rotation.w);
-	delta_time = 0.002f;
-	if (paused) {
-		return;
-	}
-
+	delta_time = 0.05f;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
 		mat4 model_matrix = graphics_entity_get_model_matrix(e);
 		collider_update(&e->mesh.collider, model_matrix);
+
+		//printf("e%d: <%f, %f, %f>\n", i, e->world_position.x, e->world_position.y, e->world_position.z);
+		//printf("e%d: rot: <%f, %f, %f, %f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
 	}
 
+	if (paused) {
+		return;
+	}
+
+#if 1
 	const r32 GRAVITY = 10.0f;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Physics_Force pf;
@@ -117,55 +114,60 @@ void core_update(r32 delta_time) {
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i].forces);
 	}
+#endif
 }
 
 extern Temporary_Contact* tmp_contacts;
 
 void core_render() {
-	for (u32 i = 0; i < array_length(tmp_contacts); ++i) {
-		Temporary_Contact* tmp = &tmp_contacts[i];
+	#if 1
+	if (tmp_contacts) {
+		for (u32 i = 0; i < array_length(tmp_contacts); ++i) {
+			Temporary_Contact* tmp = &tmp_contacts[i];
 
-		vec3 point1 = gm_vec3_add(tmp->e1->world_position, tmp->r1_wc);
-		vec3 point2 = gm_vec3_add(tmp->e2->world_position, tmp->r2_wc);
-		vec3 normal = tmp->normal;
+			vec3 point1 = gm_vec3_add(tmp->e1->world_position, tmp->r1_wc);
+			vec3 point2 = gm_vec3_add(tmp->e2->world_position, tmp->r2_wc);
+			vec3 normal = tmp->normal;
 
-		graphics_renderer_debug_points(&point1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-		graphics_renderer_debug_points(&point2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-		graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-		graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			graphics_renderer_debug_points(&point1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			graphics_renderer_debug_points(&point2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+		}
 	}
-	
-	//Entity* e1 = &entities[0];
-	//Entity* e2 = &entities[1];
-	//GJK_Simplex simplex;
-	//Clipping_Contact* contacts;
-	//vec3 normal;
-	//boolean collision = false;
-	//if (gjk_collides(e1->mesh.collider.convex_hull.transformed_vertices, e2->mesh.collider.convex_hull.transformed_vertices, &simplex)) {
-	//	r32 pen;
-	//	if (epa(e1->mesh.collider.convex_hull.transformed_vertices, e2->mesh.collider.convex_hull.transformed_vertices, &simplex, &normal, &pen)) {
-	//		e1->diffuse_info.diffuse_color = (vec4){0.0f, 1.0f, 0.0f, 1.0f};
-	//		e2->diffuse_info.diffuse_color = (vec4){0.0f, 1.0f, 0.0f, 1.0f};
+	#else
+	Entity* e1 = &entities[0];
+	Entity* e2 = &entities[1];
+	GJK_Simplex simplex;
+	Clipping_Contact* contacts;
+	vec3 normal;
+	boolean collision = false;
+	if (gjk_collides(e1->mesh.collider.convex_hull.transformed_vertices, e2->mesh.collider.convex_hull.transformed_vertices, &simplex)) {
+		r32 pen;
+		if (epa(e1->mesh.collider.convex_hull.transformed_vertices, e2->mesh.collider.convex_hull.transformed_vertices, &simplex, &normal, &pen)) {
+			e1->diffuse_info.diffuse_color = (vec4){0.0f, 1.0f, 0.0f, 1.0f};
+			e2->diffuse_info.diffuse_color = (vec4){0.0f, 1.0f, 0.0f, 1.0f};
 
-	//		contacts = clipping_get_contact_manifold(&e1->mesh.collider.convex_hull, &e2->mesh.collider.convex_hull, normal);
-	//		collision = true;
-	//	}
-	//} else {
-	//	e1->diffuse_info.diffuse_color = (vec4){1.0f, 0.0f, 0.0f, 1.0f};
-	//	e2->diffuse_info.diffuse_color = (vec4){1.0f, 0.0f, 0.0f, 1.0f};
-	//}
-	//if (collision) {
-	//	for (u32 i = 0; i < array_length(contacts); ++i) {
-	//		Clipping_Contact* contact = &contacts[i];
+			contacts = clipping_get_contact_manifold(&e1->mesh.collider.convex_hull, &e2->mesh.collider.convex_hull, normal);
+			collision = true;
+		}
+	} else {
+		e1->diffuse_info.diffuse_color = (vec4){1.0f, 0.0f, 0.0f, 1.0f};
+		e2->diffuse_info.diffuse_color = (vec4){1.0f, 0.0f, 0.0f, 1.0f};
+	}
+	if (collision) {
+		for (u32 i = 0; i < array_length(contacts); ++i) {
+			Clipping_Contact* contact = &contacts[i];
 
-	//		vec3 cp1 = contact->collision_point1;
-	//		vec3 cp2 = contact->collision_point2;
-	//		graphics_renderer_debug_points(&cp1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	//		graphics_renderer_debug_points(&cp2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	//		graphics_renderer_debug_vector(cp1, gm_vec3_add(cp1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	//		graphics_renderer_debug_vector(cp2, gm_vec3_add(cp2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	//	}
-	//}
+			vec3 cp1 = contact->collision_point1;
+			vec3 cp2 = contact->collision_point2;
+			graphics_renderer_debug_points(&cp1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			graphics_renderer_debug_points(&cp2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			graphics_renderer_debug_vector(cp1, gm_vec3_add(cp1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			graphics_renderer_debug_vector(cp2, gm_vec3_add(cp2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+		}
+	}
+	#endif
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, &entities[i], lights);
@@ -181,7 +183,7 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 	if (key_state[GLFW_KEY_LEFT_SHIFT])
 		movement_speed = 0.5f;
 	if (key_state[GLFW_KEY_RIGHT_SHIFT])
-		movement_speed = 0.1f;
+		movement_speed = 0.01f;
 
 	if (key_state[GLFW_KEY_W])
 		camera_move_forward(&camera, movement_speed * delta_time);

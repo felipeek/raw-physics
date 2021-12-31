@@ -6,7 +6,7 @@
 #include "epa.h"
 #include "clipping.h"
 
-#define NUM_SUBSTEPS 10
+#define NUM_SUBSTEPS 5
 #define NUM_POS_ITERS 1
 
 // Calculate the sum of all external forces acting on an entity
@@ -147,7 +147,7 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 	vec3 p1 = calculate_p(e1, r1_lc);
 	vec3 p2 = calculate_p(e2, r2_lc);
 	r32 d = gm_vec3_dot(gm_vec3_subtract(p1, p2), normal);
-	if (fabsf(d) > 1.0f) {
+	if (fabsf(d) > 0.1f) {
 		printf("d: %f\n", d);
 		paused = true;
 		return;
@@ -165,6 +165,12 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 		c.positional_constraint.r1_wc = r1_wc;
 		c.positional_constraint.r2_wc = r2_wc;
 		solve_positional_constraint(&c, h);
+
+		// @TODO: check if we need to recalculate r1_wc and r2_wc...
+		e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
+		e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
+		r1_wc = gm_mat3_multiply_vec3(&e1_rot_matrix, r1_lc);
+		r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
 
 		// if 'd' is greater than 0.0, we should also add a constraint for static friction, but only if lambda_t < u_s * lambda_n
 		// This is only known once the normal constraint is solved, so we delegate this check to the solver.
@@ -293,6 +299,13 @@ void pbd_simulate(r32 dt, Entity* entities) {
 					vec3 normal;
 					r32 penetration;
 					if (epa(convex_hull1->transformed_vertices, convex_hull2->transformed_vertices, &simplex, &normal, &penetration)) {
+						//if (penetration > 10) {
+						//	printf("e1: <%f, %f, %f>\n", e1->world_position.x, e1->world_position.y, e1->world_position.z);
+						//	printf("e2: <%f, %f, %f>\n", e2->world_position.x, e2->world_position.y, e2->world_position.z);
+						//	printf("e2 rot: <%f, %f, %f, %f>\n", e2->world_rotation.x, e2->world_rotation.y, e2->world_rotation.z, e2->world_rotation.w);
+						//	printf("e1 rot: <%f, %f, %f, %f>\n", e1->world_rotation.x, e1->world_rotation.y, e1->world_rotation.z, e1->world_rotation.w);
+						//}
+
 						Clipping_Contact* contacts = clipping_get_contact_manifold(convex_hull1, convex_hull2, normal);
 						for (u32 l = 0; l < array_length(contacts); ++l) {
 							Clipping_Contact* contact = &contacts[l];
@@ -363,21 +376,29 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			Temporary_Contact* contact = &tmp_contacts[j];
 			vec3 v1 = contact->e1->linear_velocity;
 			vec3 w1 = contact->e1->angular_velocity;
-			vec3 r1_wc = contact->r1_wc;
 			vec3 v2 = contact->e2->linear_velocity;
 			vec3 w2 = contact->e2->angular_velocity;
-			vec3 r2_wc = contact->r2_wc;
 			vec3 n = contact->normal;
 			r32 lambda_n = contact->lambda_n;
 			r32 lambda_t = contact->lambda_t;
 			Entity* e1 = contact->e1;
 			Entity* e2 = contact->e2;
+			#if 0
+			vec3 r1_wc = contact->r1_wc;
+			vec3 r2_wc = contact->r2_wc;
+			#else
+			mat3 q1_mat = quaternion_get_matrix3(&e1->world_rotation);
+			vec3 r1_wc = gm_mat3_multiply_vec3(&q1_mat, contact->r1_lc);
+			mat3 q2_mat = quaternion_get_matrix3(&e2->world_rotation);
+			vec3 r2_wc = gm_mat3_multiply_vec3(&q2_mat, contact->r2_lc);
+			#endif
 
 			// We start by calculating the relative normal and tangential velocities at the contact point, as described in (3.6)
 			// @NOTE: equation (29) was modified here
 			vec3 v = gm_vec3_subtract(gm_vec3_add(v1, gm_vec3_cross(w1, r1_wc)), gm_vec3_add(v2, gm_vec3_cross(w2, r2_wc)));
 			r32 vn = gm_vec3_dot(n, v);
 			vec3 vt = gm_vec3_subtract(v, gm_vec3_scalar_product(vn, n));
+			printf("VT: %f\n", gm_vec3_length(vt));
 
 			// delta_v stores the velocity change that we need to perform at the end of the solver
 			vec3 delta_v = (vec3){0.0f, 0.0f, 0.0f};

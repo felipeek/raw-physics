@@ -2,7 +2,7 @@
 #include <light_array.h>
 #include <float.h>
 
-static const r32 EPSILON = 0.00001f;
+static const r32 EPSILON = 0.001f;
 
 void polytope_from_gjk_simplex(const GJK_Simplex* s, vec3** _polytope, dvec3** _faces) {
 	assert(s->num == 4);
