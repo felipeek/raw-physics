@@ -46,8 +46,8 @@ Float_Image_Data graphics_float_image_copy(const Float_Image_Data* image_data)
 
 	fid = *image_data;
 
-	fid.data = malloc(sizeof(r32) * fid.width * fid.height * fid.channels);
-	memcpy(fid.data, image_data->data, sizeof(r32) * fid.width * fid.height * fid.channels);
+	fid.data = malloc(sizeof(r64) * fid.width * fid.height * fid.channels);
+	memcpy(fid.data, image_data->data, sizeof(r64) * fid.width * fid.height * fid.channels);
 	
 	return fid;
 }
@@ -146,24 +146,24 @@ Mesh graphics_quad_create()
 	u32* indices = array_new(u32);
 
 	Vertex v;
-	v.position = (vec3) { 0.0f, 0.0f, 0.0f};
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f};
-	v.texture_coordinates = (vec2) { 0.0f, 0.0f };
+	v.position = (fvec3) { 0.0f, 0.0f, 0.0f};
+	v.normal = (fvec3) { 0.0f, 0.0f, 1.0f};
+	v.texture_coordinates = (fvec2) { 0.0f, 0.0f };
 	array_push(vertices, v);
 
-	v.position = (vec3) { size, 0.0f, 0.0f };
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f };
-	v.texture_coordinates = (vec2) { 1.0f, 0.0f };
+	v.position = (fvec3) { size, 0.0f, 0.0f };
+	v.normal = (fvec3) { 0.0f, 0.0f, 1.0f };
+	v.texture_coordinates = (fvec2) { 1.0f, 0.0f };
 	array_push(vertices, v);
 
-	v.position = (vec3) { 0.0f, size, 0.0f };
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f };
-	v.texture_coordinates = (vec2) { 0.0f, 1.0f };
+	v.position = (fvec3) { 0.0f, size, 0.0f };
+	v.normal = (fvec3) { 0.0f, 0.0f, 1.0f };
+	v.texture_coordinates = (fvec2) { 0.0f, 1.0f };
 	array_push(vertices, v);
 
-	v.position = (vec3) { size, size, 0.0f };
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f };
-	v.texture_coordinates = (vec2) { 1.0f, 1.0f };
+	v.position = (fvec3) { size, size, 0.0f };
+	v.normal = (fvec3) { 0.0f, 0.0f, 1.0f };
+	v.texture_coordinates = (fvec2) { 1.0f, 1.0f };
 	array_push(vertices, v);
 
 	array_push(indices, 0);
@@ -215,8 +215,9 @@ Mesh graphics_mesh_create(Vertex* vertices, u32* indices, Collider_Type collider
 
 	vec3* vertices_positions = array_new(vec3);
 	for (u32 i = 0; i < array_length(vertices); ++i) {
-		vec3 position = vertices[i].position;
-		array_push(vertices_positions, position);
+		fvec3 position = vertices[i].position;
+        vec3 vposition = (vec3){(r64)position.x, (r64)position.y, (r64)position.z};
+        array_push(vertices_positions, vposition);
 	}
 	mesh.collider = collider_create(vertices_positions, indices, collider_type);
 	printf("Vertices positions: %ld\n", array_length(vertices_positions));
@@ -255,10 +256,10 @@ static void light_update_uniforms(const Light* lights, Shader shader)
 		GLint ambient_color_location = glGetUniformLocation(shader, build_light_uniform_name(buffer, i, "ambient_color"));
 		GLint diffuse_color_location = glGetUniformLocation(shader, build_light_uniform_name(buffer, i, "diffuse_color"));
 		GLint specular_color_location = glGetUniformLocation(shader, build_light_uniform_name(buffer, i, "specular_color"));
-		glUniform3f(light_position_location, light.position.x, light.position.y, light.position.z);
-		glUniform4f(ambient_color_location, light.ambient_color.x, light.ambient_color.y, light.ambient_color.z, light.ambient_color.w);
-		glUniform4f(diffuse_color_location, light.diffuse_color.x, light.diffuse_color.y, light.diffuse_color.z, light.diffuse_color.w);
-		glUniform4f(specular_color_location, light.specular_color.x, light.specular_color.y, light.specular_color.z, light.specular_color.w);
+		glUniform3f(light_position_location, (r32)light.position.x, (r32)light.position.y, (r32)light.position.z);
+		glUniform4f(ambient_color_location, (r32)light.ambient_color.x, (r32)light.ambient_color.y, (r32)light.ambient_color.z, (r32)light.ambient_color.w);
+		glUniform4f(diffuse_color_location, (r32)light.diffuse_color.x, (r32)light.diffuse_color.y, (r32)light.diffuse_color.z, (r32)light.diffuse_color.w);
+		glUniform4f(specular_color_location, (r32)light.specular_color.x, (r32)light.specular_color.y, (r32)light.specular_color.z, (r32)light.specular_color.w);
 	}
 
 	GLint light_quantity_location = glGetUniformLocation(shader, "light_quantity");
@@ -279,8 +280,8 @@ static void diffuse_update_uniforms(const Diffuse_Info* diffuse_info, Shader sha
 		glBindTexture(GL_TEXTURE_2D, diffuse_info->diffuse_map);
 	}
 	else
-		glUniform4f(diffuse_color_location, diffuse_info->diffuse_color.x, diffuse_info->diffuse_color.y,
-			diffuse_info->diffuse_color.z, diffuse_info->diffuse_color.w);
+		glUniform4f(diffuse_color_location, (r32)diffuse_info->diffuse_color.x, (r32)diffuse_info->diffuse_color.y,
+			(r32)diffuse_info->diffuse_color.z, (r32)diffuse_info->diffuse_color.w);
 }
 
 void graphics_mesh_render(Shader shader, Mesh mesh)
@@ -301,7 +302,7 @@ void graphics_entity_change_diffuse_map(Entity* entity, u32 diffuse_map, boolean
 	entity->diffuse_info.use_diffuse_map = true;
 }
 
-void graphics_entity_change_color(Entity* entity, vec4 color, boolean delete_diffuse_map)
+void graphics_entity_change_color(Entity* entity, fvec4 color, boolean delete_diffuse_map)
 {
 	if (delete_diffuse_map && entity->diffuse_info.use_diffuse_map)
 		glDeleteTextures(1, &entity->diffuse_info.diffuse_map);
@@ -312,22 +313,22 @@ void graphics_entity_change_color(Entity* entity, vec4 color, boolean delete_dif
 
 mat4 graphics_entity_get_model_matrix(const Entity* entity)
 {
-	r32 s, c;
+	r64 s, c;
 
 	mat4 scale_matrix = (mat4) {
-		entity->world_scale.x, 0.0f, 0.0f, 0.0f,
-			0.0f, entity->world_scale.y, 0.0f, 0.0f,
-			0.0f, 0.0f, entity->world_scale.z, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
+		entity->world_scale.x, 0.0, 0.0, 0.0,
+			0.0, entity->world_scale.y, 0.0, 0.0,
+			0.0, 0.0, entity->world_scale.z, 0.0,
+			0.0, 0.0, 0.0, 1.0
 	};
 
 	mat4 rotation_matrix = quaternion_get_matrix(&entity->world_rotation);
 
 	mat4 translation_matrix = (mat4) {
-		1.0f, 0.0f, 0.0f, entity->world_position.x,
-			0.0f, 1.0f, 0.0f, entity->world_position.y,
-			0.0f, 0.0f, 1.0f, entity->world_position.z,
-			0.0f, 0.0f, 0.0f, 1.0f
+		1.0, 0.0, 0.0, entity->world_position.x,
+			0.0, 1.0, 0.0, entity->world_position.y,
+			0.0, 0.0, 1.0, entity->world_position.z,
+			0.0, 0.0, 0.0, 1.0
 	};
 
 	mat4 model_matrix = gm_mat4_multiply(&rotation_matrix, &scale_matrix);
@@ -335,8 +336,8 @@ mat4 graphics_entity_get_model_matrix(const Entity* entity)
 	return model_matrix;
 }
 
-static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r32 mass) {
-    r32 mass_per_vertex = mass / array_length(vertices);
+static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r64 mass) {
+    r64 mass_per_vertex = mass / array_length(vertices);
     mat3 result = {0};
     for (u32 i = 0; i < array_length(vertices); ++i) {
         vec3 v = vertices[i];
@@ -354,7 +355,7 @@ static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r32 mass) {
     return result;
 }
 
-void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r32 mass)
+void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, fvec4 color, r64 mass)
 {
 	entity->mesh = mesh;
 	entity->world_position = world_position;
@@ -362,18 +363,18 @@ void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_pos
 	entity->world_scale = world_scale;
 	entity->diffuse_info.diffuse_color = color;
 	entity->diffuse_info.use_diffuse_map = false;
-	entity->angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->previous_angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->previous_linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->inverse_mass = 1.0f / mass;
+	entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->previous_angular_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->previous_linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->inverse_mass = 1.0 / mass;
 	entity->inertia_tensor = get_symmetric_inertia_tensor_for_object(mesh.collider.convex_hull.vertices, mass);
 	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = false;
 }
 
-void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color)
+void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, fvec4 color)
 {
 	entity->mesh = mesh;
 	entity->world_position = world_position;
@@ -381,11 +382,11 @@ void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 wor
 	entity->world_scale = world_scale;
 	entity->diffuse_info.diffuse_color = color;
 	entity->diffuse_info.use_diffuse_map = false;
-	entity->angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->previous_angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->previous_linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->inverse_mass = 0.0f;
+	entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->previous_angular_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->previous_linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->inverse_mass = 0.0;
 	entity->inertia_tensor = (mat3){0}; // this is not correct, but it shouldn't make a difference
 	entity->inverse_inertia_tensor = (mat3){0};
 	entity->forces = array_new(Physics_Force);
@@ -432,18 +433,43 @@ void graphics_entity_set_scale(Entity* entity, vec3 world_scale)
 	entity->world_scale = world_scale;
 }
 
+static void mat4_to_float_array(mat4 matrix, r32 arr[16]) {
+    arr[0] = (r32)matrix.data[0][0];
+    arr[1] = (r32)matrix.data[0][1];
+    arr[2] = (r32)matrix.data[0][2];
+    arr[3] = (r32)matrix.data[0][3];
+    arr[4] = (r32)matrix.data[1][0];
+    arr[5] = (r32)matrix.data[1][1];
+    arr[6] = (r32)matrix.data[1][2];
+    arr[7] = (r32)matrix.data[1][3];
+    arr[8] = (r32)matrix.data[2][0];
+    arr[9] = (r32)matrix.data[2][1];
+    arr[10] = (r32)matrix.data[2][2];
+    arr[11] = (r32)matrix.data[2][3];
+    arr[12] = (r32)matrix.data[3][0];
+    arr[13] = (r32)matrix.data[3][1];
+    arr[14] = (r32)matrix.data[3][2];
+    arr[15] = (r32)matrix.data[3][3];
+}
+
 void graphics_entity_render_basic_shader(const Perspective_Camera* camera, const Entity* entity)
 {
 	init_predefined_shaders();
+    r32 model[16];
+    r32 view[16];
+    r32 proj[16];
+	mat4 model_matrix = graphics_entity_get_model_matrix(entity);
+    mat4_to_float_array(model_matrix, model);
+    mat4_to_float_array(camera->view_matrix, view);
+    mat4_to_float_array(camera->projection_matrix, proj);
 	Shader shader = predefined_shaders.basic_shader;
 	glUseProgram(shader);
 	GLint model_matrix_location = glGetUniformLocation(shader, "model_matrix");
 	GLint view_matrix_location = glGetUniformLocation(shader, "view_matrix");
 	GLint projection_matrix_location = glGetUniformLocation(shader, "projection_matrix");
-	mat4 model_matrix = graphics_entity_get_model_matrix(entity);
-	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, (GLfloat*)model_matrix.data);
-	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)camera->view_matrix.data);
-	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)camera->projection_matrix.data);
+	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, (GLfloat*)model);
+	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)view);
+	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)proj);
 	graphics_mesh_render(shader, entity->mesh);
 	glUseProgram(0);
 }
@@ -451,6 +477,13 @@ void graphics_entity_render_basic_shader(const Perspective_Camera* camera, const
 void graphics_entity_render_phong_shader(const Perspective_Camera* camera, const Entity* entity, const Light* lights)
 {
 	init_predefined_shaders();
+    r32 model[16];
+    r32 view[16];
+    r32 proj[16];
+	mat4 model_matrix = graphics_entity_get_model_matrix(entity);
+    mat4_to_float_array(model_matrix, model);
+    mat4_to_float_array(camera->view_matrix, view);
+    mat4_to_float_array(camera->projection_matrix, proj);
 	Shader shader = predefined_shaders.phong_shader;
 	glUseProgram(shader);
 	light_update_uniforms(lights, shader);
@@ -459,12 +492,11 @@ void graphics_entity_render_phong_shader(const Perspective_Camera* camera, const
 	GLint model_matrix_location = glGetUniformLocation(shader, "model_matrix");
 	GLint view_matrix_location = glGetUniformLocation(shader, "view_matrix");
 	GLint projection_matrix_location = glGetUniformLocation(shader, "projection_matrix");
-	glUniform3f(camera_position_location, camera->position.x, camera->position.y, camera->position.z);
+	glUniform3f(camera_position_location, (r32)camera->position.x, (r32)camera->position.y, (r32)camera->position.z);
 	glUniform1f(shineness_location, 128.0f);
-	mat4 model_matrix = graphics_entity_get_model_matrix(entity);
-	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, (GLfloat*)model_matrix.data);
-	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)camera->view_matrix.data);
-	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)camera->projection_matrix.data);
+	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, model);
+	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, view);
+	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, proj);
 	diffuse_update_uniforms(&entity->diffuse_info, shader);
 	graphics_mesh_render(shader, entity->mesh);
 	glUseProgram(0);
@@ -492,7 +524,7 @@ u32 graphics_texture_create_from_data(const Image_Data* image_data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 
 	// Anisotropic Filtering
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0f);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -520,7 +552,7 @@ u32 graphics_texture_create_from_float_data(const Float_Image_Data* image_data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 
 	// Anisotropic Filtering
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0f);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -551,25 +583,25 @@ void graphics_light_create(Light* light, vec3 position, vec4 ambient_color, vec4
 }
 
 // If memory is null, new memory will be allocated
-Float_Image_Data graphics_image_data_to_float_image_data(Image_Data* image_data, r32* memory)
+Float_Image_Data graphics_image_data_to_float_image_data(Image_Data* image_data, r64* memory)
 {
 	// @TODO: check WHY this is happening
 	s32 image_channels = image_data->channels;
 
 	if (!memory)
-		memory = (r32*)malloc(sizeof(r32) * image_data->height * image_data->width * image_channels);
+		memory = (r64*)malloc(sizeof(r64) * image_data->height * image_data->width * image_channels);
 
 	for (s32 i = 0; i < image_data->height; ++i)
 	{
 		for (s32 j = 0; j < image_data->width; ++j)
 		{
 			memory[i * image_data->width * image_channels + j * image_channels] =
-				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels] / 255.0f;
+				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels] / 255.0;
 			memory[i * image_data->width * image_channels + j * image_channels + 1] =
-				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels + 1] / 255.0f;
+				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels + 1] / 255.0;
 			memory[i * image_data->width * image_channels + j * image_channels + 2] =
-				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels + 2] / 255.0f;
-			memory[i * image_data->width * image_channels + j * image_channels + 3] = 1.0f;
+				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels + 2] / 255.0;
+			memory[i * image_data->width * image_channels + j * image_channels + 3] = 1.0;
 		}
 	}
 
@@ -594,9 +626,9 @@ Image_Data graphics_float_image_data_to_image_data(const Float_Image_Data* float
 	{
 		for (s32 j = 0; j < float_image_data->width; ++j)
 		{
-			memory[i * float_image_data->width * image_channels + j * image_channels] = (u8)round(255.0f * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels]);
-			memory[i * float_image_data->width * image_channels + j * image_channels + 1] = (u8)round(255.0f * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels + 1]);
-			memory[i * float_image_data->width * image_channels + j * image_channels + 2] = (u8)round(255.0f * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels + 2]);
+			memory[i * float_image_data->width * image_channels + j * image_channels] = (u8)round(255.0 * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels]);
+			memory[i * float_image_data->width * image_channels + j * image_channels + 1] = (u8)round(255.0 * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels + 1]);
+			memory[i * float_image_data->width * image_channels + j * image_channels + 2] = (u8)round(255.0 * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels + 2]);
 			if (float_image_data->channels > 3) memory[i * float_image_data->width * image_channels + j * image_channels + 3] = 255;
 		}
 	}
@@ -717,7 +749,7 @@ void graphics_renderer_primitives_flush(const Perspective_Camera* camera)
 	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat *) camera->view_matrix.data);
 	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat *) camera->projection_matrix.data);
 
-	glPointSize(10.0f);
+	glPointSize(10.0);
 	glDrawArrays(GL_POINTS, 0, primitives_ctx.point_count);
 	primitives_ctx.point_count = 0;
 	primitives_ctx.point_data_ptr = 0;

@@ -9,8 +9,8 @@ typedef struct {
 } Plane;
 
 static boolean is_point_in_plane(const Plane* plane, vec3 position) {
-	float distance = -gm_vec3_dot(plane->normal, plane->point);
-	if (gm_vec3_dot(position, plane->normal) + distance < 0.0f) {
+	r64 distance = -gm_vec3_dot(plane->normal, plane->point);
+	if (gm_vec3_dot(position, plane->normal) + distance < 0.0) {
 		return false;
 	}
 
@@ -18,24 +18,24 @@ static boolean is_point_in_plane(const Plane* plane, vec3 position) {
 }
 
 static boolean plane_edge_intersection(const Plane* plane, const vec3 start, const vec3 end, vec3* out_point) {
-	const r32 EPSILON = 0.000001f;
+	const r64 EPSILON = 0.000001;
 	vec3 ab = gm_vec3_subtract(end, start);
 
 	// Check that the edge and plane are not parallel and thus never intersect
 	// We do this by projecting the line (start - A, End - B) ab along the plane
-	float ab_p = gm_vec3_dot(plane->normal, ab);
+	r64 ab_p = gm_vec3_dot(plane->normal, ab);
 	if (fabs(ab_p) > EPSILON) {
 		//Generate a random point on the plane (any point on the plane will suffice)
-		float distance = -gm_vec3_dot(plane->normal, plane->point);
+		r64 distance = -gm_vec3_dot(plane->normal, plane->point);
 		vec3 p_co = gm_vec3_scalar_product(-distance, plane->normal);
 
 		//Work out the edge factor to scale edge by
 		// e.g. how far along the edge to traverse before it meets the plane.
 		//      This is computed by: -proj<plane_nrml>(edge_start - any_planar_point) / proj<plane_nrml>(edge_start - edge_end)
-		float fac = -gm_vec3_dot(plane->normal, gm_vec3_subtract(start, p_co)) / ab_p;
+		r64 fac = -gm_vec3_dot(plane->normal, gm_vec3_subtract(start, p_co)) / ab_p;
 
-		//Stop any large floating point divide issues with almost parallel planes
-		fac = MIN(MAX(fac, 0.0f), 1.0f); 
+		//Stop any large r64ing point divide issues with almost parallel planes
+		fac = MIN(MAX(fac, 0.0), 1.0); 
 
 		//Return point on edge
 		*out_point = gm_vec3_add(start, gm_vec3_scalar_product(fac, ab));
@@ -130,21 +130,21 @@ static vec3 get_closest_point(vec3 pos, vec3 e1, vec3 e2) {
 	vec3 diff_AB = gm_vec3_subtract(e2, e1);
 
 	//Distance along the line of point 'pos' in world distance 
-	float ABAPproduct = gm_vec3_dot(diff_AP, diff_AB);
-	float magnitudeAB = gm_vec3_dot(diff_AB, diff_AB);
+	r64 ABAPproduct = gm_vec3_dot(diff_AP, diff_AB);
+	r64 magnitudeAB = gm_vec3_dot(diff_AB, diff_AB);
 
 	//Distance along the line of point 'pos' between 0-1 where 0 is line start and 1 is line end
-	float distance = ABAPproduct / magnitudeAB;
+	r64 distance = ABAPproduct / magnitudeAB;
 
 	//Clamp distance so it cant go beyond the line's start/end in either direction
-	distance = MAX(MIN(distance, 1.0f), 0.0f);
+	distance = MAX(MIN(distance, 1.0), 0.0);
 
 	//Use distance from line start (0-1) to compute the actual position
 	return gm_vec3_add(e1, gm_vec3_scalar_product(distance, diff_AB));
 }
 
 static vec3 get_closest_point_polygon(vec3 position, Plane* reference_plane) {
-	r32 d = gm_vec3_dot(gm_vec3_scalar_product(-1.0f, reference_plane->normal), reference_plane->point);
+	r64 d = gm_vec3_dot(gm_vec3_scalar_product(-1.0, reference_plane->normal), reference_plane->point);
 	return gm_vec3_subtract(position,
 		gm_vec3_scalar_product(gm_vec3_dot(reference_plane->normal, position) + d, reference_plane->normal));
 }
@@ -165,14 +165,14 @@ static Plane* build_boundary_planes(Collider_Convex_Hull* convex_hull, u32 targe
 }
 
 static u32 get_face_with_most_fitting_normal(u32 support_idx, const Collider_Convex_Hull* convex_hull, vec3 normal) {
-	const r32 EPSILON = 0.000001f;
+	const r64 EPSILON = 0.000001;
 	u32* support_faces = convex_hull->vertex_to_faces[support_idx];
 
-	r32 max_proj = -FLT_MAX;
+	r64 max_proj = -DBL_MAX;
 	u32 selected_face_idx;
 	for (u32 i = 0; i < array_length(support_faces); ++i) {
 		Collider_Convex_Hull_Face face = convex_hull->transformed_faces[support_faces[i]];
-		r32 proj = gm_vec3_dot(face.normal, normal);
+		r64 proj = gm_vec3_dot(face.normal, normal);
 		if (proj > max_proj) {
 			max_proj = proj;
 			selected_face_idx = support_faces[i];
@@ -192,7 +192,7 @@ static dvec4 get_edge_with_most_fitting_normal(u32 support1_idx, u32 support2_id
 	u32* support1_neighbors = convex_hull1->vertex_to_neighbors[support1_idx];
 	u32* support2_neighbors = convex_hull2->vertex_to_neighbors[support2_idx];
 
-	r32 max_dot = -FLT_MAX;
+	r64 max_dot = -DBL_MAX;
 	dvec4 selected_edges;
 
 	for (u32 i = 0; i < array_length(support1_neighbors); ++i) {
@@ -205,7 +205,7 @@ static dvec4 get_edge_with_most_fitting_normal(u32 support1_idx, u32 support2_id
 			vec3 current_normal = gm_vec3_normalize(gm_vec3_cross(edge1, edge2));
 			vec3 current_normal_inverted = gm_vec3_negative(current_normal);
 
-			r32 dot = gm_vec3_dot(current_normal, normal);
+			r64 dot = gm_vec3_dot(current_normal, normal);
 			if (dot > max_dot) {
 				max_dot = dot;
 				selected_edges.x = support1_idx;
@@ -234,7 +234,7 @@ static dvec4 get_edge_with_most_fitting_normal(u32 support1_idx, u32 support2_id
 // a1*x + b1*y = c1
 // a2*x + b2*y = c2
 // Outputs: x and y
-static boolean solve_2x2_linear_system(r32 a1, r32 b1, r32 c1, r32 a2, r32 b2, r32 c2, r32* x, r32* y) {
+static boolean solve_2x2_linear_system(r64 a1, r64 b1, r64 c1, r64 a2, r64 b2, r64 c2, r64* x, r64* y) {
   if ((a1 * b2) - (a2 * b1) == 0)
     return false;
 
@@ -255,15 +255,15 @@ static boolean solve_2x2_linear_system(r32 a1, r32 b1, r32 c1, r32 a2, r32 b2, r
 // L2 is the closest POINT to the first line that belongs to the second line
 // _N is the number that satisfies L1 = P1 + _N * D1
 // _M is the number that satisfies L2 = P2 + _M * D2
-static boolean collision_distance_between_skew_lines(vec3 p1, vec3 d1, vec3 p2, vec3 d2, vec3 *l1, vec3 *l2, r32 * _n, r32 * _m) {
-  r32 n1 = d1.x * d2.x + d1.y * d2.y + d1.z * d2.z;
-  r32 n2 = d2.x * d2.x + d2.y * d2.y + d2.z * d2.z;
-  r32 m1 = -d1.x * d1.x - d1.y * d1.y - d1.z * d1.z;
-  r32 m2 = -d2.x * d1.x - d2.y * d1.y - d2.z * d1.z;
-  r32 r1 = -d1.x * p2.x + d1.x * p1.x - d1.y * p2.y + d1.y * p1.y - d1.z * p2.z + d1.z * p1.z;
-  r32 r2 = -d2.x * p2.x + d2.x * p1.x - d2.y * p2.y + d2.y * p1.y - d2.z * p2.z + d2.z * p1.z;
+static boolean collision_distance_between_skew_lines(vec3 p1, vec3 d1, vec3 p2, vec3 d2, vec3 *l1, vec3 *l2, r64 * _n, r64 * _m) {
+  r64 n1 = d1.x * d2.x + d1.y * d2.y + d1.z * d2.z;
+  r64 n2 = d2.x * d2.x + d2.y * d2.y + d2.z * d2.z;
+  r64 m1 = -d1.x * d1.x - d1.y * d1.y - d1.z * d1.z;
+  r64 m2 = -d2.x * d1.x - d2.y * d1.y - d2.z * d1.z;
+  r64 r1 = -d1.x * p2.x + d1.x * p1.x - d1.y * p2.y + d1.y * p1.y - d1.z * p2.z + d1.z * p1.z;
+  r64 r2 = -d2.x * p2.x + d2.x * p1.x - d2.y * p2.y + d2.y * p1.y - d2.z * p2.z + d2.z * p1.z;
 
-  r32 m, n;
+  r64 m, n;
   if (!solve_2x2_linear_system(n1, m1, r1, n2, m2, r2, &n, &m))
     return false;
 
@@ -289,7 +289,7 @@ static vec3* get_vertices_of_faces(Collider_Convex_Hull* hull, Collider_Convex_H
 
 Clipping_Contact* clipping_get_contact_manifold(Collider_Convex_Hull* convex_hull1, Collider_Convex_Hull* convex_hull2,
 	vec3 normal) {
-	const r32 EPSILON = 0.0001f;
+	const r64 EPSILON = 0.0001;
 	Clipping_Contact* contacts = array_new(Clipping_Contact);
 
 	vec3 inverted_normal = gm_vec3_negative(normal);
@@ -303,9 +303,9 @@ Clipping_Contact* clipping_get_contact_manifold(Collider_Convex_Hull* convex_hul
 	Collider_Convex_Hull_Face face2 = convex_hull2->transformed_faces[face2_idx];
 	dvec4 edges = get_edge_with_most_fitting_normal(support1_idx, support2_idx, convex_hull1, convex_hull2, normal, &edge_normal);
 
-	r32 chosen_normal1_dot = gm_vec3_dot(face1.normal, normal);
-	r32 chosen_normal2_dot = gm_vec3_dot(face2.normal, inverted_normal);
-	r32 edge_normal_dot = gm_vec3_dot(edge_normal, normal);
+	r64 chosen_normal1_dot = gm_vec3_dot(face1.normal, normal);
+	r64 chosen_normal2_dot = gm_vec3_dot(face2.normal, inverted_normal);
+	r64 edge_normal_dot = gm_vec3_dot(edge_normal, normal);
 
 	if (edge_normal_dot > chosen_normal1_dot + EPSILON && edge_normal_dot > chosen_normal2_dot + EPSILON) {
 		//printf("EDGE\n");
@@ -343,7 +343,7 @@ Clipping_Contact* clipping_get_contact_manifold(Collider_Convex_Hull* convex_hul
 			//vec3 closest_point = get_closest_pointPolygon(point, reference_face_support_points);
 			vec3 closest_point = get_closest_point_polygon(point, &reference_plane);
 			vec3 point_diff = gm_vec3_subtract(point, closest_point);
-			r32 contact_penetration;
+			r64 contact_penetration;
 
 			// we are projecting the points that are in the incident face on the reference planes
 			// so the points that we have are part of the incident object.
@@ -358,7 +358,7 @@ Clipping_Contact* clipping_get_contact_manifold(Collider_Convex_Hull* convex_hul
 				contact.collision_point2 = gm_vec3_add(point, gm_vec3_scalar_product(contact_penetration, normal));
 			}
 
-			if (contact_penetration < 0.0f) {
+			if (contact_penetration < 0.0) {
 				array_push(contacts, contact);
 			}
 		}

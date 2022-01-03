@@ -12,9 +12,9 @@ typedef struct {
 	Entity* e2;
 	vec3 r1_wc;
 	vec3 r2_wc;
-	r32 compliance;
+	r64 compliance;
 	vec3 delta_x;
-	r32* lambda;
+	r64* lambda;
 } Positional_Constaint;
 
 typedef struct {
@@ -23,15 +23,15 @@ typedef struct {
 	vec3 r1_lc;
 	vec3 r2_lc;
 	vec3 normal;
-	r32* lambda_t;
-	r32* lambda_n;
+	r64* lambda_t;
+	r64* lambda_n;
 } Collision_Constraint;
 
 typedef struct {
 	Entity* e1;
 	Entity* e2;
-	r32 lambda_n;
-	r32 lambda_t;
+	r64 lambda_n;
+	r64 lambda_t;
 	vec3 r1_lc;
 	vec3 r2_lc;
 	vec3 r1_wc;
@@ -48,7 +48,7 @@ typedef struct {
 	};
 } Constraint;
 
-void pbd_simulate(r32 dt, Entity* entities);
+void pbd_simulate(r64 dt, Entity* entities);
 void collect_collisions(Entity* entities);
 
 #endif

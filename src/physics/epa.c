@@ -2,7 +2,7 @@
 #include <light_array.h>
 #include <float.h>
 
-static const r32 EPSILON = 0.001f;
+static const r64 EPSILON = 0.001;
 
 void polytope_from_gjk_simplex(const GJK_Simplex* s, vec3** _polytope, dvec3** _faces) {
 	assert(s->num == 4);
@@ -28,7 +28,7 @@ void polytope_from_gjk_simplex(const GJK_Simplex* s, vec3** _polytope, dvec3** _
 	*_faces = faces;
 }
 
-void get_face_normal_and_distance_to_origin(dvec3 face, vec3* polytope, vec3* _normal, r32* _distance) {
+void get_face_normal_and_distance_to_origin(dvec3 face, vec3* polytope, vec3* _normal, r64* _distance) {
 	vec3 a = polytope[face.x];
 	vec3 b = polytope[face.y];
 	vec3 c = polytope[face.z];
@@ -38,7 +38,7 @@ void get_face_normal_and_distance_to_origin(dvec3 face, vec3* polytope, vec3* _n
 	vec3 normal = gm_vec3_normalize(gm_vec3_cross(ab, ac));
 
 	// the distance from the face's *plane* to the origin (considering an infinite plane).
-	r32 distance = gm_vec3_dot(normal, a);
+	r64 distance = gm_vec3_dot(normal, a);
 	if (distance < -EPSILON) {
 		// if the distance is less than 0, it means that our normal is point inwards instead of outwards
 		// in this case, we just invert both normal and distance
@@ -51,7 +51,7 @@ void get_face_normal_and_distance_to_origin(dvec3 face, vec3* polytope, vec3* _n
 		// since our shape is convex, we analyze the other vertices of the hull to deduce the orientation
 		for (u32 i = 0; i < array_length(polytope); ++i) {
 			vec3 current = polytope[i];
-			r32 auxiliar_distance = gm_vec3_dot(normal, current);
+			r64 auxiliar_distance = gm_vec3_dot(normal, current);
 			if (auxiliar_distance < -EPSILON || auxiliar_distance > EPSILON) {
 				// since the shape is convex, the other vertices should always be "behind" the normal plane
 				normal = auxiliar_distance < -EPSILON ? normal : gm_vec3_negative(normal);
@@ -99,11 +99,11 @@ void add_edge(dvec2** edges, dvec2 edge, vec3* polytope) {
 
 static vec3 triangle_centroid(vec3 p1, vec3 p2, vec3 p3) {
 	vec3 centroid = gm_vec3_add(gm_vec3_add(p2, p3), p1);
-	centroid = gm_vec3_scalar_product(1.0f / 3.0f, centroid);
+	centroid = gm_vec3_scalar_product(1.0 / 3.0, centroid);
 	return centroid;
 }
 
-boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* _normal, r32* _penetration) {
+boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* _normal, r64* _penetration) {
 	vec3* polytope;
 	dvec3* faces;
 
@@ -111,14 +111,14 @@ boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* _normal, r32
 	polytope_from_gjk_simplex(simplex, &polytope, &faces);
 
 	vec3* normals = array_new(vec3);
-	r32* faces_distance_to_origin = array_new(r32);
+	r64* faces_distance_to_origin = array_new(r64);
 
 	vec3 min_normal;
-	r32 min_distance = FLT_MAX;
+	r64 min_distance = DBL_MAX;
 
 	for (u32 i = 0; i < array_length(faces); ++i) {
 		vec3 normal;
-		r32 distance;
+		r64 distance;
 		dvec3 face = faces[i];
 
 		get_face_normal_and_distance_to_origin(face, polytope, &normal, &distance);
@@ -137,7 +137,7 @@ boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* _normal, r32
 		vec3 support_point = gjk_get_support_point_of_minkowski_difference(shape1, shape2, min_normal);
 
 		// If the support time lies on the face currently set as the closest to the origin, we are done.
-		r32 d = gm_vec3_dot(min_normal, support_point);
+		r64 d = gm_vec3_dot(min_normal, support_point);
 		if (fabsf(d - min_distance) < EPSILON) {
 			*_normal = min_normal;
 			*_penetration = min_distance;
@@ -163,7 +163,7 @@ boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* _normal, r32
 			);
 
 			// If the face normal points towards the support point, we need to reconstruct it.
-			if (gm_vec3_dot(normal, gm_vec3_subtract(support_point, centroid)) > 0.0f) {
+			if (gm_vec3_dot(normal, gm_vec3_subtract(support_point, centroid)) > 0.0) {
 				dvec3 face = faces[i];
 
 				dvec2 edge1 = (dvec2){face.x, face.y};
@@ -192,16 +192,16 @@ boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* _normal, r32
 			array_push(faces, new_face);
 
 			vec3 new_face_normal;
-			r32 new_face_distance;
+			r64 new_face_distance;
 			get_face_normal_and_distance_to_origin(new_face, polytope, &new_face_normal, &new_face_distance);
 
 			array_push(normals, new_face_normal);
 			array_push(faces_distance_to_origin, new_face_distance);
 		}
 
-		min_distance = FLT_MAX;
+		min_distance = DBL_MAX;
 		for (u32 i = 0; i < array_length(faces_distance_to_origin); ++i) {
-			r32 distance = faces_distance_to_origin[i];
+			r64 distance = faces_distance_to_origin[i];
 			if (distance < min_distance) {
 				min_distance = distance;
 				min_normal = normals[i];

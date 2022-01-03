@@ -4,9 +4,9 @@
 #include <errno.h>
 #include <string.h>
 
-extern r32 util_random_float(r32 min, r32 max)
+extern r64 util_random_float(r64 min, r64 max)
 {
-    r32 scale = rand() / (r32)RAND_MAX;
+    r64 scale = rand() / (r64)RAND_MAX;
     return min + scale * (max - min);
 }
 

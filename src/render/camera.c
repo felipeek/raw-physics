@@ -7,10 +7,10 @@ extern s32 window_height;
 static void recalculate_view_matrix(Perspective_Camera* camera)
 {
 	mat4 trans = (mat4) {
-		1.0f, 0.0f, 0.0f, -camera->position.x,
-		0.0f, 1.0f, 0.0f, -camera->position.y,
-		0.0f, 0.0f, 1.0f, -camera->position.z,
-		0.0f, 0.0f, 0.0f, 1.0f
+		1.0, 0.0, 0.0, -camera->position.x,
+		0.0, 1.0, 0.0, -camera->position.y,
+		0.0, 0.0, 1.0, -camera->position.z,
+		0.0, 0.0, 0.0, 1.0
 	};
 
 	Quaternion f = quaternion_product(&camera->rotation, &camera->yrotation);
@@ -21,12 +21,12 @@ static void recalculate_view_matrix(Perspective_Camera* camera)
 
 static void recalculate_projection_matrix(Perspective_Camera* camera)
 {
-	r32 near = camera->near_plane;
-	r32 far = camera->far_plane;
-	r32 top = (r32)fabs(near) * atanf(gm_radians(camera->fov) / 2.0f);
-	r32 bottom = -top;
-	r32 right = top * ((r32)window_width / (r32)window_height);
-	r32 left = -right;
+	r64 near = camera->near_plane;
+	r64 far = camera->far_plane;
+	r64 top = (r64)fabs(near) * atanf(gm_radians(camera->fov) / 2.0);
+	r64 bottom = -top;
+	r64 right = top * ((r64)window_width / (r64)window_height);
+	r64 left = -right;
 
 	mat4 p = (mat4) {
 		near, 0, 0, 0,
@@ -36,9 +36,9 @@ static void recalculate_projection_matrix(Perspective_Camera* camera)
 	};
 
 	mat4 m = (mat4) {
-		2.0f / (right - left), 0, 0, -(right + left) / (right - left),
-			0, 2.0f / (top - bottom), 0, -(top + bottom) / (top - bottom),
-			0, 0, 2.0f / (far - near), -(far + near) / (far - near),
+		2.0 / (right - left), 0, 0, -(right + left) / (right - left),
+			0, 2.0 / (top - bottom), 0, -(top + bottom) / (top - bottom),
+			0, 0, 2.0 / (far - near), -(far + near) / (far - near),
 			0, 0, 0, 1
 	};
 
@@ -47,14 +47,14 @@ static void recalculate_projection_matrix(Perspective_Camera* camera)
 	camera->projection_matrix = gm_mat4_scalar_product(-1, &mp);
 }
 
-void camera_init(Perspective_Camera* camera, vec3 position, r32 near_plane, r32 far_plane, r32 fov)
+void camera_init(Perspective_Camera* camera, vec3 position, r64 near_plane, r64 far_plane, r64 fov)
 {
 	camera->position = position;
 	camera->near_plane = near_plane;
 	camera->far_plane = far_plane;
 	camera->fov = fov;
-	camera->rotation = (Quaternion) {0.0f, 0.0f, 0.0f, 1.0f};
-	camera->yrotation = (Quaternion) {0.0f, 0.0f, 0.0f, 1.0f};
+	camera->rotation = (Quaternion) {0.0, 0.0, 0.0, 1.0};
+	camera->yrotation = (Quaternion) {0.0, 0.0, 0.0, 1.0};
 	recalculate_view_matrix(camera);
 	recalculate_projection_matrix(camera);
 }
@@ -65,27 +65,27 @@ void camera_set_position(Perspective_Camera* camera, vec3 position)
 	recalculate_view_matrix(camera);
 }
 
-void camera_set_near_plane(Perspective_Camera* camera, r32 near_plane)
+void camera_set_near_plane(Perspective_Camera* camera, r64 near_plane)
 {
 	camera->near_plane = near_plane;
 	recalculate_projection_matrix(camera);
 }
 
-void camera_set_far_plane(Perspective_Camera* camera, r32 far_plane)
+void camera_set_far_plane(Perspective_Camera* camera, r64 far_plane)
 {
 	camera->far_plane = far_plane;
 	recalculate_projection_matrix(camera);
 }
 
-void camera_rotate_x(Perspective_Camera* camera, r32 x_difference)
+void camera_rotate_x(Perspective_Camera* camera, r64 x_difference)
 {
-	Quaternion y_axis = quaternion_new((vec3) { 0.0f, 1.0f, 0.0f }, x_difference);
+	Quaternion y_axis = quaternion_new((vec3) { 0.0, 1.0, 0.0 }, x_difference);
 	camera->yrotation = quaternion_product(&y_axis, &camera->yrotation);
 	quaternion_normalize(&camera->yrotation);
 	recalculate_view_matrix(camera);
 }
 
-void camera_rotate_y(Perspective_Camera* camera, r32 y_difference)
+void camera_rotate_y(Perspective_Camera* camera, r64 y_difference)
 {
 	vec3 right = quaternion_get_right_inverted(&camera->rotation);
 	right = gm_vec3_normalize(right);
@@ -95,7 +95,7 @@ void camera_rotate_y(Perspective_Camera* camera, r32 y_difference)
 	recalculate_view_matrix(camera);
 }
 
-void camera_move_forward(Perspective_Camera* camera, r32 amount)
+void camera_move_forward(Perspective_Camera* camera, r64 amount)
 {
 	Quaternion f = quaternion_product(&camera->rotation, &camera->yrotation);
 
@@ -106,7 +106,7 @@ void camera_move_forward(Perspective_Camera* camera, r32 amount)
 	recalculate_view_matrix(camera);
 }
 
-void camera_move_right(Perspective_Camera* camera, r32 amount)
+void camera_move_right(Perspective_Camera* camera, r64 amount)
 {
 	Quaternion f = quaternion_product(&camera->rotation, &camera->yrotation);
 
@@ -141,7 +141,7 @@ vec3 camera_get_z_axis(const Perspective_Camera* camera)
 	return (vec3) {forward.x, forward.y, forward.z};
 }
 
-void camera_set_fov(Perspective_Camera* camera, r32 fov)
+void camera_set_fov(Perspective_Camera* camera, r64 fov)
 {
 	camera->fov = fov;
 	recalculate_projection_matrix(camera);
