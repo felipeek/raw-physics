@@ -10,11 +10,11 @@ typedef enum {
 typedef struct {
 	Entity* e1;
 	Entity* e2;
-	vec3 r1_wc;
-	vec3 r2_wc;
+	vec3 r1_lc;
+	vec3 r2_lc;
 	r32 compliance;
 	vec3 delta_x;
-	r32* lambda;
+	r32 lambda;
 } Positional_Constaint;
 
 typedef struct {
@@ -23,21 +23,9 @@ typedef struct {
 	vec3 r1_lc;
 	vec3 r2_lc;
 	vec3 normal;
-	r32* lambda_t;
-	r32* lambda_n;
-} Collision_Constraint;
-
-typedef struct {
-	Entity* e1;
-	Entity* e2;
-	r32 lambda_n;
 	r32 lambda_t;
-	vec3 r1_lc;
-	vec3 r2_lc;
-	vec3 r1_wc;
-	vec3 r2_wc;
-	vec3 normal;
-} Temporary_Contact;
+	r32 lambda_n;
+} Collision_Constraint;
 
 typedef struct {
 	Constraint_Type type;

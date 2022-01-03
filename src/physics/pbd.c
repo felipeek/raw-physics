@@ -58,19 +58,24 @@ static vec3 calculate_p(Entity* e, vec3 r_lc) {
 	return gm_vec3_add(e->world_position, gm_mat3_multiply_vec3(&current_rot_matrix, r_lc));
 }
 
-// Solves the positional constraint, updating the position and orientation of the entities accordingly
-static void solve_positional_constraint(Constraint* constraint, r32 h) {
+// Apply the positional constraint, updating the position and orientation of the entities accordingly
+static r32 apply_positional_constraint(Constraint* constraint, r32 h) {
 	assert(constraint->type == POSITIONAL_CONSTRAINT);
 
 	Entity* e1 = constraint->positional_constraint.e1;
 	Entity* e2 = constraint->positional_constraint.e2;
 	mat3 e1_rot = quaternion_get_matrix3(&e1->world_rotation);
 	mat3 e2_rot = quaternion_get_matrix3(&e2->world_rotation);
-	vec3 r1 = constraint->positional_constraint.r1_wc;	// in world coordinates
-	vec3 r2 = constraint->positional_constraint.r2_wc; // in world coordinates
-	r32 lambda = *constraint->positional_constraint.lambda;
+	vec3 r1_lc = constraint->positional_constraint.r1_lc;
+	vec3 r2_lc = constraint->positional_constraint.r2_lc;
+	r32 lambda = constraint->positional_constraint.lambda;
 	r32 compliance = constraint->positional_constraint.compliance;
 	vec3 delta_x = constraint->positional_constraint.delta_x;
+
+	mat3 e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
+	mat3 e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
+	vec3 r1_wc = gm_mat3_multiply_vec3(&e1_rot_matrix, r1_lc);
+	vec3 r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
 
 	mat3 e1_inverse_inertia_tensor = get_dynamic_inverse_inertia_tensor(e1);
 	mat3 e2_inverse_inertia_tensor = get_dynamic_inverse_inertia_tensor(e2);
@@ -80,13 +85,12 @@ static void solve_positional_constraint(Constraint* constraint, r32 h) {
 	r32 c = gm_vec3_length(delta_x);
 
 	// calculate the inverse masses of both entities
-	r32 w1 = e1->inverse_mass + gm_vec3_dot(gm_vec3_cross(r1, n), gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1, n)));
-	r32 w2 = e2->inverse_mass + gm_vec3_dot(gm_vec3_cross(r2, n), gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2, n)));
+	r32 w1 = e1->inverse_mass + gm_vec3_dot(gm_vec3_cross(r1_wc, n), gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1_wc, n)));
+	r32 w2 = e2->inverse_mass + gm_vec3_dot(gm_vec3_cross(r2_wc, n), gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2_wc, n)));
 
 	// calculate the delta_lambda (XPBD) and updates the constraint
 	r32 til_compliance = compliance / (h * h);
 	r32 delta_lambda = (- c - til_compliance * lambda) / (w1 + w2 + til_compliance);
-	*constraint->positional_constraint.lambda += delta_lambda;
 
 	// calculates the positional impulse
 	vec3 positional_impulse = gm_vec3_scalar_product(delta_lambda, n);
@@ -100,8 +104,8 @@ static void solve_positional_constraint(Constraint* constraint, r32 h) {
 	}
 
 	// updates the rotation of the entities based on eq (8) and (9)
-	vec3 aux1 = gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1, positional_impulse));
-	vec3 aux2 = gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2, positional_impulse));
+	vec3 aux1 = gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1_wc, positional_impulse));
+	vec3 aux2 = gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2_wc, positional_impulse));
 	Quaternion aux_q1 = (Quaternion){aux1.x, aux1.y, aux1.z, 0.0f};
 	Quaternion aux_q2 = (Quaternion){aux2.x, aux2.y, aux2.z, 0.0f};
 	Quaternion q1 = quaternion_product(&aux_q1, &e1->world_rotation);
@@ -122,6 +126,14 @@ static void solve_positional_constraint(Constraint* constraint, r32 h) {
 		// should we normalize?
 		e2->world_rotation = quaternion_normalize(&e2->world_rotation);
 	}
+
+    return delta_lambda;
+}
+
+static void solve_positional_constraint(Constraint* constraint, r32 h) {
+	assert(constraint->type == POSITIONAL_CONSTRAINT);
+    r32 delta_lambda = apply_positional_constraint(constraint, h);
+    constraint->positional_constraint.lambda += delta_lambda;
 }
 
 extern boolean paused;
@@ -135,8 +147,8 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 	vec3 r1_lc = constraint->collision_constraint.r1_lc;
 	vec3 r2_lc = constraint->collision_constraint.r2_lc;
 	vec3 normal = constraint->collision_constraint.normal;
-	r32* lambda_n = constraint->collision_constraint.lambda_n;
-	r32* lambda_t = constraint->collision_constraint.lambda_t;
+	r32 lambda_n = constraint->collision_constraint.lambda_n;
+	r32 lambda_t = constraint->collision_constraint.lambda_t;
 
 	mat3 e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
 	mat3 e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
@@ -144,14 +156,9 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 	vec3 r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
 
 	// here we calculate 'p1' and 'p2' in order to calculate 'd', as stated in sec (3.5)
-	vec3 p1 = calculate_p(e1, r1_lc);
-	vec3 p2 = calculate_p(e2, r2_lc);
+	vec3 p1 = gm_vec3_add(e1->world_position, r1_wc);
+	vec3 p2 = gm_vec3_add(e2->world_position, r2_wc);
 	r32 d = gm_vec3_dot(gm_vec3_subtract(p1, p2), normal);
-	if (fabsf(d) > 0.1f) {
-		printf("d: %f\n", d);
-		//paused = true;
-		//return;
-	}
 	vec3 delta_x = gm_vec3_scalar_product(d, normal);
 
 	if (d > 0.0f) {
@@ -162,28 +169,34 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 		c.positional_constraint.e1 = e1;
 		c.positional_constraint.e2 = e2;
 		c.positional_constraint.lambda = lambda_n;
-		c.positional_constraint.r1_wc = r1_wc;
-		c.positional_constraint.r2_wc = r2_wc;
-		solve_positional_constraint(&c, h);
+		c.positional_constraint.r1_lc = r1_lc;
+		c.positional_constraint.r2_lc = r2_lc;
+		r32 delta_lambda = apply_positional_constraint(&c, h);
+
+        lambda_n += delta_lambda;
+        constraint->collision_constraint.lambda_n = lambda_n;
 
         // Recalculate p1, p2, r1_wc and r2_wc
-        p1 = calculate_p(e1, r1_lc);
-        p2 = calculate_p(e2, r2_lc);
-		e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
-		e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
-		r1_wc = gm_mat3_multiply_vec3(&e1_rot_matrix, r1_lc);
-		r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
+        e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
+        e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
+        r1_wc = gm_mat3_multiply_vec3(&e1_rot_matrix, r1_lc);
+        r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
+
+        p1 = gm_vec3_add(e1->world_position, r1_wc);
+        p2 = gm_vec3_add(e2->world_position, r2_wc);
 
 		// if 'd' is greater than 0.0, we should also add a constraint for static friction, but only if lambda_t < u_s * lambda_n
 		const r32 static_friction_coefficient = 1.0f;
-		vec3 p1_til = calculate_p_til(e1, r1_lc);
-		vec3 p2_til = calculate_p_til(e2, r2_lc);
-		vec3 delta_p = gm_vec3_subtract(gm_vec3_subtract(p1, p1_til), gm_vec3_subtract(p2, p2_til));
-		vec3 delta_p_t = gm_vec3_subtract(delta_p, gm_vec3_scalar_product(gm_vec3_dot(delta_p, normal), normal));
 
 		// @NOTE(fek): This inequation shown in 3.5 was changed because the lambdas will always be negative!
-		if (*lambda_t > static_friction_coefficient * *lambda_n) {
-			//printf("Applying static friction\n");
+		if (lambda_t > static_friction_coefficient * lambda_n) {
+            mat3 e1_previous_rot_matrix = quaternion_get_matrix3(&e1->previous_world_rotation);
+            vec3 p1_til = gm_vec3_add(e1->previous_world_position, gm_mat3_multiply_vec3(&e1_previous_rot_matrix, r1_lc));
+            mat3 e2_previous_rot_matrix = quaternion_get_matrix3(&e2->previous_world_rotation);
+            vec3 p2_til = gm_vec3_add(e2->previous_world_position, gm_mat3_multiply_vec3(&e2_previous_rot_matrix, r2_lc));
+            vec3 delta_p = gm_vec3_subtract(gm_vec3_subtract(p1, p1_til), gm_vec3_subtract(p2, p2_til));
+            vec3 delta_p_t = gm_vec3_subtract(delta_p, gm_vec3_scalar_product(gm_vec3_dot(delta_p, normal), normal));
+
 			Constraint c = {0};
 			c.type = POSITIONAL_CONSTRAINT;
 			c.positional_constraint.compliance = 0.0f;
@@ -191,9 +204,12 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 			c.positional_constraint.e1 = e1;
 			c.positional_constraint.e2 = e2;
 			c.positional_constraint.lambda = lambda_t;
-			c.positional_constraint.r1_wc = r1_wc;
-			c.positional_constraint.r2_wc = r2_wc;
-			solve_positional_constraint(&c, h);
+			c.positional_constraint.r1_lc = r1_lc;
+			c.positional_constraint.r2_lc = r2_lc;
+			//r32 delta_lambda = apply_positional_constraint(&c, h);
+
+            //lambda_t += delta_lambda;
+            //constraint->collision_constraint.lambda_t = lambda_t;
 		}
 	}
 }
@@ -213,27 +229,25 @@ static void solve_constraint(Constraint* constraint, r32 h) {
 	assert(0);
 }
 
-// Create 'artificial' position constraints for a given collision that was detected in the simulation
-static void create_constraints_for_contacts(Temporary_Contact* tmp_contacts, Constraint** constraints) {
-	for (u32 i = 0; i < array_length(tmp_contacts); ++i) {
-		Temporary_Contact* contact = &tmp_contacts[i];
+void clipping_contact_to_constraint(Entity* e1, Entity* e2, vec3 normal, Clipping_Contact* contact, Constraint* constraint) {
+    constraint->type = COLLISION_CONSTRAINT;
+    constraint->collision_constraint.e1 = e1;
+    constraint->collision_constraint.e2 = e2;
+    constraint->collision_constraint.normal = normal;
+    constraint->collision_constraint.lambda_n = 0.0f;
+    constraint->collision_constraint.lambda_t = 0.0f;
 
-		Constraint constraint = {0};
-		constraint.type = COLLISION_CONSTRAINT;
-		constraint.collision_constraint.e1 = contact->e1;
-		constraint.collision_constraint.e2 = contact->e2;
-		// we make lambda a reference to the value stored in the collision_info, so we can accumulate per iteration
-		constraint.collision_constraint.lambda_n = &contact->lambda_n;
-		constraint.collision_constraint.lambda_t = &contact->lambda_t;
-		constraint.collision_constraint.r1_lc = contact->r1_lc;
-		constraint.collision_constraint.r2_lc = contact->r2_lc;
-		constraint.collision_constraint.normal = contact->normal;
+    vec3 r1_wc = gm_vec3_subtract(contact->collision_point1, e1->world_position);
+    vec3 r2_wc = gm_vec3_subtract(contact->collision_point2, e2->world_position);
 
-		array_push(*constraints, constraint);
-	}
+    Quaternion q1_inv = quaternion_inverse(&e1->world_rotation);
+    mat3 q1_mat = quaternion_get_matrix3(&q1_inv);
+    constraint->collision_constraint.r1_lc = gm_mat3_multiply_vec3(&q1_mat, r1_wc);
+
+    Quaternion q2_inv = quaternion_inverse(&e2->world_rotation);
+    mat3 q2_mat = quaternion_get_matrix3(&q2_inv);
+    constraint->collision_constraint.r2_lc = gm_mat3_multiply_vec3(&q2_mat, r2_wc);
 }
-
-Temporary_Contact* tmp_contacts;
 
 void pbd_simulate(r32 dt, Entity* entities) {
 	if (dt <= 0.0f) return;
@@ -274,11 +288,8 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			e->world_rotation = quaternion_normalize(&e->world_rotation);
 		}
 
-		if (!tmp_contacts) {
-			tmp_contacts = array_new(Temporary_Contact);
-		} else {
-			array_clear(tmp_contacts);
-		}
+        // Create the constraints array
+		Constraint* constraints = array_new(Constraint);
 
 		// As explained in sec 3.5, in each substep we need to check for collisions
 		// (I am not pre-collecting potential collision pairs.)
@@ -303,42 +314,43 @@ void pbd_simulate(r32 dt, Entity* entities) {
 						Clipping_Contact* contacts = clipping_get_contact_manifold(convex_hull1, convex_hull2, normal);
 						for (u32 l = 0; l < array_length(contacts); ++l) {
 							Clipping_Contact* contact = &contacts[l];
-							Temporary_Contact tmp;
-							tmp.e1 = e1;
-							tmp.e2 = e2;
-							tmp.normal = normal;
-							tmp.lambda_n = 0.0f;
-							tmp.lambda_t = 0.0f;
-							tmp.r1_wc = gm_vec3_subtract(contact->collision_point1, e1->world_position);
-							tmp.r2_wc = gm_vec3_subtract(contact->collision_point2, e2->world_position);
-							Quaternion q1_inv = quaternion_inverse(&e1->world_rotation);
-							mat3 q1_mat = quaternion_get_matrix3(&q1_inv);
-							tmp.r1_lc = gm_mat3_multiply_vec3(&q1_mat, tmp.r1_wc);
-
-							Quaternion q2_inv = quaternion_inverse(&e2->world_rotation);
-							mat3 q2_mat = quaternion_get_matrix3(&q2_inv);
-							tmp.r2_lc = gm_mat3_multiply_vec3(&q2_mat, tmp.r2_wc);
-							array_push(tmp_contacts, tmp);
+                            Constraint constraint;
+                            clipping_contact_to_constraint(e1, e2, normal, contact, &constraint);
+                            array_push(constraints, constraint);
 						}
-
-                        //Constraint* constraints = array_new(Constraint);
-                        //create_constraints_for_contacts(tmp_contacts, &constraints);
-                        //for (u32 k = 0; k < array_length(constraints); ++k) {
-                        //    Constraint* constraint = &constraints[k];
-                        //    solve_constraint(constraint, h);
-                        //}	
-                        //array_clear(tmp_contacts);
 					}
 				}
 			}
 		}
 
+#if 0
+        int size = array_length(constraints);
+        u32* idxs = array_new(u32);
+        for (u32 i = 0; i < size; ++i) {
+            int idx;
+            boolean new;
+            do {
+                new = true;
+                idx = rand() % size;
+                for (u32 j = 0; j < array_length(idxs); ++j) {
+                    if (idx == idxs[j]) {
+                        new = false;
+                        break;
+                    }
+                }
+            } while (!new);
+            array_push(idxs, idx);
+        }
+
+        Constraint* abc = array_new(Constraint);
+        for (u32 i = 0; i < array_length(idxs); ++i) {
+            array_push(abc, constraints[idxs[i]]);
+        }
+        constraints = abc;
+#endif
+
 		// Now we run the PBD solver with NUM_POS_ITERS iterations
-		Constraint* constraints = array_new(Constraint);
-
 		for (u32 j = 0; j < NUM_POS_ITERS; ++j) {
-			create_constraints_for_contacts(tmp_contacts, &constraints);
-
 			for (u32 k = 0; k < array_length(constraints); ++k) {
 				Constraint* constraint = &constraints[k];
 				solve_constraint(constraint, h);
@@ -346,9 +358,6 @@ void pbd_simulate(r32 dt, Entity* entities) {
 					return;
 				}
 			}	
-
-			// Here we should only clear the constraints generated because of collisions, but for now all of them fall into this category
-			array_clear(constraints);
 		}
 
 		// The PBD velocity update
@@ -374,34 +383,35 @@ void pbd_simulate(r32 dt, Entity* entities) {
 		}
 
 		// The velocity solver - we run this additional solver for every collision that we found
-		for (u32 j = 0; j < array_length(tmp_contacts); ++j) {
-			Temporary_Contact* contact = &tmp_contacts[j];
-			vec3 v1 = contact->e1->linear_velocity;
-			vec3 w1 = contact->e1->angular_velocity;
-			vec3 v2 = contact->e2->linear_velocity;
-			vec3 w2 = contact->e2->angular_velocity;
-			vec3 n = contact->normal;
-			r32 lambda_n = contact->lambda_n;
-			r32 lambda_t = contact->lambda_t;
-			Entity* e1 = contact->e1;
-			Entity* e2 = contact->e2;
-			#if 0
-			vec3 r1_wc = contact->r1_wc;
-			vec3 r2_wc = contact->r2_wc;
-			#else
+		for (u32 j = 0; j < array_length(constraints); ++j) {
+            Constraint* constraint = &constraints[j];
+            if (constraint->type != COLLISION_CONSTRAINT) {
+                continue;
+            }
+
+			Entity* e1 = constraint->collision_constraint.e1;
+			Entity* e2 = constraint->collision_constraint.e2;
+            vec3 r1_lc = constraint->collision_constraint.r1_lc;
+            vec3 r2_lc = constraint->collision_constraint.r2_lc;
+			vec3 n = constraint->collision_constraint.normal;
+			r32 lambda_n = constraint->collision_constraint.lambda_n;
+			r32 lambda_t = constraint->collision_constraint.lambda_t;
+
+			vec3 v1 = e1->linear_velocity;
+			vec3 w1 = e1->angular_velocity;
+			vec3 v2 = e2->linear_velocity;
+			vec3 w2 = e2->angular_velocity;
+
 			mat3 q1_mat = quaternion_get_matrix3(&e1->world_rotation);
-			vec3 r1_wc = gm_mat3_multiply_vec3(&q1_mat, contact->r1_lc);
+			vec3 r1_wc = gm_mat3_multiply_vec3(&q1_mat, r1_lc);
 			mat3 q2_mat = quaternion_get_matrix3(&e2->world_rotation);
-			vec3 r2_wc = gm_mat3_multiply_vec3(&q2_mat, contact->r2_lc);
-			#endif
+			vec3 r2_wc = gm_mat3_multiply_vec3(&q2_mat, r2_lc);
 
 			// We start by calculating the relative normal and tangential velocities at the contact point, as described in (3.6)
 			// @NOTE: equation (29) was modified here
 			vec3 v = gm_vec3_subtract(gm_vec3_add(v1, gm_vec3_cross(w1, r1_wc)), gm_vec3_add(v2, gm_vec3_cross(w2, r2_wc)));
 			r32 vn = gm_vec3_dot(n, v);
 			vec3 vt = gm_vec3_subtract(v, gm_vec3_scalar_product(vn, n));
-            char buf[256];
-            printf("VT %d: %s\n", j,  gm_vec3_to_string(buf, vt));
 
 			// delta_v stores the velocity change that we need to perform at the end of the solver
 			vec3 delta_v = (vec3){0.0f, 0.0f, 0.0f};
@@ -445,6 +455,5 @@ void pbd_simulate(r32 dt, Entity* entities) {
 		}
 
 		array_free(constraints);
-		//array_free(collision_infos);
 	}
 }

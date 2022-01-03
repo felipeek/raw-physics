@@ -117,24 +117,22 @@ void core_update(r32 delta_time) {
 #endif
 }
 
-extern Temporary_Contact* tmp_contacts;
-
 void core_render() {
 	#if 1
-	if (tmp_contacts) {
-		for (u32 i = 0; i < array_length(tmp_contacts); ++i) {
-			Temporary_Contact* tmp = &tmp_contacts[i];
+	//if (tmp_contacts) {
+	//	for (u32 i = 0; i < array_length(tmp_contacts); ++i) {
+	//		Temporary_Contact* tmp = &tmp_contacts[i];
 
-			vec3 point1 = gm_vec3_add(tmp->e1->world_position, tmp->r1_wc);
-			vec3 point2 = gm_vec3_add(tmp->e2->world_position, tmp->r2_wc);
-			vec3 normal = tmp->normal;
+	//		vec3 point1 = gm_vec3_add(tmp->e1->world_position, tmp->r1_wc);
+	//		vec3 point2 = gm_vec3_add(tmp->e2->world_position, tmp->r2_wc);
+	//		vec3 normal = tmp->normal;
 
-			graphics_renderer_debug_points(&point1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			graphics_renderer_debug_points(&point2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-		}
-	}
+	//		graphics_renderer_debug_points(&point1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+	//		graphics_renderer_debug_points(&point2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+	//		graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+	//		graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+	//	}
+	//}
 	#else
 	Entity* e1 = &entities[0];
 	Entity* e2 = &entities[1];
