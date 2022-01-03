@@ -64,7 +64,7 @@ int core_init() {
 
 	r32 y = -2.0f;
 
-	for (u32 i = 0; i < 1; ++i) {
+	for (u32 i = 0; i < 2; ++i) {
 		y += 2.1f;
 		Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
 		graphics_entity_create_with_color(&e, m2, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
@@ -86,7 +86,7 @@ void core_destroy() {
 boolean paused = false;
 
 void core_update(r32 delta_time) {
-	delta_time = 0.05f;
+	delta_time = 0.15f;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
 		mat4 model_matrix = graphics_entity_get_model_matrix(e);

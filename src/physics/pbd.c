@@ -6,7 +6,7 @@
 #include "epa.h"
 #include "clipping.h"
 
-#define NUM_SUBSTEPS 5
+#define NUM_SUBSTEPS 10
 #define NUM_POS_ITERS 1
 
 // Calculate the sum of all external forces acting on an entity
@@ -149,8 +149,8 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 	r32 d = gm_vec3_dot(gm_vec3_subtract(p1, p2), normal);
 	if (fabsf(d) > 0.1f) {
 		printf("d: %f\n", d);
-		paused = true;
-		return;
+		//paused = true;
+		//return;
 	}
 	vec3 delta_x = gm_vec3_scalar_product(d, normal);
 
@@ -166,15 +166,16 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 		c.positional_constraint.r2_wc = r2_wc;
 		solve_positional_constraint(&c, h);
 
-		// @TODO: check if we need to recalculate r1_wc and r2_wc...
+        // Recalculate p1, p2, r1_wc and r2_wc
+        p1 = calculate_p(e1, r1_lc);
+        p2 = calculate_p(e2, r2_lc);
 		e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
 		e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
 		r1_wc = gm_mat3_multiply_vec3(&e1_rot_matrix, r1_lc);
 		r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
 
 		// if 'd' is greater than 0.0, we should also add a constraint for static friction, but only if lambda_t < u_s * lambda_n
-		// This is only known once the normal constraint is solved, so we delegate this check to the solver.
-		const r32 static_friction_coefficient = 0.0f;
+		const r32 static_friction_coefficient = 1.0f;
 		vec3 p1_til = calculate_p_til(e1, r1_lc);
 		vec3 p2_til = calculate_p_til(e2, r2_lc);
 		vec3 delta_p = gm_vec3_subtract(gm_vec3_subtract(p1, p1_til), gm_vec3_subtract(p2, p2_til));
@@ -243,15 +244,15 @@ void pbd_simulate(r32 dt, Entity* entities) {
 	for (u32 i = 0; i < NUM_SUBSTEPS; ++i) {
 		for (u32 j = 0; j < array_length(entities); ++j) {
 			Entity* e = &entities[j];
+			// Stores the previous position and orientation of the entity
+			e->previous_world_position = e->world_position;
+			e->previous_world_rotation = e->world_rotation;
+
 			if (e->fixed) continue;	
 
 			// Calculate the external force and torque of the entity
 			vec3 external_force = calculate_external_force(e);
 			vec3 external_torque = calculate_external_torque(e);
-
-			// Stores the previous position and orientation of the entity
-			e->previous_world_position = e->world_position;
-			e->previous_world_rotation = e->world_rotation;
 
 			// Update the entity position and linear velocity based on the current velocity and applied forces
 			e->linear_velocity = gm_vec3_add(e->linear_velocity, gm_vec3_scalar_product(h * e->inverse_mass, external_force));
@@ -299,13 +300,6 @@ void pbd_simulate(r32 dt, Entity* entities) {
 					vec3 normal;
 					r32 penetration;
 					if (epa(convex_hull1->transformed_vertices, convex_hull2->transformed_vertices, &simplex, &normal, &penetration)) {
-						//if (penetration > 10) {
-						//	printf("e1: <%f, %f, %f>\n", e1->world_position.x, e1->world_position.y, e1->world_position.z);
-						//	printf("e2: <%f, %f, %f>\n", e2->world_position.x, e2->world_position.y, e2->world_position.z);
-						//	printf("e2 rot: <%f, %f, %f, %f>\n", e2->world_rotation.x, e2->world_rotation.y, e2->world_rotation.z, e2->world_rotation.w);
-						//	printf("e1 rot: <%f, %f, %f, %f>\n", e1->world_rotation.x, e1->world_rotation.y, e1->world_rotation.z, e1->world_rotation.w);
-						//}
-
 						Clipping_Contact* contacts = clipping_get_contact_manifold(convex_hull1, convex_hull2, normal);
 						for (u32 l = 0; l < array_length(contacts); ++l) {
 							Clipping_Contact* contact = &contacts[l];
@@ -326,6 +320,14 @@ void pbd_simulate(r32 dt, Entity* entities) {
 							tmp.r2_lc = gm_mat3_multiply_vec3(&q2_mat, tmp.r2_wc);
 							array_push(tmp_contacts, tmp);
 						}
+
+                        //Constraint* constraints = array_new(Constraint);
+                        //create_constraints_for_contacts(tmp_contacts, &constraints);
+                        //for (u32 k = 0; k < array_length(constraints); ++k) {
+                        //    Constraint* constraint = &constraints[k];
+                        //    solve_constraint(constraint, h);
+                        //}	
+                        //array_clear(tmp_contacts);
 					}
 				}
 			}
@@ -398,7 +400,8 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			vec3 v = gm_vec3_subtract(gm_vec3_add(v1, gm_vec3_cross(w1, r1_wc)), gm_vec3_add(v2, gm_vec3_cross(w2, r2_wc)));
 			r32 vn = gm_vec3_dot(n, v);
 			vec3 vt = gm_vec3_subtract(v, gm_vec3_scalar_product(vn, n));
-			printf("VT: %f\n", gm_vec3_length(vt));
+            char buf[256];
+            printf("VT %d: %s\n", j,  gm_vec3_to_string(buf, vt));
 
 			// delta_v stores the velocity change that we need to perform at the end of the solver
 			vec3 delta_v = (vec3){0.0f, 0.0f, 0.0f};
