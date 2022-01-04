@@ -335,20 +335,56 @@ mat4 graphics_entity_get_model_matrix(const Entity* entity)
 	return model_matrix;
 }
 
-static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r32 mass) {
+mat3 graphics_entity_get_model_matrix_without_translation(const Entity* entity)
+{
+	r32 s, c;
+
+	mat3 scale_matrix = (mat3) {
+		entity->world_scale.x, 0.0f, 0.0f,
+			0.0f, entity->world_scale.y, 0.0f,
+			0.0f, 0.0f, entity->world_scale.z
+	};
+
+	mat3 rotation_matrix = quaternion_get_matrix3(&entity->world_rotation);
+
+	mat3 model_matrix = gm_mat3_multiply(&rotation_matrix, &scale_matrix);
+	return model_matrix;
+}
+
+mat3 graphics_entity_get_model_matrix_using_previous_rotation_and_without_translation(const Entity* entity)
+{
+	r32 s, c;
+
+	mat3 scale_matrix = (mat3) {
+		entity->world_scale.x, 0.0f, 0.0f,
+			0.0f, entity->world_scale.y, 0.0f,
+			0.0f, 0.0f, entity->world_scale.z
+	};
+
+	mat3 rotation_matrix = quaternion_get_matrix3(&entity->previous_world_rotation);
+
+	mat3 model_matrix = gm_mat3_multiply(&rotation_matrix, &scale_matrix);
+	return model_matrix;
+}
+
+// @TODO: scale needs to be dynamic
+static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r32 mass, vec3 scale) {
     r32 mass_per_vertex = mass / array_length(vertices);
     mat3 result = {0};
     for (u32 i = 0; i < array_length(vertices); ++i) {
         vec3 v = vertices[i];
-        result.data[0][0] += mass_per_vertex * (v.y * v.y + v.z * v.z);
-        result.data[0][1] += mass_per_vertex * v.x * v.y;
-        result.data[0][2] += mass_per_vertex * v.x * v.z;
-        result.data[1][0] += mass_per_vertex * v.x * v.y;
-        result.data[1][1] += mass_per_vertex * (v.x * v.x + v.z * v.z);
-        result.data[1][2] += mass_per_vertex * v.y * v.z;
-        result.data[2][0] += mass_per_vertex * v.x * v.z;
-        result.data[2][1] += mass_per_vertex * v.y * v.z;
-        result.data[2][2] += mass_per_vertex * (v.x * v.x + v.y * v.y);
+        r32 vx = v.x * scale.x;
+        r32 vy = v.y * scale.y;
+        r32 vz = v.z * scale.z;
+        result.data[0][0] += mass_per_vertex * (vy * vy + vz * vz);
+        result.data[0][1] += mass_per_vertex * vx * vy;
+        result.data[0][2] += mass_per_vertex * vx * vz;
+        result.data[1][0] += mass_per_vertex * vx * vy;
+        result.data[1][1] += mass_per_vertex * (vx * vx + vz * vz);
+        result.data[1][2] += mass_per_vertex * vy * vz;
+        result.data[2][0] += mass_per_vertex * vx * vz;
+        result.data[2][1] += mass_per_vertex * vy * vz;
+        result.data[2][2] += mass_per_vertex * (vx * vx + vy * vy);
     }
 
     return result;
@@ -367,7 +403,7 @@ void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_pos
 	entity->previous_angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
 	entity->previous_linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
 	entity->inverse_mass = 1.0f / mass;
-	entity->inertia_tensor = get_symmetric_inertia_tensor_for_object(mesh.collider.convex_hull.vertices, mass);
+	entity->inertia_tensor = get_symmetric_inertia_tensor_for_object(mesh.collider.convex_hull.vertices, mass, world_scale);
 	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = false;

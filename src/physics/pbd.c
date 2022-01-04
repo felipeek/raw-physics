@@ -32,30 +32,55 @@ static vec3 calculate_external_torque(Entity* e) {
 
 // Calculate the dynamic inertia tensor of an entity, i.e., the inertia tensor transformed considering entity's rotation
 static mat3 get_dynamic_inertia_tensor(Entity* e) {
-    mat4 rotation_matrix = quaternion_get_matrix(&e->world_rotation);
-    mat3 rotation_matrix_m3 = gm_mat4_to_mat3(&rotation_matrix);
-    mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix_m3);
-    mat3 aux = gm_mat3_multiply(&rotation_matrix_m3, &e->inertia_tensor);
-    return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
+    //mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
+    //mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
+    //mat3 aux = gm_mat3_multiply(&rotation_matrix, &e->inertia_tensor);
+    //return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
+
+    if (e->inverse_mass == 0.0) {
+        return e->inertia_tensor;
+    }
+
+    mat4 e_model_matrix = graphics_entity_get_model_matrix(e);
+    collider_update(&e->mesh.collider, e_model_matrix);
+    vec3* vertices = e->mesh.collider.convex_hull.transformed_vertices;
+    r32 mass = 1.0f / e->inverse_mass;
+
+    r32 mass_per_vertex = mass / array_length(vertices);
+    mat3 result = {0};
+    for (u32 i = 0; i < array_length(vertices); ++i) {
+        vec3 v = vertices[i];
+        r32 vx = v.x;
+        r32 vy = v.y;
+        r32 vz = v.z;
+        result.data[0][0] += mass_per_vertex * (vy * vy + vz * vz);
+        result.data[0][1] += mass_per_vertex * vx * vy;
+        result.data[0][2] += mass_per_vertex * vx * vz;
+        result.data[1][0] += mass_per_vertex * vx * vy;
+        result.data[1][1] += mass_per_vertex * (vx * vx + vz * vz);
+        result.data[1][2] += mass_per_vertex * vy * vz;
+        result.data[2][0] += mass_per_vertex * vx * vz;
+        result.data[2][1] += mass_per_vertex * vy * vz;
+        result.data[2][2] += mass_per_vertex * (vx * vx + vy * vy);
+    }
+
+    return result;
 }
 
 // Calculate the dynamic inverse inertia tensor of an entity, i.e., the inverse inertia tensor transformed considering entity's rotation
 static mat3 get_dynamic_inverse_inertia_tensor(Entity* e) {
-    mat4 rotation_matrix = quaternion_get_matrix(&e->world_rotation);
-    mat3 rotation_matrix_m3 = gm_mat4_to_mat3(&rotation_matrix);
-    mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix_m3);
-    mat3 aux = gm_mat3_multiply(&rotation_matrix_m3, &e->inverse_inertia_tensor);
-    return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
-}
+    //mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
+    //mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
+    //mat3 aux = gm_mat3_multiply(&rotation_matrix, &e->inverse_inertia_tensor);
+    //return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
 
-static vec3 calculate_p_til(Entity* e, vec3 r_lc) {
-	mat3 previous_rot_matrix = quaternion_get_matrix3(&e->previous_world_rotation);
-	return gm_vec3_add(e->previous_world_position, gm_mat3_multiply_vec3(&previous_rot_matrix, r_lc));
-}
-
-static vec3 calculate_p(Entity* e, vec3 r_lc) {
-	mat3 current_rot_matrix = quaternion_get_matrix3(&e->world_rotation);
-	return gm_vec3_add(e->world_position, gm_mat3_multiply_vec3(&current_rot_matrix, r_lc));
+    if (e->inverse_mass == 0.0) {
+        return e->inverse_inertia_tensor;
+    }
+    mat3 aa = get_dynamic_inertia_tensor(e);
+    mat3 i;
+    assert(gm_mat3_inverse(&aa, &i));
+    return i;
 }
 
 // Apply the positional constraint, updating the position and orientation of the entities accordingly
@@ -64,18 +89,16 @@ static r32 apply_positional_constraint(Constraint* constraint, r32 h) {
 
 	Entity* e1 = constraint->positional_constraint.e1;
 	Entity* e2 = constraint->positional_constraint.e2;
-	mat3 e1_rot = quaternion_get_matrix3(&e1->world_rotation);
-	mat3 e2_rot = quaternion_get_matrix3(&e2->world_rotation);
 	vec3 r1_lc = constraint->positional_constraint.r1_lc;
 	vec3 r2_lc = constraint->positional_constraint.r2_lc;
 	r32 lambda = constraint->positional_constraint.lambda;
 	r32 compliance = constraint->positional_constraint.compliance;
 	vec3 delta_x = constraint->positional_constraint.delta_x;
 
-	mat3 e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
-	mat3 e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
-	vec3 r1_wc = gm_mat3_multiply_vec3(&e1_rot_matrix, r1_lc);
-	vec3 r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
+    mat3 e1_model_matrix = graphics_entity_get_model_matrix_without_translation(e1);
+    mat3 e2_model_matrix = graphics_entity_get_model_matrix_without_translation(e2);
+	vec3 r1_wc = gm_mat3_multiply_vec3(&e1_model_matrix, r1_lc);
+	vec3 r2_wc = gm_mat3_multiply_vec3(&e2_model_matrix, r2_lc);
 
 	mat3 e1_inverse_inertia_tensor = get_dynamic_inverse_inertia_tensor(e1);
 	mat3 e2_inverse_inertia_tensor = get_dynamic_inverse_inertia_tensor(e2);
@@ -150,16 +173,20 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 	r32 lambda_n = constraint->collision_constraint.lambda_n;
 	r32 lambda_t = constraint->collision_constraint.lambda_t;
 
-	mat3 e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
-	mat3 e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
-	vec3 r1_wc = gm_mat3_multiply_vec3(&e1_rot_matrix, r1_lc);
-	vec3 r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
+    mat3 e1_model_matrix = graphics_entity_get_model_matrix_without_translation(e1);
+    mat3 e2_model_matrix = graphics_entity_get_model_matrix_without_translation(e2);
+	vec3 r1_wc = gm_mat3_multiply_vec3(&e1_model_matrix, r1_lc);
+	vec3 r2_wc = gm_mat3_multiply_vec3(&e2_model_matrix, r2_lc);
 
 	// here we calculate 'p1' and 'p2' in order to calculate 'd', as stated in sec (3.5)
 	vec3 p1 = gm_vec3_add(e1->world_position, r1_wc);
 	vec3 p2 = gm_vec3_add(e2->world_position, r2_wc);
 	r32 d = gm_vec3_dot(gm_vec3_subtract(p1, p2), normal);
 	vec3 delta_x = gm_vec3_scalar_product(d, normal);
+
+    if (fabsf(d) > 0.001) {
+        printf("D: %f\n", d);
+    }
 
 	if (d > 0.0f) {
 		Constraint c;
@@ -177,10 +204,10 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
         constraint->collision_constraint.lambda_n = lambda_n;
 
         // Recalculate p1, p2, r1_wc and r2_wc
-        e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
-        e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
-        r1_wc = gm_mat3_multiply_vec3(&e1_rot_matrix, r1_lc);
-        r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
+        e1_model_matrix = graphics_entity_get_model_matrix_without_translation(e1);
+        e2_model_matrix = graphics_entity_get_model_matrix_without_translation(e2);
+        r1_wc = gm_mat3_multiply_vec3(&e1_model_matrix, r1_lc);
+        r2_wc = gm_mat3_multiply_vec3(&e2_model_matrix, r2_lc);
 
         p1 = gm_vec3_add(e1->world_position, r1_wc);
         p2 = gm_vec3_add(e2->world_position, r2_wc);
@@ -190,10 +217,10 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 
 		// @NOTE(fek): This inequation shown in 3.5 was changed because the lambdas will always be negative!
 		if (lambda_t > static_friction_coefficient * lambda_n) {
-            mat3 e1_previous_rot_matrix = quaternion_get_matrix3(&e1->previous_world_rotation);
-            vec3 p1_til = gm_vec3_add(e1->previous_world_position, gm_mat3_multiply_vec3(&e1_previous_rot_matrix, r1_lc));
-            mat3 e2_previous_rot_matrix = quaternion_get_matrix3(&e2->previous_world_rotation);
-            vec3 p2_til = gm_vec3_add(e2->previous_world_position, gm_mat3_multiply_vec3(&e2_previous_rot_matrix, r2_lc));
+            mat3 e1_previous_model_matrix = graphics_entity_get_model_matrix_using_previous_rotation_and_without_translation(e1);
+            mat3 e2_previous_model_matrix = graphics_entity_get_model_matrix_using_previous_rotation_and_without_translation(e2);
+            vec3 p1_til = gm_vec3_add(e1->previous_world_position, gm_mat3_multiply_vec3(&e1_previous_model_matrix, r1_lc));
+            vec3 p2_til = gm_vec3_add(e2->previous_world_position, gm_mat3_multiply_vec3(&e2_previous_model_matrix, r2_lc));
             vec3 delta_p = gm_vec3_subtract(gm_vec3_subtract(p1, p1_til), gm_vec3_subtract(p2, p2_til));
             vec3 delta_p_t = gm_vec3_subtract(delta_p, gm_vec3_scalar_product(gm_vec3_dot(delta_p, normal), normal));
 
@@ -240,13 +267,14 @@ void clipping_contact_to_constraint(Entity* e1, Entity* e2, vec3 normal, Clippin
     vec3 r1_wc = gm_vec3_subtract(contact->collision_point1, e1->world_position);
     vec3 r2_wc = gm_vec3_subtract(contact->collision_point2, e2->world_position);
 
-    Quaternion q1_inv = quaternion_inverse(&e1->world_rotation);
-    mat3 q1_mat = quaternion_get_matrix3(&q1_inv);
-    constraint->collision_constraint.r1_lc = gm_mat3_multiply_vec3(&q1_mat, r1_wc);
-
-    Quaternion q2_inv = quaternion_inverse(&e2->world_rotation);
-    mat3 q2_mat = quaternion_get_matrix3(&q2_inv);
-    constraint->collision_constraint.r2_lc = gm_mat3_multiply_vec3(&q2_mat, r2_wc);
+    mat3 e1_model_matrix = graphics_entity_get_model_matrix_without_translation(e1);
+    mat3 e2_model_matrix = graphics_entity_get_model_matrix_without_translation(e2);
+    mat3 e1_model_matrix_inverse;
+    mat3 e2_model_matrix_inverse;
+    assert(gm_mat3_inverse(&e1_model_matrix, &e1_model_matrix_inverse));
+    assert(gm_mat3_inverse(&e2_model_matrix, &e2_model_matrix_inverse));
+    constraint->collision_constraint.r1_lc = gm_mat3_multiply_vec3(&e1_model_matrix_inverse, r1_wc);
+    constraint->collision_constraint.r2_lc = gm_mat3_multiply_vec3(&e2_model_matrix_inverse, r2_wc);
 }
 
 void pbd_simulate(r32 dt, Entity* entities) {
@@ -402,10 +430,10 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			vec3 v2 = e2->linear_velocity;
 			vec3 w2 = e2->angular_velocity;
 
-			mat3 q1_mat = quaternion_get_matrix3(&e1->world_rotation);
-			vec3 r1_wc = gm_mat3_multiply_vec3(&q1_mat, r1_lc);
-			mat3 q2_mat = quaternion_get_matrix3(&e2->world_rotation);
-			vec3 r2_wc = gm_mat3_multiply_vec3(&q2_mat, r2_lc);
+            mat3 e1_model_matrix = graphics_entity_get_model_matrix_without_translation(e1);
+            mat3 e2_model_matrix = graphics_entity_get_model_matrix_without_translation(e2);
+            vec3 r1_wc = gm_mat3_multiply_vec3(&e1_model_matrix, r1_lc);
+            vec3 r2_wc = gm_mat3_multiply_vec3(&e2_model_matrix, r2_lc);
 
 			// We start by calculating the relative normal and tangential velocities at the contact point, as described in (3.6)
 			// @NOTE: equation (29) was modified here

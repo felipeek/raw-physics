@@ -101,6 +101,8 @@ void graphics_entity_set_scale(Entity* entity, vec3 world_scale);
 void graphics_entity_render_basic_shader(const Perspective_Camera* camera, const Entity* entity);
 void graphics_entity_render_phong_shader(const Perspective_Camera* camera, const Entity* entity, const Light* lights);
 mat4 graphics_entity_get_model_matrix(const Entity* entity);
+mat3 graphics_entity_get_model_matrix_without_translation(const Entity* entity);
+mat3 graphics_entity_get_model_matrix_using_previous_rotation_and_without_translation(const Entity* entity);
 void graphics_light_create(Light* light, vec3 position, vec4 ambient_color, vec4 diffuse_color, vec4 specular_color);
 u32 graphics_texture_create(const s8* texture_path);
 u32 graphics_texture_create_from_data(const Image_Data* image_data);

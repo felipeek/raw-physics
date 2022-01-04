@@ -62,16 +62,39 @@ int core_init() {
 		(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
 	array_push(entities, e);
 
+#if 0
+    Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
+    graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
+    	(vec3){5.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
+	array_push(entities, e);
+
+    m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
+    graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 7.1, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
+    	(vec3){5.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
+	array_push(entities, e);
+#else
+    Mesh m2 = graphics_mesh_create_from_obj("./res/cube5.obj", COLLIDER_TYPE_CONVEX_HULL);
+    graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
+    	(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
+	array_push(entities, e);
+
+    m2 = graphics_mesh_create_from_obj("./res/cube5.obj", COLLIDER_TYPE_CONVEX_HULL);
+    graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 7.1, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
+    	(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
+	array_push(entities, e);
+#endif
+
 	r32 y = -2.0f;
 
-	for (u32 i = 0; i < 2; ++i) {
-		y += 2.1f;
-		Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
-		graphics_entity_create_with_color(&e, m2, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
-			(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
-		//e.world_position = (vec3){-0.000944963249, -0.0000153643723, -0.00111608475};
-		//e.world_rotation = (Quaternion){0.00000165915253, -0.00146911771, -9.74293812E-7, 0.999998986};
-		array_push(entities, e);
+	for (u32 i = 0; i < 1; ++i) {
+		y += 6.1f;
+		//Mesh m2 = graphics_mesh_create_from_obj("./res/cube5.obj", COLLIDER_TYPE_CONVEX_HULL);
+		//graphics_entity_create_with_color(&e, m2, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 70.0f),
+		//	(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
+		//Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
+		//graphics_entity_create_with_color(&e, m2, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 70.0f),
+		//	(vec3){5.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
+		//array_push(entities, e);
 	}
 
 	menu_register_dummy_callback(menu_dummy_callback);
@@ -86,7 +109,7 @@ void core_destroy() {
 boolean paused = false;
 
 void core_update(r32 delta_time) {
-	delta_time = 0.15f;
+	delta_time = 0.015f;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
 		mat4 model_matrix = graphics_entity_get_model_matrix(e);
