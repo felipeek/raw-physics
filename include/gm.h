@@ -766,19 +766,19 @@ char* gm_mat2_to_string(char* buffer, const mat2* m)
 
 char* gm_vec4_to_string(char* buffer, vec4 v)
 {
-	sprintf(buffer, "<%.5f, %.5f, %.5f, %.5f>", v.x, v.y, v.z, v.w);
+	sprintf(buffer, "<%f, %f, %f, %f>", v.x, v.y, v.z, v.w);
 	return buffer;
 }
 
 char* gm_vec3_to_string(char* buffer, vec3 v)
 {
-	sprintf(buffer, "<%.5f, %.5f, %.5f>", v.x, v.y, v.z);
+	sprintf(buffer, "<%.9f, %.9f, %.9f>", v.x, v.y, v.z);
 	return buffer;
 }
 
 char* gm_vec2_to_string(char* buffer, vec2 v)
 {
-	sprintf(buffer, "<%.5f, %.5f>", v.x, v.y);
+	sprintf(buffer, "<%f, %f>", v.x, v.y);
 	return buffer;
 }
 

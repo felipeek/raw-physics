@@ -377,7 +377,7 @@ void collider_update(Collider* collider, mat4 model_matrix) {
 			for (u32 i = 0; i < array_length(collider->convex_hull.transformed_faces); ++i) {
 				vec3 normal = collider->convex_hull.faces[i].normal;
 				vec3 transformed_normal = gm_mat3_multiply_vec3(&model_matrix3_transposed_inv, normal);
-				collider->convex_hull.transformed_faces[i].normal = transformed_normal;
+				collider->convex_hull.transformed_faces[i].normal = gm_vec3_normalize(transformed_normal);
 			}
 		} break;
 		default: {

@@ -48,6 +48,8 @@ static void menu_dummy_callback() {
 	printf("dummy callback called!\n");
 }
 
+#define DUMP2
+
 int core_init() {
 	// Create camera
 	camera = create_camera();
@@ -62,15 +64,15 @@ int core_init() {
 		(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
 	array_push(entities, e);
 
-#if 0
+#ifdef DUMP1
     Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
     graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
     	(vec3){5.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
 	array_push(entities, e);
 
     m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
-    graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 7.1, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
-    	(vec3){5.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
+    graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
+    	(vec3){5.0f, 1.0f, 1.0f}, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f);
 	array_push(entities, e);
 #else
     Mesh m2 = graphics_mesh_create_from_obj("./res/cube5.obj", COLLIDER_TYPE_CONVEX_HULL);
@@ -79,8 +81,8 @@ int core_init() {
 	array_push(entities, e);
 
     m2 = graphics_mesh_create_from_obj("./res/cube5.obj", COLLIDER_TYPE_CONVEX_HULL);
-    graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 7.1, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
-    	(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
+    graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
+    	(vec3){1.0f, 1.0f, 1.0f}, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f);
 	array_push(entities, e);
 #endif
 
@@ -92,9 +94,6 @@ int core_init() {
 		Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
 		graphics_entity_create_with_color(&e, m2, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
 			(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);
-		//e.world_position = (vec3){-0.000944963249, -0.0000153643723, -0.00111608475};
-		//e.world_rotation = (Quaternion){0.00000165915253, -0.00146911771, -9.74293812E-7, 0.999998986};
-		array_push(entities, e);
 	}
 #endif
 
@@ -110,12 +109,12 @@ void core_destroy() {
 boolean paused = false;
 
 void core_update(r32 delta_time) {
-	//delta_time = 0.15f;
+	delta_time = 0.04;
+
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
 		mat4 model_matrix = graphics_entity_get_model_matrix(e);
 		collider_update(&e->mesh.collider, model_matrix);
-
 		//printf("e%d: <%f, %f, %f>\n", i, e->world_position.x, e->world_position.y, e->world_position.z);
 		//printf("e%d: rot: <%f, %f, %f, %f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
 	}
