@@ -32,20 +32,40 @@ static vec3 calculate_external_torque(Entity* e) {
 
 // Calculate the dynamic inertia tensor of an entity, i.e., the inertia tensor transformed considering entity's rotation
 static mat3 get_dynamic_inertia_tensor(Entity* e) {
-    mat4 rotation_matrix = quaternion_get_matrix(&e->world_rotation);
-    mat3 rotation_matrix_m3 = gm_mat4_to_mat3(&rotation_matrix);
-    mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix_m3);
-    mat3 aux = gm_mat3_multiply(&rotation_matrix_m3, &e->inertia_tensor);
+#if 0
+    // Can only be used if the local->world matrix is orthogonal
+    mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
+    mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
+    mat3 aux = gm_mat3_multiply(&rotation_matrix, &e->inertia_tensor);
     return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
+#else
+    // Can always be used
+    mat3 local_to_world = quaternion_get_matrix3(&e->world_rotation);
+    mat3 inverse_local_to_world;
+    assert(gm_mat3_inverse(&local_to_world, &inverse_local_to_world));
+    mat3 transposed_inverse_local_to_world = gm_mat3_transpose(&inverse_local_to_world);
+    mat3 aux = gm_mat3_multiply(&transposed_inverse_local_to_world, &e->inertia_tensor);
+    return gm_mat3_multiply(&aux, &inverse_local_to_world);
+#endif
 }
 
 // Calculate the dynamic inverse inertia tensor of an entity, i.e., the inverse inertia tensor transformed considering entity's rotation
 static mat3 get_dynamic_inverse_inertia_tensor(Entity* e) {
-    mat4 rotation_matrix = quaternion_get_matrix(&e->world_rotation);
-    mat3 rotation_matrix_m3 = gm_mat4_to_mat3(&rotation_matrix);
-    mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix_m3);
-    mat3 aux = gm_mat3_multiply(&rotation_matrix_m3, &e->inverse_inertia_tensor);
+#if 0
+    // Can only be used if the local->world matrix is orthogonal
+    mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
+    mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
+    mat3 aux = gm_mat3_multiply(&rotation_matrix, &e->inverse_inertia_tensor);
     return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
+#else
+    // Can always be used
+    mat3 local_to_world = quaternion_get_matrix3(&e->world_rotation);
+    mat3 inverse_local_to_world;
+    assert(gm_mat3_inverse(&local_to_world, &inverse_local_to_world));
+    mat3 transposed_inverse_local_to_world = gm_mat3_transpose(&inverse_local_to_world);
+    mat3 aux = gm_mat3_multiply(&transposed_inverse_local_to_world, &e->inverse_inertia_tensor);
+    return gm_mat3_multiply(&aux, &inverse_local_to_world);
+#endif
 }
 
 static vec3 calculate_p_til(Entity* e, vec3 r_lc) {
