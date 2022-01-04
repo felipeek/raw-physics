@@ -319,8 +319,8 @@ void pbd_simulate(r32 dt, Entity* entities) {
 				Entity* e1 = &entities[j];
 				Entity* e2 = &entities[k];
 
-				mat4 e1_model_matrix = graphics_entity_get_model_matrix(e1);
-				mat4 e2_model_matrix = graphics_entity_get_model_matrix(e2);
+				mat4 e1_model_matrix = graphics_entity_get_model_matrix_no_scale(e1);
+				mat4 e2_model_matrix = graphics_entity_get_model_matrix_no_scale(e2);
 				collider_update(&e1->collider, e1_model_matrix);
 				collider_update(&e2->collider, e2_model_matrix);
 

@@ -30,6 +30,6 @@ typedef struct {
 } Collider;
 
 Collider collider_create(const vec3* vertices, const u32* indices, Collider_Type type);
-void collider_update(Collider* collider, mat4 model_matrix);
+void collider_update(Collider* collider, mat4 model_matrix_no_scale);
 
 #endif

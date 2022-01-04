@@ -354,7 +354,7 @@ Collider collider_create(const vec3* vertices, const u32* indices, Collider_Type
 	return collider;
 }
 
-void collider_update(Collider* collider, mat4 model_matrix) {
+void collider_update(Collider* collider, mat4 model_matrix_no_scale) {
 	switch (collider->type) {
 		case COLLIDER_TYPE_CONVEX_HULL: {
 			for (u32 i = 0; i < array_length(collider->convex_hull.transformed_vertices); ++i) {
@@ -364,19 +364,14 @@ void collider_update(Collider* collider, mat4 model_matrix) {
 					collider->convex_hull.vertices[i].z,
 					1.0f
 				};
-				vec4 transformed_vertex = gm_mat4_multiply_vec4(&model_matrix, vertex);
+				vec4 transformed_vertex = gm_mat4_multiply_vec4(&model_matrix_no_scale, vertex);
 				transformed_vertex = gm_vec4_scalar_product(1.0f / transformed_vertex.w, transformed_vertex);
 				collider->convex_hull.transformed_vertices[i] = gm_vec4_to_vec3(transformed_vertex);
 			}
 
-			mat3 model_matrix3 = gm_mat4_to_mat3(&model_matrix);
-			mat3 model_matrix3_transposed = gm_mat3_transpose(&model_matrix3);
-			mat3 model_matrix3_transposed_inv;
-			assert(gm_mat3_inverse(&model_matrix3_transposed, &model_matrix3_transposed_inv));
-
 			for (u32 i = 0; i < array_length(collider->convex_hull.transformed_faces); ++i) {
 				vec3 normal = collider->convex_hull.faces[i].normal;
-				vec3 transformed_normal = gm_mat3_multiply_vec3(&model_matrix3_transposed_inv, normal);
+				vec3 transformed_normal = gm_mat4_multiply_vec3(&model_matrix_no_scale, normal, false);
 				collider->convex_hull.transformed_faces[i].normal = gm_vec3_normalize(transformed_normal);
 			}
 		} break;

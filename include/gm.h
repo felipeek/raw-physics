@@ -102,7 +102,7 @@ typedef struct
 mat4  gm_mat4_ortho(r32 left, r32 right, r32 bottom, r32 top);
 int   gm_mat4_inverse(const mat4* m, mat4* out);
 vec4  gm_mat4_multiply_vec4(const mat4* m, vec4 v);
-vec3  gm_mat4_multiply_vec3(const mat4* m, vec3 v);
+vec3  gm_mat4_multiply_vec3(const mat4* m, vec3 v, boolean is_point);
 mat4  gm_mat4_multiply(const mat4* m1, const mat4* m2);
 mat4  gm_mat4_transpose(const mat4* m);
 mat4  gm_mat4_identity(void);
@@ -409,11 +409,17 @@ vec4 gm_mat4_multiply_vec4(const mat4* m, vec4 v)
 	return result;
 }
 
-vec3 gm_mat4_multiply_vec3(const mat4* m, vec3 v) {
+vec3 gm_mat4_multiply_vec3(const mat4* m, vec3 v, boolean is_point) {
 	vec3 result;
-	result.x = m->data[0][0] * v.x + m->data[0][1] * v.y + m->data[0][2] * v.z + m->data[0][3] * 1.0f;
-	result.y = m->data[1][0] * v.x + m->data[1][1] * v.y + m->data[1][2] * v.z + m->data[1][3] * 1.0f;
-	result.z = m->data[2][0] * v.x + m->data[2][1] * v.y + m->data[2][2] * v.z + m->data[2][3] * 1.0f;
+	if (is_point) {
+		result.x = m->data[0][0] * v.x + m->data[0][1] * v.y + m->data[0][2] * v.z + m->data[0][3] * 1.0f;
+		result.y = m->data[1][0] * v.x + m->data[1][1] * v.y + m->data[1][2] * v.z + m->data[1][3] * 1.0f;
+		result.z = m->data[2][0] * v.x + m->data[2][1] * v.y + m->data[2][2] * v.z + m->data[2][3] * 1.0f;
+	} else {
+		result.x = m->data[0][0] * v.x + m->data[0][1] * v.y + m->data[0][2] * v.z;
+		result.y = m->data[1][0] * v.x + m->data[1][1] * v.y + m->data[1][2] * v.z;
+		result.z = m->data[2][0] * v.x + m->data[2][1] * v.y + m->data[2][2] * v.z;
+	}
 	return result;
 }
 

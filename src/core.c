@@ -20,10 +20,13 @@ static Entity* entities;
 // Mouse binding to target positions
 static boolean is_mouse_bound_to_entity_movement;
 
-static Collider create_collider(Vertex* vertices, u32* indices) {
+static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
 	vec3* vertices_positions = array_new(vec3);
 	for (u32 i = 0; i < array_length(vertices); ++i) {
 		vec3 position = vertices[i].position;
+        position.x *= scale.x;
+        position.y *= scale.y;
+        position.z *= scale.z;
 		array_push(vertices_positions, position);
 	}
 	Collider collider = collider_create(vertices_positions, indices, COLLIDER_TYPE_CONVEX_HULL);
@@ -87,9 +90,10 @@ int core_init() {
 	u32* floor_indices;
 	obj_parse("./res/floor.obj", &floor_vertices, &floor_indices);
 	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
-    Collider floor_collider = create_collider(floor_vertices, floor_indices);
+    vec3 floor_scale = (vec3){1.0f, 1.0f, 1.0f};
+    Collider floor_collider = create_collider(floor_vertices, floor_indices, floor_scale);
 	graphics_entity_create_with_color_fixed(&e, floor_mesh, (vec3){0.0f, -2.0f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
-		(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 1.0f, 1.0f, 1.0f}, floor_collider);
+		floor_scale, (vec4){1.0f, 1.0f, 1.0f, 1.0f}, floor_collider);
 	array_push(entities, e);
     array_free(floor_vertices);
     array_free(floor_indices);
@@ -97,31 +101,33 @@ int core_init() {
 	Vertex* cube_vertices;
 	u32* cube_indices;
 
-#ifdef DUMP1
+#ifdef DUMP2
 	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
     Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
+    vec3 cube_scale = (vec3){5.0f, 1.0f, 1.0f};
 
-    Collider cube_collider1 = create_collider(cube_vertices, cube_indices);
+    Collider cube_collider1 = create_collider(cube_vertices, cube_indices, cube_scale);
     graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
-    	(vec3){5.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider1);
+    	cube_scale, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider1);
 	array_push(entities, e);
 
-    Collider cube_collider2 = create_collider(cube_vertices, cube_indices);
+    Collider cube_collider2 = create_collider(cube_vertices, cube_indices, cube_scale);
     graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
-    	(vec3){5.0f, 1.0f, 1.0f}, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider2);
+    	cube_scale, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider2);
 	array_push(entities, e);
 #else
 	obj_parse("./res/cube5.obj", &cube_vertices, &cube_indices);
     Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
+    vec3 cube_scale = (vec3){1.0f, 1.0f, 1.0f};
 
-    Collider cube_collider1 = create_collider(cube_vertices, cube_indices);
+    Collider cube_collider1 = create_collider(cube_vertices, cube_indices, cube_scale);
     graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
-    	(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider1);
+    	cube_scale, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider1);
 	array_push(entities, e);
 
-    Collider cube_collider2 = create_collider(cube_vertices, cube_indices);
+    Collider cube_collider2 = create_collider(cube_vertices, cube_indices, cube_scale);
     graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
-    	(vec3){1.0f, 1.0f, 1.0f}, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider2);
+    	cube_scale, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider2);
 	array_push(entities, e);
 #endif
 
@@ -155,7 +161,7 @@ void core_update(r32 delta_time) {
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
-		mat4 model_matrix = graphics_entity_get_model_matrix(e);
+		mat4 model_matrix = graphics_entity_get_model_matrix_no_scale(e);
 		collider_update(&e->collider, model_matrix);
 		//printf("e%d: <%f, %f, %f>\n", i, e->world_position.x, e->world_position.y, e->world_position.z);
 		//printf("e%d: rot: <%f, %f, %f, %f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
@@ -334,9 +340,10 @@ void core_input_process(boolean* key_state, r32 delta_time) {
         u32* indices;
         obj_parse(mesh_name, &vertices, &indices);
 		Mesh m = graphics_mesh_create(vertices, indices);
-        Collider collider = create_collider(vertices, indices);
+        vec3 scale = (vec3){1.0f, 1.0f, 1.0f};
+        Collider collider = create_collider(vertices, indices, scale);
 		graphics_entity_create_with_color(&e, m, cube_position, quaternion_new((vec3){0.35f, 0.44f, 0.12f}, 0.0f),
-			(vec3){1.0f, 1.0f, 1.0f}, (vec4){rand() / (r32)RAND_MAX, rand() / (r32)RAND_MAX, rand() / (r32)RAND_MAX, 1.0f}, 1.0f, collider);
+			scale, (vec4){rand() / (r32)RAND_MAX, rand() / (r32)RAND_MAX, rand() / (r32)RAND_MAX, 1.0f}, 1.0f, collider);
         array_free(vertices);
         array_free(indices);
 
