@@ -321,11 +321,11 @@ void pbd_simulate(r32 dt, Entity* entities) {
 
 				mat4 e1_model_matrix = graphics_entity_get_model_matrix(e1);
 				mat4 e2_model_matrix = graphics_entity_get_model_matrix(e2);
-				collider_update(&e1->mesh.collider, e1_model_matrix);
-				collider_update(&e2->mesh.collider, e2_model_matrix);
+				collider_update(&e1->collider, e1_model_matrix);
+				collider_update(&e2->collider, e2_model_matrix);
 
-				Collider_Convex_Hull* convex_hull1 = &e1->mesh.collider.convex_hull;
-				Collider_Convex_Hull* convex_hull2 = &e2->mesh.collider.convex_hull;
+				Collider_Convex_Hull* convex_hull1 = &e1->collider.convex_hull;
+				Collider_Convex_Hull* convex_hull2 = &e2->collider.convex_hull;
 				GJK_Simplex simplex;
 				if (gjk_collides(convex_hull1->transformed_vertices, convex_hull2->transformed_vertices, &simplex)) {
 					vec3 normal;

@@ -23,7 +23,6 @@ typedef struct {
 typedef struct {
 	u32 VAO, VBO, EBO;
 	u32 num_indices;
-	Collider collider;
 } Mesh;
 
 typedef struct {
@@ -39,6 +38,7 @@ typedef struct {
 	Diffuse_Info diffuse_info;
 
 	// Physics Related
+	Collider collider;
 	Physics_Force* forces;
 	r32 inverse_mass;
 	mat3 inertia_tensor;
@@ -80,12 +80,11 @@ void graphics_image_save(const s8* image_path, const Image_Data* image_data);
 void graphics_float_image_save(const s8* image_path, const Float_Image_Data* image_data);
 Shader graphics_shader_create(const s8* vertex_shader_path, const s8* fragment_shader_path);
 Mesh graphics_quad_create();
-Mesh graphics_mesh_create(Vertex* vertices, u32* indices, Collider_Type collider_type);
-Mesh graphics_mesh_create_from_obj(const s8* obj_path, Collider_Type collider_type);
+Mesh graphics_mesh_create(Vertex* vertices, u32* indices);
+Mesh graphics_mesh_create_from_obj(const s8* obj_path);
 void graphics_mesh_render(Shader shader, Mesh mesh);
-void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r32 mass);
-void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color);
-void graphics_entity_create_with_texture(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, u32 texture);
+void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r32 mass, Collider collider);
+void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider);
 void graphics_entity_destroy(Entity* entity);
 // If entity already has a diffuse map, the older diffuse map will be deleted if delete_diffuse_map is true.
 // If entity has a color instead of a diffuse map, the mesh will lose the color and be set to use the diffuse map.

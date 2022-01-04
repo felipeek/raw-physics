@@ -173,10 +173,10 @@ Mesh graphics_quad_create()
 	array_push(indices, 3);
 	array_push(indices, 2);
 
-	return graphics_mesh_create(vertices, indices, 0);
+	return graphics_mesh_create(vertices, indices);
 }
 
-Mesh graphics_mesh_create(Vertex* vertices, u32* indices, Collider_Type collider_type)
+Mesh graphics_mesh_create(Vertex* vertices, u32* indices)
 {
 	Mesh mesh;
 	GLuint VBO, EBO, VAO;
@@ -212,26 +212,6 @@ Mesh graphics_mesh_create(Vertex* vertices, u32* indices, Collider_Type collider
 	mesh.VBO = VBO;
 	mesh.EBO = EBO;
 	mesh.num_indices = array_length(indices);
-
-	vec3* vertices_positions = array_new(vec3);
-	for (u32 i = 0; i < array_length(vertices); ++i) {
-		vec3 position = vertices[i].position;
-		array_push(vertices_positions, position);
-	}
-	mesh.collider = collider_create(vertices_positions, indices, collider_type);
-	printf("Vertices positions: %ld\n", array_length(vertices_positions));
-	array_free(vertices_positions);
-
-	printf("Hull positions: %ld\n", array_length(mesh.collider.convex_hull.vertices));
-	for (u32 i = 0; i < array_length(mesh.collider.convex_hull.faces); ++i) {
-		Collider_Convex_Hull_Face face = mesh.collider.convex_hull.faces[i];
-		printf("Face num elements: %ld\n", array_length(face.elements));
-		printf("Face normal: <%.3f, %.3f, %.3f>\n", face.normal.x, face.normal.y, face.normal.z);
-		//for (u32 j = 0; j < array_length(face.elements); ++j) {
-		//	vec3 v = mesh.collider.convex_hull.vertices[face.elements[j]];
-		//	printf("\tV: <%.3f, %.3f, %.3f> (elem: %d)\n", v.x, v.y, v.z, face.elements[j]);
-		//}
-	}
 
 	return mesh;
 }
@@ -357,7 +337,7 @@ static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r32 mass, ve
     return result;
 }
 
-void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r32 mass)
+void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r32 mass, Collider collider)
 {
 	entity->mesh = mesh;
 	entity->world_position = world_position;
@@ -370,13 +350,14 @@ void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_pos
 	entity->previous_angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
 	entity->previous_linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
 	entity->inverse_mass = 1.0f / mass;
-	entity->inertia_tensor = get_symmetric_inertia_tensor_for_object(mesh.collider.convex_hull.vertices, mass, world_scale);
+	entity->inertia_tensor = get_symmetric_inertia_tensor_for_object(collider.convex_hull.vertices, mass, world_scale);
 	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = false;
+    entity->collider = collider;
 }
 
-void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color)
+void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider)
 {
 	entity->mesh = mesh;
 	entity->world_position = world_position;
@@ -393,16 +374,7 @@ void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 wor
 	entity->inverse_inertia_tensor = (mat3){0};
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = true;
-}
-
-void graphics_entity_create_with_texture(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, u32 texture)
-{
-	entity->mesh = mesh;
-	entity->world_position = world_position;
-	entity->world_rotation = world_rotation;
-	entity->world_scale = world_scale;
-	entity->diffuse_info.diffuse_map = texture;
-	entity->diffuse_info.use_diffuse_map = true;
+    entity->collider = collider;
 }
 
 void graphics_entity_destroy(Entity* entity)
@@ -613,12 +585,12 @@ Image_Data graphics_float_image_data_to_image_data(const Float_Image_Data* float
 	return id;
 }
 
-Mesh graphics_mesh_create_from_obj(const s8* obj_path, Collider_Type collider_type)
+Mesh graphics_mesh_create_from_obj(const s8* obj_path)
 {
 	Vertex* vertices;
 	u32* indices;
 	obj_parse(obj_path, &vertices, &indices);
-	Mesh m = graphics_mesh_create(vertices, indices, collider_type);
+	Mesh m = graphics_mesh_create(vertices, indices);
 	array_free(vertices);
 	array_free(indices);
 	return m;
