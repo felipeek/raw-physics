@@ -62,7 +62,7 @@ int core_init() {
 		(vec3){1.0f, 1.0f, 1.0f}, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
 	array_push(entities, e);
 
-#if 0
+#if 1
     Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
     graphics_entity_create_with_color(&e, m2, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
     	(vec3){5.0f, 1.0f, 1.0f}, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f);

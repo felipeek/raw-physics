@@ -32,55 +32,40 @@ static vec3 calculate_external_torque(Entity* e) {
 
 // Calculate the dynamic inertia tensor of an entity, i.e., the inertia tensor transformed considering entity's rotation
 static mat3 get_dynamic_inertia_tensor(Entity* e) {
-    //mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
-    //mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
-    //mat3 aux = gm_mat3_multiply(&rotation_matrix, &e->inertia_tensor);
-    //return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
-
-    if (e->inverse_mass == 0.0) {
-        return e->inertia_tensor;
-    }
-
-    mat4 e_model_matrix = graphics_entity_get_model_matrix(e);
-    collider_update(&e->mesh.collider, e_model_matrix);
-    vec3* vertices = e->mesh.collider.convex_hull.transformed_vertices;
-    r32 mass = 1.0f / e->inverse_mass;
-
-    r32 mass_per_vertex = mass / array_length(vertices);
-    mat3 result = {0};
-    for (u32 i = 0; i < array_length(vertices); ++i) {
-        vec3 v = vertices[i];
-        r32 vx = v.x;
-        r32 vy = v.y;
-        r32 vz = v.z;
-        result.data[0][0] += mass_per_vertex * (vy * vy + vz * vz);
-        result.data[0][1] += mass_per_vertex * vx * vy;
-        result.data[0][2] += mass_per_vertex * vx * vz;
-        result.data[1][0] += mass_per_vertex * vx * vy;
-        result.data[1][1] += mass_per_vertex * (vx * vx + vz * vz);
-        result.data[1][2] += mass_per_vertex * vy * vz;
-        result.data[2][0] += mass_per_vertex * vx * vz;
-        result.data[2][1] += mass_per_vertex * vy * vz;
-        result.data[2][2] += mass_per_vertex * (vx * vx + vy * vy);
-    }
-
-    return result;
+#if 0
+    // Can only be used if the local->world matrix is orthogonal
+    mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
+    mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
+    mat3 aux = gm_mat3_multiply(&rotation_matrix, &e->inertia_tensor);
+    return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
+#else
+    // Can always be used
+    mat3 local_to_world = quaternion_get_matrix3(&e->world_rotation);
+    mat3 inverse_local_to_world;
+    assert(gm_mat3_inverse(&local_to_world, &inverse_local_to_world));
+    mat3 transposed_inverse_local_to_world = gm_mat3_transpose(&inverse_local_to_world);
+    mat3 aux = gm_mat3_multiply(&transposed_inverse_local_to_world, &e->inertia_tensor);
+    return gm_mat3_multiply(&aux, &inverse_local_to_world);
+#endif
 }
 
 // Calculate the dynamic inverse inertia tensor of an entity, i.e., the inverse inertia tensor transformed considering entity's rotation
 static mat3 get_dynamic_inverse_inertia_tensor(Entity* e) {
-    //mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
-    //mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
-    //mat3 aux = gm_mat3_multiply(&rotation_matrix, &e->inverse_inertia_tensor);
-    //return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
-
-    if (e->inverse_mass == 0.0) {
-        return e->inverse_inertia_tensor;
-    }
-    mat3 aa = get_dynamic_inertia_tensor(e);
-    mat3 i;
-    assert(gm_mat3_inverse(&aa, &i));
-    return i;
+#if 0
+    // Can only be used if the local->world matrix is orthogonal
+    mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
+    mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
+    mat3 aux = gm_mat3_multiply(&rotation_matrix, &e->inverse_inertia_tensor);
+    return gm_mat3_multiply(&aux, &transposed_rotation_matrix);
+#else
+    // Can always be used
+    mat3 local_to_world = quaternion_get_matrix3(&e->world_rotation);
+    mat3 inverse_local_to_world;
+    assert(gm_mat3_inverse(&local_to_world, &inverse_local_to_world));
+    mat3 transposed_inverse_local_to_world = gm_mat3_transpose(&inverse_local_to_world);
+    mat3 aux = gm_mat3_multiply(&transposed_inverse_local_to_world, &e->inverse_inertia_tensor);
+    return gm_mat3_multiply(&aux, &inverse_local_to_world);
+#endif
 }
 
 // Apply the positional constraint, updating the position and orientation of the entities accordingly
