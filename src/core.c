@@ -222,7 +222,7 @@ int core_init() {
 #if 1
 	r32 y = -2.0f;
 
-	for (u32 i = 0; i < 2; ++i) {
+	for (u32 i = 0; i < 9; ++i) {
 		y += 2.1f;
 		Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
 		graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
@@ -261,11 +261,11 @@ boolean paused = false;
 int dt_idx = 0;
 
 void core_update(r32 delta_time) {
-	if (dt_idx < array_length(dt_arr)) {
-		delta_time = dt_arr[dt_idx];
-		dt_idx++;
-	}
-	//delta_time = 0.39;
+	//if (dt_idx < array_length(dt_arr)) {
+	//	delta_time = dt_arr[dt_idx];
+	//	dt_idx++;
+	//}
+	delta_time = 0.03;
 	//printf("%f\n", delta_time);
 	//fflush(stdout);
 
@@ -346,7 +346,7 @@ void core_render() {
 	}
 	#endif
 
-	for (u32 i = 1; i < array_length(entities); ++i) {
+	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, &entities[i], lights);
 	}
 

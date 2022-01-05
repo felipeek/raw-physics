@@ -133,7 +133,7 @@ boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* _normal, r32
 	}
 
 	boolean converged = false;
-	for (u32 it = 0; it < 1000; ++it) {
+	for (u32 it = 0; it < 50; ++it) {
 		vec3 support_point = gjk_get_support_point_of_minkowski_difference(shape1, shape2, min_normal);
 
 		// If the support time lies on the face currently set as the closest to the origin, we are done.

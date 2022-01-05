@@ -6,8 +6,9 @@
 #include "epa.h"
 #include "clipping.h"
 
-#define NUM_SUBSTEPS 10
+#define NUM_SUBSTEPS 50
 #define NUM_POS_ITERS 1
+#define USE_QUATERNIONS_LINEARIZED_FORMULAS
 
 // Calculate the sum of all external forces acting on an entity
 static vec3 calculate_external_force(Entity* e) {
@@ -126,6 +127,7 @@ static r32 apply_positional_constraint(Constraint* constraint, r32 h) {
 	// updates the rotation of the entities based on eq (8) and (9)
 	vec3 aux1 = gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1_wc, positional_impulse));
 	vec3 aux2 = gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2_wc, positional_impulse));
+#ifdef USE_QUATERNIONS_LINEARIZED_FORMULAS
 	Quaternion aux_q1 = (Quaternion){aux1.x, aux1.y, aux1.z, 0.0f};
 	Quaternion aux_q2 = (Quaternion){aux2.x, aux2.y, aux2.z, 0.0f};
 	Quaternion q1 = quaternion_product(&aux_q1, &e1->world_rotation);
@@ -146,6 +148,25 @@ static r32 apply_positional_constraint(Constraint* constraint, r32 h) {
 		// should we normalize?
 		e2->world_rotation = quaternion_normalize(&e2->world_rotation);
 	}
+#else
+	if (!e1->fixed) {
+		r32 e1_rotation_angle = gm_vec3_length(aux1);
+		vec3 e1_rotation_axis = gm_vec3_normalize(aux1);
+		Quaternion e1_orientation_change = quaternion_new_radians(e1_rotation_axis, e1_rotation_angle);
+		e1->world_rotation = quaternion_product(&e1_orientation_change, &e1->world_rotation);
+		// should we normalize?
+		e1->world_rotation = quaternion_normalize(&e1->world_rotation);
+	}
+
+	if (!e2->fixed) {
+		r32 e2_rotation_angle = -gm_vec3_length(aux2);
+		vec3 e2_rotation_axis = gm_vec3_normalize(aux2);
+		Quaternion e2_orientation_change = quaternion_new_radians(e2_rotation_axis, e2_rotation_angle);
+		e2->world_rotation = quaternion_product(&e2_orientation_change, &e2->world_rotation);
+		// should we normalize?
+		e2->world_rotation = quaternion_normalize(&e2->world_rotation);
+	}
+#endif
 
 	return delta_lambda;
 }
@@ -211,10 +232,10 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 		p2 = gm_vec3_add(e2->world_position, r2_wc);
 
 		// if 'd' is greater than 0.0, we should also add a constraint for static friction, but only if lambda_t < u_s * lambda_n
-		const r32 static_friction_coefficient = 1.0f;
+		const r32 static_friction_coefficient = 0.0f;
 
 		// @NOTE(fek): This inequation shown in 3.5 was changed because the lambdas will always be negative!
-		if (lambda_t > static_friction_coefficient * lambda_n) {
+		if (static_friction_coefficient > 0.0f && lambda_t > static_friction_coefficient * lambda_n) {
 			mat3 e1_previous_rot_matrix = quaternion_get_matrix3(&e1->previous_world_rotation);
 			vec3 p1_til = gm_vec3_add(e1->previous_world_position, gm_mat3_multiply_vec3(&e1_previous_rot_matrix, r1_lc));
 			mat3 e2_previous_rot_matrix = quaternion_get_matrix3(&e2->previous_world_rotation);
@@ -231,10 +252,10 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 			c.positional_constraint.lambda = lambda_t;
 			c.positional_constraint.r1_lc = r1_lc;
 			c.positional_constraint.r2_lc = r2_lc;
-			//r32 delta_lambda = apply_positional_constraint(&c, h);
+			r32 delta_lambda = apply_positional_constraint(&c, h);
 
-			//lambda_t += delta_lambda;
-			//constraint->collision_constraint.lambda_t = lambda_t;
+			lambda_t += delta_lambda;
+			constraint->collision_constraint.lambda_t = lambda_t;
 		}
 	}
 }
@@ -303,6 +324,7 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			e->angular_velocity = gm_vec3_add(e->angular_velocity, gm_vec3_scalar_product(h, 
 				gm_mat3_multiply_vec3(&e_inverse_inertia_tensor, gm_vec3_subtract(external_torque,
 				gm_vec3_cross(e->angular_velocity, gm_mat3_multiply_vec3(&e_inertia_tensor, e->angular_velocity))))));
+#ifdef USE_QUATERNIONS_LINEARIZED_FORMULAS
 			Quaternion aux = (Quaternion){e->angular_velocity.x, e->angular_velocity.y, e->angular_velocity.z, 0.0f};
 			Quaternion q = quaternion_product(&aux, &e->world_rotation);
 			e->world_rotation.x = e->world_rotation.x + h * 0.5f * q.x;
@@ -311,6 +333,14 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			e->world_rotation.w = e->world_rotation.w + h * 0.5f * q.w;
 			// should we normalize?
 			e->world_rotation = quaternion_normalize(&e->world_rotation);
+#else
+			r32 rotation_angle = gm_vec3_length(e->angular_velocity) * h;
+			vec3 rotation_axis = gm_vec3_normalize(e->angular_velocity);
+			Quaternion orientation_change = quaternion_new_radians(rotation_axis, rotation_angle);
+			e->world_rotation = quaternion_product(&orientation_change, &e->world_rotation);
+			// should we normalize?
+			e->world_rotation = quaternion_normalize(&e->world_rotation);
+#endif
 		}
 
 		// Create the constraints array
@@ -457,7 +487,7 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			vec3 v_til = gm_vec3_subtract(gm_vec3_add(old_v1, gm_vec3_cross(old_w1, r1_wc)), gm_vec3_add(old_v2, gm_vec3_cross(old_w2, r2_wc)));
 			r32 vn_til = gm_vec3_dot(n, v_til);
 			//r32 e = (fabsf(vn) > 2.0f * GRAVITY * h) ? 0.8f : 0.0f;
-			r32 e = 0.0f;
+			r32 e = 0.2f;
 			// @NOTE: equation (34) was modified here
 			fact = -vn + MIN(-e * vn_til, 0.0f);
 			// update delta_v
