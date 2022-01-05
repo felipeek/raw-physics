@@ -19,7 +19,7 @@ Quaternion
 quaternion_new(vec3 axis, r32 angle)
 {
   if (gm_vec3_length(axis) != 0.0f)
-    axis = gm_vec3_normalize(axis);
+	axis = gm_vec3_normalize(axis);
   r32 sang = sinf(gm_radians(angle) / 2.0f);
 
   Quaternion quat;

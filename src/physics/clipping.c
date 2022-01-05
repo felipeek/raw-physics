@@ -235,14 +235,14 @@ static dvec4 get_edge_with_most_fitting_normal(u32 support1_idx, u32 support2_id
 // a2*x + b2*y = c2
 // Outputs: x and y
 static boolean solve_2x2_linear_system(r32 a1, r32 b1, r32 c1, r32 a2, r32 b2, r32 c2, r32* x, r32* y) {
-  if ((a1 * b2) - (a2 * b1) == 0)
-    return false;
+	if ((a1 * b2) - (a2 * b1) == 0)
+		return false;
 
-  if (x)
-    *x = ((c1 * b2) - (c2 * b1)) / ((a1 * b2) - (a2 * b1));
+	if (x)
+		*x = ((c1 * b2) - (c2 * b1)) / ((a1 * b2) - (a2 * b1));
 
-  if (y)
-    *y = ((a1 * c2) - (a2 * c1)) / ((a1 * b2) - (a2 * b1));
+	if (y)
+		*y = ((a1 * c2) - (a2 * c1)) / ((a1 * b2) - (a2 * b1));
 
   return true;
 }
@@ -256,27 +256,28 @@ static boolean solve_2x2_linear_system(r32 a1, r32 b1, r32 c1, r32 a2, r32 b2, r
 // _N is the number that satisfies L1 = P1 + _N * D1
 // _M is the number that satisfies L2 = P2 + _M * D2
 static boolean collision_distance_between_skew_lines(vec3 p1, vec3 d1, vec3 p2, vec3 d2, vec3 *l1, vec3 *l2, r32 * _n, r32 * _m) {
-  r32 n1 = d1.x * d2.x + d1.y * d2.y + d1.z * d2.z;
-  r32 n2 = d2.x * d2.x + d2.y * d2.y + d2.z * d2.z;
-  r32 m1 = -d1.x * d1.x - d1.y * d1.y - d1.z * d1.z;
-  r32 m2 = -d2.x * d1.x - d2.y * d1.y - d2.z * d1.z;
-  r32 r1 = -d1.x * p2.x + d1.x * p1.x - d1.y * p2.y + d1.y * p1.y - d1.z * p2.z + d1.z * p1.z;
-  r32 r2 = -d2.x * p2.x + d2.x * p1.x - d2.y * p2.y + d2.y * p1.y - d2.z * p2.z + d2.z * p1.z;
+	r32 n1 = d1.x * d2.x + d1.y * d2.y + d1.z * d2.z;
+	r32 n2 = d2.x * d2.x + d2.y * d2.y + d2.z * d2.z;
+	r32 m1 = -d1.x * d1.x - d1.y * d1.y - d1.z * d1.z;
+	r32 m2 = -d2.x * d1.x - d2.y * d1.y - d2.z * d1.z;
+	r32 r1 = -d1.x * p2.x + d1.x * p1.x - d1.y * p2.y + d1.y * p1.y - d1.z * p2.z + d1.z * p1.z;
+	r32 r2 = -d2.x * p2.x + d2.x * p1.x - d2.y * p2.y + d2.y * p1.y - d2.z * p2.z + d2.z * p1.z;
 
-  r32 m, n;
-  if (!solve_2x2_linear_system(n1, m1, r1, n2, m2, r2, &n, &m))
-    return false;
+	r32 m, n;
+	if (!solve_2x2_linear_system(n1, m1, r1, n2, m2, r2, &n, &m)) {
+		return false;
+	}
 
-  if (l1)
-    *l1 = gm_vec3_add(p1, gm_vec3_scalar_product(m, d1));
-  if (l2)
-    *l2 = gm_vec3_add(p2, gm_vec3_scalar_product(n, d2));
-  if (_n)
-    *_n = n;
-  if (_m)
-    *_m = m;
+	if (l1)
+		*l1 = gm_vec3_add(p1, gm_vec3_scalar_product(m, d1));
+	if (l2)
+		*l2 = gm_vec3_add(p2, gm_vec3_scalar_product(n, d2));
+	if (_n)
+		*_n = n;
+	if (_m)
+		*_m = m;
 
-  return true;
+	return true;
 }
 
 static vec3* get_vertices_of_faces(Collider_Convex_Hull* hull, Collider_Convex_Hull_Face face) {

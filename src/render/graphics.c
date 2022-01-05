@@ -333,22 +333,22 @@ mat4 graphics_entity_get_model_matrix_no_scale(const Entity* entity)
 }
 
 static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r32 mass) {
-    r32 mass_per_vertex = mass / array_length(vertices);
-    mat3 result = {0};
-    for (u32 i = 0; i < array_length(vertices); ++i) {
-        vec3 v = vertices[i];
-        result.data[0][0] += mass_per_vertex * (v.y * v.y + v.z * v.z);
-        result.data[0][1] += mass_per_vertex * v.x * v.y;
-        result.data[0][2] += mass_per_vertex * v.x * v.z;
-        result.data[1][0] += mass_per_vertex * v.x * v.y;
-        result.data[1][1] += mass_per_vertex * (v.x * v.x + v.z * v.z);
-        result.data[1][2] += mass_per_vertex * v.y * v.z;
-        result.data[2][0] += mass_per_vertex * v.x * v.z;
-        result.data[2][1] += mass_per_vertex * v.y * v.z;
-        result.data[2][2] += mass_per_vertex * (v.x * v.x + v.y * v.y);
-    }
+	r32 mass_per_vertex = mass / array_length(vertices);
+	mat3 result = {0};
+	for (u32 i = 0; i < array_length(vertices); ++i) {
+		vec3 v = vertices[i];
+		result.data[0][0] += mass_per_vertex * (v.y * v.y + v.z * v.z);
+		result.data[0][1] += mass_per_vertex * v.x * v.y;
+		result.data[0][2] += mass_per_vertex * v.x * v.z;
+		result.data[1][0] += mass_per_vertex * v.x * v.y;
+		result.data[1][1] += mass_per_vertex * (v.x * v.x + v.z * v.z);
+		result.data[1][2] += mass_per_vertex * v.y * v.z;
+		result.data[2][0] += mass_per_vertex * v.x * v.z;
+		result.data[2][1] += mass_per_vertex * v.y * v.z;
+		result.data[2][2] += mass_per_vertex * (v.x * v.x + v.y * v.y);
+	}
 
-    return result;
+	return result;
 }
 
 void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r32 mass, Collider collider)
@@ -368,7 +368,7 @@ void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_pos
 	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = false;
-    entity->collider = collider;
+	entity->collider = collider;
 }
 
 void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider)
@@ -388,7 +388,7 @@ void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 wor
 	entity->inverse_inertia_tensor = (mat3){0};
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = true;
-    entity->collider = collider;
+	entity->collider = collider;
 }
 
 void graphics_entity_destroy(Entity* entity)
@@ -639,8 +639,8 @@ static Render_Primitives_Context primitives_ctx;
 
 void graphics_renderer_primitives_init()
 {
-    if (primitives_ctx.initialized) return;
-    primitives_ctx.initialized = true;
+	if (primitives_ctx.initialized) return;
+	primitives_ctx.initialized = true;
 
 	int batch_size = 1024 * 1024;
 
@@ -674,7 +674,7 @@ void graphics_renderer_primitives_init()
 
 void graphics_renderer_primitives_flush(const Perspective_Camera* camera)
 {
-    graphics_renderer_primitives_init();
+	graphics_renderer_primitives_init();
 	glUseProgram(primitives_ctx.shader);
 
 	// Vector
@@ -737,7 +737,7 @@ static void setup_primitives_point_render()
 
 void graphics_renderer_debug_points(vec3* points, int point_count, vec4 color)
 {
-    graphics_renderer_primitives_init();
+	graphics_renderer_primitives_init();
 	setup_primitives_point_render();
 	Primitive_3D_Vertex *verts = (Primitive_3D_Vertex *)primitives_ctx.point_data_ptr + primitives_ctx.point_count;
 
@@ -752,7 +752,7 @@ void graphics_renderer_debug_points(vec3* points, int point_count, vec4 color)
 
 void graphics_renderer_debug_vector(vec3 p1, vec3 p2, vec4 color)
 {
-    graphics_renderer_primitives_init();
+	graphics_renderer_primitives_init();
 	setup_primitives_render();
 
 	Primitive_3D_Vertex *verts = (Primitive_3D_Vertex *)primitives_ctx.data_ptr + primitives_ctx.vertex_count;
