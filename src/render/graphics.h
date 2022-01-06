@@ -46,6 +46,8 @@ typedef struct {
 	vec3 angular_velocity;
 	vec3 linear_velocity;
 	boolean fixed;
+	boolean active;
+	r32 deactivationTime;
 
 	// PBD Auxilar
 	vec3 previous_world_position;

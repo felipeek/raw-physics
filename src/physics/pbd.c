@@ -11,6 +11,7 @@
 #define NUM_SUBSTEPS 50
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
+#define ENABLE_SIMULATION_ISLANDS
 
 // Calculate the sum of all external forces acting on an entity
 static vec3 calculate_external_force(Entity* e) {
@@ -311,6 +312,7 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			e->previous_world_rotation = e->world_rotation;
 
 			if (e->fixed) continue;	
+			if (!e->active) continue;
 
 			// Calculate the external force and torque of the entity
 			vec3 external_force = calculate_external_force(e);
@@ -349,8 +351,42 @@ void pbd_simulate(r32 dt, Entity* entities) {
 		Constraint* constraints = array_new(Constraint);
 
 		Broad_Collision_Pair* broad_collision_pairs = broad_get_collision_pairs(entities);
+
+#ifdef ENABLE_SIMULATION_ISLANDS
 		Entity*** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs);
 
+		// All entities will be contained in the simulation islands.
+		// Update deactivation time and also, at the same time, its active status
+		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
+			Entity** simulation_island = simulation_islands[j];
+
+			boolean all_inactive = true;
+			for (u32 k = 0; k < array_length(simulation_island); ++k) {
+				Entity* e = simulation_island[k];
+
+				r32 linear_velocity_len = gm_vec3_length(e->linear_velocity);
+				r32 angular_velocity_len = gm_vec3_length(e->angular_velocity);
+				const r32 LINEAR_SLEEPING_THRESHOLD = 0.05f;
+				const r32 ANGULAR_SLEEPING_THRESHOLD = 0.05f;
+				if (linear_velocity_len < LINEAR_SLEEPING_THRESHOLD && angular_velocity_len < ANGULAR_SLEEPING_THRESHOLD) {
+					e->deactivationTime += dt;
+				} else {
+					e->deactivationTime = 0.0f;
+				}
+
+				const r32 DEACTIVATION_TIME_TO_BE_INACTIVE = 2.0f;
+				if (e->deactivationTime < DEACTIVATION_TIME_TO_BE_INACTIVE) {
+					all_inactive = false;
+				}
+			}
+
+			// We only set entities to inactive if the whole island is inactive!
+			for (u32 k = 0; k < array_length(simulation_island); ++k) {
+				Entity* e = simulation_island[k];
+				e->active = !all_inactive;
+			}
+		}
+#if 0
 		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
 			Entity** simulation_island = simulation_islands[j];
 			vec4 color = util_pallete(j);
@@ -359,7 +395,21 @@ void pbd_simulate(r32 dt, Entity* entities) {
 				e->diffuse_info.diffuse_color = color;
 			}
 		}
+#else
+		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
+			Entity** simulation_island = simulation_islands[j];
+			for (u32 k = 0; k < array_length(simulation_island); ++k) {
+				Entity* e = simulation_island[k];
+				if (e->active) {
+					e->diffuse_info.diffuse_color = util_pallete(1);
+				} else {
+					e->diffuse_info.diffuse_color = util_pallete(0);
+				}
+			}
+		}
+#endif
 
+#endif
 		// As explained in sec 3.5, in each substep we need to check for collisions
 		// (I am not pre-collecting potential collision pairs.)
 		// Here we just check the plane-cube collision and collect the intersections.
@@ -368,6 +418,16 @@ void pbd_simulate(r32 dt, Entity* entities) {
 		for (u32 j = 0; j < array_length(broad_collision_pairs); ++j) {
 			Entity* e1 = broad_collision_pairs[j].e1;
 			Entity* e2 = broad_collision_pairs[j].e2;
+
+			// If e1 is "colliding" with e2, they must be either both active or both inactive
+			if (!e1->fixed && !e2->fixed) {
+				assert((e1->active && e2->active) || (!e1->active && !e2->active));
+			}
+
+			// No need to solve the collision if both entities are either inactive or fixed
+			if ((e1->fixed || !e1->active) && (e2->fixed || !e2->active)) {
+				continue;
+			}
 
 			mat4 e1_model_matrix = graphics_entity_get_model_matrix_no_scale(e1);
 			mat4 e2_model_matrix = graphics_entity_get_model_matrix_no_scale(e2);
@@ -435,6 +495,7 @@ void pbd_simulate(r32 dt, Entity* entities) {
 		for (u32 j = 0; j < array_length(entities); ++j) {
 			Entity* e = &entities[j];
 			if (e->fixed) continue;
+			if (!e->active) continue;
 			
 			// We start by storing the current velocities (this is needed for the velocity solver that comes at the end of the loop)
 			e->previous_linear_velocity = e->linear_velocity;

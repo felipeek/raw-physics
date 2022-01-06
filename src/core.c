@@ -222,7 +222,7 @@ int core_init() {
 #if 1
 	r32 y = -2.0f;
 
-	for (u32 i = 0; i < 2; ++i) {
+	for (u32 i = 0; i < 8; ++i) {
 		y += 2.1f;
 		Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
 		graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),

@@ -368,6 +368,8 @@ void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_pos
 	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = false;
+	entity->active = true;
+	entity->deactivationTime = 0.0f;
 	entity->collider = collider;
 }
 
@@ -388,6 +390,8 @@ void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 wor
 	entity->inverse_inertia_tensor = (mat3){0};
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = true;
+	entity->active = true; // meaningless for fixed entities
+	entity->deactivationTime = 0.0f;
 	entity->collider = collider;
 }
 
