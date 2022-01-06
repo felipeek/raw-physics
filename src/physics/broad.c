@@ -96,3 +96,12 @@ Entity*** broad_collect_simulation_islands(Entity* entities, Broad_Collision_Pai
 	array_free(collision_pairs);
 	return simulation_islands;
 }
+
+void broad_simulation_islands_destroy(Entity*** simulation_islands) {
+	for (u32 i = 0; i < array_length(simulation_islands); ++i) {
+		Entity** simulation_island = simulation_islands[i];
+		array_free(simulation_island);
+	}
+
+	array_free(simulation_islands);
+}

@@ -118,6 +118,7 @@ static void sutherland_hodgman(vec3* input_polygon, int num_clip_planes, const P
 	}
 
 	*out_polygon = input;
+	array_free(output);
 }
 
 // Gets the closest point x on the line (edge) to point (pos)
@@ -329,18 +330,19 @@ Clipping_Contact* clipping_get_contact_manifold(Collider_Convex_Hull* convex_hul
 		Plane* boundary_planes = is_face1_the_reference_face ? build_boundary_planes(convex_hull1, face1_idx) :
 			build_boundary_planes(convex_hull2, face2_idx);
 
-		vec3* out_polygon;
-		sutherland_hodgman(incident_face_support_points, array_length(boundary_planes), boundary_planes, &out_polygon, false);
+		vec3* clipped_points;
+		sutherland_hodgman(incident_face_support_points, array_length(boundary_planes), boundary_planes, &clipped_points, false);
 
 		Plane reference_plane;
 		reference_plane.normal = is_face1_the_reference_face ? gm_vec3_negative(face1.normal) :
 			gm_vec3_negative(face2.normal);
 		reference_plane.point = reference_face_support_points[0];
 
-		sutherland_hodgman(out_polygon, 1, &reference_plane, &out_polygon, true);
+		vec3* final_clipped_points;
+		sutherland_hodgman(clipped_points, 1, &reference_plane, &final_clipped_points, true);
 
-		for (u32 i = 0; i < array_length(out_polygon); ++i) {
-			vec3 point = out_polygon[i];
+		for (u32 i = 0; i < array_length(final_clipped_points); ++i) {
+			vec3 point = final_clipped_points[i];
 			//vec3 closest_point = get_closest_pointPolygon(point, reference_face_support_points);
 			vec3 closest_point = get_closest_point_polygon(point, &reference_plane);
 			vec3 point_diff = gm_vec3_subtract(point, closest_point);
@@ -363,6 +365,12 @@ Clipping_Contact* clipping_get_contact_manifold(Collider_Convex_Hull* convex_hul
 				array_push(contacts, contact);
 			}
 		}
+
+		array_free(reference_face_support_points);
+		array_free(incident_face_support_points);
+		array_free(boundary_planes);
+		array_free(clipped_points);
+		array_free(final_clipped_points);
 	}
 
 	if (array_length(contacts) == 0) {

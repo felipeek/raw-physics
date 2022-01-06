@@ -90,3 +90,10 @@ Mesh graphics_mesh_create(Vertex* vertices, u32* indices)
 
 	return mesh;
 }
+
+void mesh_destroy(Mesh* mesh) {
+	// In theory this function is idempotent
+	glDeleteVertexArrays(1, &mesh->VAO);
+	glDeleteBuffers(1, &mesh->EBO);
+	glDeleteBuffers(1, &mesh->VBO);
+}

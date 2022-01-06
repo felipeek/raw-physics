@@ -21,88 +21,6 @@ static Entity* entities;
 // Mouse binding to target positions
 static boolean is_mouse_bound_to_entity_movement;
 
-static r32* get_delta_time_arr() {
-	r32* dt_arr = array_new(r32);
-	array_push(dt_arr, 0.000000);
-	array_push(dt_arr, 0.010726);
-	array_push(dt_arr, 0.000840);
-	array_push(dt_arr, 0.000429);
-	array_push(dt_arr, 0.008090);
-	array_push(dt_arr, 0.016989);
-	array_push(dt_arr, 0.016502);
-	array_push(dt_arr, 0.016700);
-	array_push(dt_arr, 0.016698);
-	array_push(dt_arr, 0.016631);
-	array_push(dt_arr, 0.017473);
-	array_push(dt_arr, 0.015995);
-	array_push(dt_arr, 0.016642);
-	array_push(dt_arr, 0.017178);
-	array_push(dt_arr, 0.017180);
-	array_push(dt_arr, 0.016939);
-	array_push(dt_arr, 0.016338);
-	array_push(dt_arr, 0.118641);
-	array_push(dt_arr, 0.000566);
-	array_push(dt_arr, 0.000426);
-	array_push(dt_arr, 0.000435);
-	array_push(dt_arr, 0.001416);
-	array_push(dt_arr, 0.000827);
-	array_push(dt_arr, 0.000415);
-	array_push(dt_arr, 0.009703);
-	array_push(dt_arr, 0.016889);
-	array_push(dt_arr, 0.016420);
-	array_push(dt_arr, 0.017075);
-	array_push(dt_arr, 0.016640);
-	array_push(dt_arr, 0.016266);
-	array_push(dt_arr, 0.016771);
-	array_push(dt_arr, 0.016616);
-	array_push(dt_arr, 0.016746);
-	array_push(dt_arr, 0.016697);
-	array_push(dt_arr, 0.017084);
-	array_push(dt_arr, 0.016200);
-	array_push(dt_arr, 0.016652);
-	array_push(dt_arr, 0.016834);
-	array_push(dt_arr, 0.016472);
-	array_push(dt_arr, 0.018114);
-	array_push(dt_arr, 0.019547);
-	array_push(dt_arr, 0.013839);
-	array_push(dt_arr, 0.016140);
-	array_push(dt_arr, 0.016639);
-	array_push(dt_arr, 0.016674);
-	array_push(dt_arr, 0.016654);
-	array_push(dt_arr, 0.016689);
-	array_push(dt_arr, 0.016750);
-	array_push(dt_arr, 0.016504);
-	array_push(dt_arr, 0.016788);
-	array_push(dt_arr, 0.017364);
-	array_push(dt_arr, 0.016576);
-	array_push(dt_arr, 0.016549);
-	array_push(dt_arr, 0.016763);
-	array_push(dt_arr, 0.016679);
-	array_push(dt_arr, 0.016874);
-	array_push(dt_arr, 0.016679);
-	array_push(dt_arr, 0.016597);
-	array_push(dt_arr, 0.015480);
-	array_push(dt_arr, 0.016463);
-	array_push(dt_arr, 0.016846);
-	array_push(dt_arr, 0.016590);
-	array_push(dt_arr, 0.016735);
-	array_push(dt_arr, 0.016742);
-	array_push(dt_arr, 0.016586);
-	array_push(dt_arr, 0.016625);
-	array_push(dt_arr, 0.016751);
-	array_push(dt_arr, 0.016684);
-	array_push(dt_arr, 0.016644);
-	array_push(dt_arr, 0.016782);
-	array_push(dt_arr, 0.016769);
-	array_push(dt_arr, 0.016584);
-	array_push(dt_arr, 0.018085);
-	array_push(dt_arr, 0.016633);
-	array_push(dt_arr, 0.016779);
-	array_push(dt_arr, 0.016602);
-	array_push(dt_arr, 0.016712);
-	return dt_arr;
-}
-
 static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
 	vec3* vertices_positions = array_new(vec3);
 	for (u32 i = 0; i < array_length(vertices); ++i) {
@@ -160,11 +78,7 @@ static void menu_dummy_callback() {
 
 //#define DUMP2
 
-r32* dt_arr;
-
 int core_init() {
-	dt_arr = get_delta_time_arr();
-
 	// Create camera
 	camera = create_camera();
 	// Create light
@@ -256,6 +170,13 @@ int core_init() {
 
 void core_destroy() {
 	array_free(lights);
+	for (u32 i = 0; i < array_length(entities); ++i) {
+		Entity* e = &entities[i];
+		collider_destroy(&e->collider);
+		mesh_destroy(&e->mesh);
+		entity_destroy(e);
+	}
+	array_free(entities);
 }
 
 boolean paused = false;

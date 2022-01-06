@@ -107,6 +107,7 @@ void entity_create_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quatern
 
 void entity_destroy(Entity* entity)
 {
+	array_free(entity->forces);
 }
 
 void entity_mesh_replace(Entity* entity, Mesh mesh, boolean delete_normal_map)

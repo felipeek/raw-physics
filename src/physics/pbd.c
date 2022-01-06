@@ -404,6 +404,7 @@ void pbd_simulate(r32 dt, Entity* entities) {
 		}
 #endif
 
+		broad_simulation_islands_destroy(simulation_islands);
 #endif
 		// As explained in sec 3.5, in each substep we need to check for collisions
 		// (I am not pre-collecting potential collision pairs.)
@@ -443,6 +444,7 @@ void pbd_simulate(r32 dt, Entity* entities) {
 						clipping_contact_to_constraint(e1, e2, normal, contact, &constraint);
 						array_push(constraints, constraint);
 					}
+					array_free(contacts);
 				}
 			}
 		}

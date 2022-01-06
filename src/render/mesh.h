@@ -18,5 +18,6 @@ typedef struct {
 Mesh graphics_quad_create();
 Mesh graphics_mesh_create(Vertex* vertices, u32* indices);
 Mesh graphics_mesh_create_from_obj(const s8* obj_path);
+void mesh_destroy(Mesh* mesh);
 
 #endif

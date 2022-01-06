@@ -9,5 +9,6 @@ typedef struct {
 
 Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities);
 Entity*** broad_collect_simulation_islands(Entity* entities, Broad_Collision_Pair* _collision_pairs);
+void broad_simulation_islands_destroy(Entity*** simulation_islands);
 
 #endif

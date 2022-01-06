@@ -232,12 +232,6 @@ static Collider collider_convex_hull_create(const vec3* vertices, const u32* ind
 		vertex_to_neighbors_map[i] = array_new(u32);
 	}
 
-	// Prepare face to neighbors map
-	u32** face_to_neighbor_faces_map = malloc(sizeof(u32*) * array_length(hull_triangle_faces));
-	for (u32 i = 0; i < array_length(hull_triangle_faces); ++i) {
-		face_to_neighbor_faces_map[i] = array_new(u32);
-	}
-
 	// Prepare triangle faces to neighbors map
 	u32** triangle_faces_to_neighbor_faces_map = malloc(sizeof(u32*) * array_length(hull_triangle_faces));
 	for (u32 i = 0; i < array_length(hull_triangle_faces); ++i) {
@@ -317,6 +311,12 @@ static Collider collider_convex_hull_create(const vec3* vertices, const u32* ind
 		array_free(planar_faces);
 	}
 
+	// Prepare face to neighbors map
+	u32** face_to_neighbor_faces_map = malloc(sizeof(u32*) * array_length(faces));
+	for (u32 i = 0; i < array_length(faces); ++i) {
+		face_to_neighbor_faces_map[i] = array_new(u32);
+	}
+
 	// Fill faces to neighbor faces map
 	for (u32 i = 0; i < array_length(faces); ++i) {
 		Collider_Convex_Hull_Face face = faces[i];
@@ -339,6 +339,7 @@ static Collider collider_convex_hull_create(const vec3* vertices, const u32* ind
 	}
 	free(triangle_faces_to_neighbor_faces_map);
 	free(is_triangle_face_already_processed_arr);
+	array_free(hull_triangle_faces);
 
 	Collider_Convex_Hull convex_hull;
 	convex_hull.faces = faces;
@@ -356,6 +357,31 @@ static Collider collider_convex_hull_create(const vec3* vertices, const u32* ind
 	return collider;
 }
 
+static void collider_convex_hull_destroy(Collider* collider) {
+	for (u32 i = 0; i < array_length(collider->convex_hull.vertices); ++i) {
+		array_free(collider->convex_hull.vertex_to_faces[i]);
+	}
+	free(collider->convex_hull.vertex_to_faces);
+	for (u32 i = 0; i < array_length(collider->convex_hull.vertices); ++i) {
+		array_free(collider->convex_hull.vertex_to_neighbors[i]);
+	}
+	free(collider->convex_hull.vertex_to_neighbors);
+	for (u32 i = 0; i < array_length(collider->convex_hull.faces); ++i) {
+		array_free(collider->convex_hull.face_to_neighbors[i]);
+	}
+	free(collider->convex_hull.face_to_neighbors);
+
+	array_free(collider->convex_hull.vertices);
+	array_free(collider->convex_hull.transformed_vertices);
+	for (u32 i = 0; i < array_length(collider->convex_hull.faces); ++i) {
+		array_free(collider->convex_hull.faces[i].elements);
+	}
+	array_free(collider->convex_hull.faces);
+
+	// The 'elements' array of the transformed faces is the same as the one stored in 'faces', so we don't need to release it again.
+	array_free(collider->convex_hull.transformed_faces);
+}
+
 Collider collider_create(const vec3* vertices, const u32* indices, Collider_Type type) {
 	switch (type) {
 		case COLLIDER_TYPE_CONVEX_HULL: {
@@ -363,6 +389,14 @@ Collider collider_create(const vec3* vertices, const u32* indices, Collider_Type
 		} break;
 	}
 	assert(0);
+}
+
+void collider_destroy(Collider* collider) {
+	switch (collider->type) {
+		case COLLIDER_TYPE_CONVEX_HULL: {
+			collider_convex_hull_destroy(collider);
+		} break;
+	}
 }
 
 void collider_update(Collider* collider, mat4 model_matrix_no_scale) {
