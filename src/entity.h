@@ -38,7 +38,6 @@ typedef struct {
 
 	vec3 updated_linear_velocity;
 	vec3 updated_angular_velocity;
-	u32 updated_velocities_num;
 } Entity;
 
 mat4 entity_get_model_matrix(const Entity* entity);

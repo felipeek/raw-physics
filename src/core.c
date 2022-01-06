@@ -52,7 +52,7 @@ static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
 	return collider;
 }
 
-//#define NEAR_ORIGIN
+#define NEAR_ORIGIN
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -159,7 +159,7 @@ int core_init() {
 #if 1
 	r64 y = -2.0;
 
-	for (u32 i = 0; i < 1; ++i) {
+	for (u32 i = 0; i < 5; ++i) {
 		y += 2.1;
 		Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
 #ifdef NEAR_ORIGIN
@@ -405,7 +405,7 @@ void core_input_process(boolean* key_state, r64 delta_time) {
 		//force.position = (vec3) {0.0, 0.0, 0.0};
 		//array_push(e.forces, force);
 
-		e.linear_velocity = gm_vec3_scalar_product(5.0, gm_vec3_scalar_product(-1.0, camera_z));
+		e.linear_velocity = gm_vec3_scalar_product(10.0, gm_vec3_scalar_product(-1.0, camera_z));
 
 		//if (array_length(entities) == 2) {
 		//	entities[1] = e;

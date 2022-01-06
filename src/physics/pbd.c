@@ -11,7 +11,7 @@
 #define NUM_SUBSTEPS 70
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
-//#define ENABLE_SIMULATION_ISLANDS
+#define ENABLE_SIMULATION_ISLANDS
 
 extern boolean paused;
 
@@ -512,7 +512,6 @@ void pbd_simulate(r64 dt, Entity* entities) {
 
 			e->updated_linear_velocity = (vec3){0.0, 0.0, 0.0};
 			e->updated_angular_velocity = (vec3){0.0, 0.0, 0.0};
-			e->updated_velocities_num = 0;
 		}
 
 		// The velocity solver - we run this additional solver for every collision that we found
@@ -550,7 +549,7 @@ void pbd_simulate(r64 dt, Entity* entities) {
 			vec3 delta_v = (vec3){0.0, 0.0, 0.0};
 			
 			// we start by applying Coloumb's dynamic friction force
-			const r64 dynamic_friction_coefficient = 0.8;
+			const r64 dynamic_friction_coefficient = 1.0;
 			r64 fn = lambda_n / h; // simplifly h^2 by ommiting h in the next calculation
 			// @NOTE: equation (30) was modified here
 			r64 fact = MIN(dynamic_friction_coefficient * fabsf(fn), gm_vec3_length(vt));
@@ -565,7 +564,7 @@ void pbd_simulate(r64 dt, Entity* entities) {
 			vec3 v_til = gm_vec3_subtract(gm_vec3_add(old_v1, gm_vec3_cross(old_w1, r1_wc)), gm_vec3_add(old_v2, gm_vec3_cross(old_w2, r2_wc)));
 			r64 vn_til = gm_vec3_dot(n, v_til);
 			//r64 e = (fabsf(vn) > 2.0 * GRAVITY * h) ? 0.8 : 0.0;
-			r64 e = 0.2;
+			r64 e = 0.0;
 			// @NOTE: equation (34) was modified here
 			fact = -vn + MIN(-e * vn_til, 0.0);
 			// update delta_v
@@ -579,26 +578,12 @@ void pbd_simulate(r64 dt, Entity* entities) {
 			vec3 p = gm_vec3_scalar_product(1.0 / (_w1 + _w2), delta_v);
 
 			if (!e1->fixed) {
-				e1->updated_linear_velocity = gm_vec3_add(e1->updated_linear_velocity, gm_vec3_scalar_product(e1->inverse_mass, p));
-				e1->updated_angular_velocity = gm_vec3_add(e1->updated_angular_velocity, gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1_wc, p)));
-				e1->updated_velocities_num++;
+				e1->linear_velocity = gm_vec3_add(e1->linear_velocity, gm_vec3_scalar_product(e1->inverse_mass, p));
+				e1->angular_velocity = gm_vec3_add(e1->angular_velocity, gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1_wc, p)));
 			}
 			if (!e2->fixed) {
-				e2->updated_linear_velocity = gm_vec3_add(e2->updated_linear_velocity, gm_vec3_negative(gm_vec3_scalar_product(e2->inverse_mass, p)));
-				e2->updated_angular_velocity = gm_vec3_add(e2->updated_angular_velocity, gm_vec3_negative(gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2_wc, p))));
-				e2->updated_velocities_num++;
-			}
-		}
-
-		// @TODO: CHECK THIS
-		for (u32 j = 0; j < array_length(entities); ++j) {
-			Entity* e = &entities[j];
-			if (e->fixed) continue;
-			if (!e->active) continue;
-
-			if (e->updated_velocities_num > 0) {
-				e->linear_velocity = gm_vec3_add(e->linear_velocity, gm_vec3_scalar_product(1.0 / e->updated_velocities_num, e->updated_linear_velocity));
-				e->angular_velocity = gm_vec3_add(e->angular_velocity, gm_vec3_scalar_product(1.0 / e->updated_velocities_num, e->updated_angular_velocity));
+				e2->linear_velocity = gm_vec3_add(e2->linear_velocity, gm_vec3_negative(gm_vec3_scalar_product(e2->inverse_mass, p)));
+				e2->angular_velocity = gm_vec3_add(e2->angular_velocity, gm_vec3_negative(gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2_wc, p))));
 			}
 		}
 
