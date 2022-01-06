@@ -22,7 +22,7 @@ static boolean is_mouse_bound_to_entity_movement;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
-	vec3 camera_position = (vec3) { 0.0, 5.0, 15.0 };
+	vec3 camera_position = (vec3) { 5000.0, 3.0, 5010.0 };
 	r64 camera_near_plane = -0.01;
 	r64 camera_far_plane = -1000.0;
 	r64 camera_fov = 45.0;
@@ -34,10 +34,17 @@ static Light* create_lights() {
 	Light light;
 	Light* lights = array_new(Light);
 
-	vec3 light_position = (vec3) {0.0, 0.0, 15.0};
+	vec3 light_position = (vec3) {5000.0, 2.0, 5005.0};
 	vec4 ambient_color = (vec4) {0.1, 0.1, 0.1, 1.0};
 	vec4 diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0};
 	vec4 specular_color = (vec4) {0.5, 0.5, 0.5, 1.0};
+	graphics_light_create(&light, light_position, ambient_color, diffuse_color, specular_color);
+	array_push(lights, light);
+
+	light_position = (vec3) {0.0, 0.0, 15.0};
+	ambient_color = (vec4) {0.1, 0.1, 0.1, 1.0};
+	diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0};
+	specular_color = (vec4) {0.5, 0.5, 0.5, 1.0};
 	graphics_light_create(&light, light_position, ambient_color, diffuse_color, specular_color);
 	array_push(lights, light);
 
@@ -58,16 +65,16 @@ int core_init() {
 
 	Entity e;
 	Mesh m = graphics_mesh_create_from_obj("./res/floor.obj", COLLIDER_TYPE_CONVEX_HULL);
-	graphics_entity_create_with_color_fixed(&e, m, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+	graphics_entity_create_with_color_fixed(&e, m, (vec3){5000.0, -2.0, 5000.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
 		(vec3){1.0, 1.0, 1.0}, (fvec4){1.0f, 1.0f, 1.0f, 1.0f});
 	array_push(entities, e);
 
 	r64 y = -2.0;
 
-	for (u32 i = 0; i < 2; ++i) {
-		y += 2.1;
+	for (u32 i = 0; i < 1; ++i) {
+		y += 3.0;
 		Mesh m2 = graphics_mesh_create_from_obj("./res/cube.obj", COLLIDER_TYPE_CONVEX_HULL);
-		graphics_entity_create_with_color(&e, m2, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+		graphics_entity_create_with_color(&e, m2, (vec3){5000.0, y, 5000.0}, quaternion_new((vec3){1.0, 1.0, 1.0}, 20.0),
 			(vec3){1.0, 1.0, 1.0}, (fvec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0);
 		//e.world_position = (vec3){-0.000944963249, -0.0000153643723, -0.00111608475};
 		//e.world_rotation = (Quaternion){0.00000165915253, -0.00146911771, -9.74293812E-7, 0.999998986};
@@ -86,7 +93,7 @@ void core_destroy() {
 boolean paused = false;
 
 void core_update(r64 delta_time) {
-	delta_time = 0.15;
+	delta_time = 0.02;
 	//delta_time = 0.01;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
