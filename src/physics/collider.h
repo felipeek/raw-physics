@@ -24,7 +24,7 @@ typedef enum {
 
 typedef struct {
 	Collider_Type type;
-	r32 bounding_sphere_radius;
+	r64 bounding_sphere_radius;
 	union {
 		Collider_Convex_Hull convex_hull;
 	};

@@ -10,7 +10,7 @@ Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities) {
 		for (u32 j = i + 1; j < array_length(entities); ++j) {
 			Entity* e2 = &entities[j];
 
-			r32 entities_distance = gm_vec3_length(gm_vec3_subtract(e1->world_position, e2->world_position));
+			r64 entities_distance = gm_vec3_length(gm_vec3_subtract(e1->world_position, e2->world_position));
 			if (entities_distance <= e1->collider.bounding_sphere_radius + e2->collider.bounding_sphere_radius) {
 				pair.e1 = e1;
 				pair.e2 = e2;

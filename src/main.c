@@ -118,7 +118,7 @@ static void init_glew()
 
 s32 main(s32 argc, s8** argv)
 {
-	r32 delta_time = 0.0f;
+	r64 delta_time = 0.0;
 	main_window = init_glfw();
 	init_glew();
 
@@ -159,7 +159,7 @@ s32 main(s32 argc, s8** argv)
 		else
 			++fps;
 
-		delta_time = (r32)(current_frame - last_frame);
+		delta_time = (r64)(current_frame - last_frame);
 
 		last_frame = current_frame;
 	}

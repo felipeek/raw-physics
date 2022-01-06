@@ -2,6 +2,7 @@
 #include <hash_map.h>
 #include <memory.h>
 #include <light_array.h>
+#include <limits.h>
 
 static int vertex_compare(const void *key1, const void *key2) {
 	vec3 v1 = *(vec3*)key1;
@@ -11,12 +12,12 @@ static int vertex_compare(const void *key1, const void *key2) {
 
 static unsigned int vertex_hash(const void *key) {
 	vec3 v = *(vec3*)key;
-	unsigned int x, y, z;
-	assert(sizeof(r32) == sizeof(unsigned int));
-	memcpy(&x, &v.x, sizeof(r32));
-	memcpy(&y, &v.y, sizeof(r32));
-	memcpy(&z, &v.z, sizeof(r32));
-	return x + y + z;
+	unsigned long long x, y, z;
+	assert(sizeof(r64) == sizeof(unsigned long long));
+	memcpy(&x, &v.x, sizeof(r64));
+	memcpy(&y, &v.y, sizeof(r64));
+	memcpy(&z, &v.z, sizeof(r64));
+	return (unsigned int)((x + y + z) % UINT_MAX);
 }
 
 static boolean do_triangles_share_same_vertex(dvec3 t1, dvec3 t2) {
@@ -41,7 +42,7 @@ static boolean do_faces_share_same_vertex(u32* e1, u32* e2) {
 
 static void collect_faces_planar_to(vec3* hull, dvec3* hull_triangle_faces, u32** triangle_faces_to_neighbor_faces_map,
 	boolean* is_triangle_face_already_processed_arr, u32 face_to_test_idx, vec3 target_normal, dvec3** out) {
-	const r32 EPSILON = 0.000001f;
+	const r64 EPSILON = 0.000001;
 	dvec3 face_to_test = hull_triangle_faces[face_to_test_idx];
 	vec3 v1 = hull[face_to_test.x];
 	vec3 v2 = hull[face_to_test.y];
@@ -55,9 +56,9 @@ static void collect_faces_planar_to(vec3* hull, dvec3* hull_triangle_faces, u32*
 		return;
 	}
 
-	r32 projection = gm_vec3_dot(face_normal, target_normal);
+	r64 projection = gm_vec3_dot(face_normal, target_normal);
 
-	if ((projection - 1.0f) > -EPSILON && (projection - 1.0f) < EPSILON) {
+	if ((projection - 1.0) > -EPSILON && (projection - 1.0) < EPSILON) {
 		array_push(*out, face_to_test);
 		is_triangle_face_already_processed_arr[face_to_test_idx] = true;
 
@@ -168,11 +169,11 @@ static boolean is_neighbor_already_in_vertex_to_neighbors_map(u32* vertex_to_nei
 	return false;
 }
 
-static r32 get_convex_hull_bounding_sphere_radius(const vec3* hull) {
-	r32 max_distance = 0.0f;
+static r64 get_convex_hull_bounding_sphere_radius(const vec3* hull) {
+	r64 max_distance = 0.0;
 	for (u32 i = 0; i < array_length(hull); ++i) {
 		vec3 v = hull[i];
-		r32 distance = gm_vec3_length(v);
+		r64 distance = gm_vec3_length(v);
 		if (distance > max_distance) {
 			max_distance = distance;
 		}
@@ -407,10 +408,10 @@ void collider_update(Collider* collider, mat4 model_matrix_no_scale) {
 					collider->convex_hull.vertices[i].x,
 					collider->convex_hull.vertices[i].y,
 					collider->convex_hull.vertices[i].z,
-					1.0f
+					1.0
 				};
 				vec4 transformed_vertex = gm_mat4_multiply_vec4(&model_matrix_no_scale, vertex);
-				transformed_vertex = gm_vec4_scalar_product(1.0f / transformed_vertex.w, transformed_vertex);
+				transformed_vertex = gm_vec4_scalar_product(1.0 / transformed_vertex.w, transformed_vertex);
 				collider->convex_hull.transformed_vertices[i] = gm_vec4_to_vec3(transformed_vertex);
 			}
 

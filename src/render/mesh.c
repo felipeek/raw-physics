@@ -21,24 +21,24 @@ Mesh graphics_quad_create()
 	u32* indices = array_new(u32);
 
 	Vertex v;
-	v.position = (vec3) { 0.0f, 0.0f, 0.0f};
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f};
-	v.texture_coordinates = (vec2) { 0.0f, 0.0f };
+	v.position = (fvec3) { 0.0f, 0.0f, 0.0f};
+	v.normal = (fvec3) { 0.0f, 0.0f, 1.0f};
+	v.texture_coordinates = (fvec2) { 0.0f, 0.0f };
 	array_push(vertices, v);
 
-	v.position = (vec3) { size, 0.0f, 0.0f };
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f };
-	v.texture_coordinates = (vec2) { 1.0f, 0.0f };
+	v.position = (fvec3) { size, 0.0f, 0.0f };
+	v.normal = (fvec3) { 0.0f, 0.0f, 1.0f };
+	v.texture_coordinates = (fvec2) { 1.0f, 0.0f };
 	array_push(vertices, v);
 
-	v.position = (vec3) { 0.0f, size, 0.0f };
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f };
-	v.texture_coordinates = (vec2) { 0.0f, 1.0f };
+	v.position = (fvec3) { 0.0f, size, 0.0f };
+	v.normal = (fvec3) { 0.0f, 0.0f, 1.0f };
+	v.texture_coordinates = (fvec2) { 0.0f, 1.0f };
 	array_push(vertices, v);
 
-	v.position = (vec3) { size, size, 0.0f };
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f };
-	v.texture_coordinates = (vec2) { 1.0f, 1.0f };
+	v.position = (fvec3) { size, size, 0.0f };
+	v.normal = (fvec3) { 0.0f, 0.0f, 1.0f };
+	v.texture_coordinates = (fvec2) { 1.0f, 1.0f };
 	array_push(vertices, v);
 
 	array_push(indices, 0);

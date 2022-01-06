@@ -12,7 +12,7 @@
 #include "physics/pbd.h"
 #include "entity.h"
 
-#define GIM_ENTITY_COLOR (vec4) {1.0f, 1.0f, 1.0f, 1.0f}
+#define GIM_ENTITY_COLOR (vec4) {1.0, 1.0, 1.0, 1.0}
 
 static Perspective_Camera camera;
 static Light* lights;
@@ -24,7 +24,11 @@ static boolean is_mouse_bound_to_entity_movement;
 static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
 	vec3* vertices_positions = array_new(vec3);
 	for (u32 i = 0; i < array_length(vertices); ++i) {
-		vec3 position = vertices[i].position;
+		vec3 position = (vec3) {
+			(r64)vertices[i].position.x,
+			(r64)vertices[i].position.y,
+			(r64)vertices[i].position.z
+		};
 		position.x *= scale.x;
 		position.y *= scale.y;
 		position.z *= scale.z;
@@ -48,12 +52,18 @@ static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
 	return collider;
 }
 
+//#define NEAR_ORIGIN
+
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
-	vec3 camera_position = (vec3) { 0.0f, 5.0f, 15.0f };
-	r32 camera_near_plane = -0.01f;
-	r32 camera_far_plane = -1000.0f;
-	r32 camera_fov = 45.0f;
+#ifdef NEAR_ORIGIN
+	vec3 camera_position = (vec3) { 0.0, 5.0, 15.0 };
+#else
+	vec3 camera_position = (vec3) { 5000.0, 5.0, 5015.0 };
+#endif
+	r64 camera_near_plane = -0.01;
+	r64 camera_far_plane = -1000.0;
+	r64 camera_fov = 45.0;
 	camera_init(&camera, camera_position, camera_near_plane, camera_far_plane, camera_fov);
 	return camera;
 }
@@ -62,10 +72,17 @@ static Light* create_lights() {
 	Light light;
 	Light* lights = array_new(Light);
 
-	vec3 light_position = (vec3) {0.0f, 0.0f, 15.0f};
-	vec4 ambient_color = (vec4) {0.1f, 0.1f, 0.1f, 1.0f};
-	vec4 diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0f};
-	vec4 specular_color = (vec4) {0.5f, 0.5f, 0.5f, 1.0f};
+	vec3 light_position = (vec3) {0.0, 0.0, 15.0};
+	vec4 ambient_color = (vec4) {0.1, 0.1, 0.1, 1.0};
+	vec4 diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0};
+	vec4 specular_color = (vec4) {0.5, 0.5, 0.5, 1.0};
+	graphics_light_create(&light, light_position, ambient_color, diffuse_color, specular_color);
+	array_push(lights, light);
+
+	light_position = (vec3) {5005.0, 5.0, 5005.0};
+	ambient_color = (vec4) {0.1, 0.1, 0.1, 1.0};
+	diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0};
+	specular_color = (vec4) {0.5, 0.5, 0.5, 1.0};
 	graphics_light_create(&light, light_position, ambient_color, diffuse_color, specular_color);
 	array_push(lights, light);
 
@@ -91,10 +108,15 @@ int core_init() {
 	u32* floor_indices;
 	obj_parse("./res/floor.obj", &floor_vertices, &floor_indices);
 	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
-	vec3 floor_scale = (vec3){1.0f, 1.0f, 1.0f};
+	vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
 	Collider floor_collider = create_collider(floor_vertices, floor_indices, floor_scale);
-	entity_create_fixed(&e, floor_mesh, (vec3){0.0f, -2.0f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
-		floor_scale, (vec4){1.0f, 1.0f, 1.0f, 1.0f}, floor_collider);
+#ifdef NEAR_ORIGIN
+	entity_create_fixed(&e, floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
+#else
+	entity_create_fixed(&e, floor_mesh, (vec3){5000.0, -2.0, 5000.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
+#endif
 	array_push(entities, e);
 	array_free(floor_vertices);
 	array_free(floor_indices);
@@ -105,43 +127,48 @@ int core_init() {
 #ifdef DUMP2
 	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
 	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
-	vec3 cube_scale = (vec3){5.0f, 1.0f, 1.0f};
+	vec3 cube_scale = (vec3){5.0, 1.0, 1.0};
 
 	Collider cube_collider1 = create_collider(cube_vertices, cube_indices, cube_scale);
-	entity_create(&e, cube_mesh, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
-		cube_scale, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider1);
+	entity_create(&e, cube_mesh, (vec3){0.0, 2.1, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		cube_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, cube_collider1);
 	array_push(entities, e);
 
 	Collider cube_collider2 = create_collider(cube_vertices, cube_indices, cube_scale);
-	entity_create(&e, cube_mesh, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
-		cube_scale, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider2);
+	entity_create(&e, cube_mesh, (vec3){0.0, 7.1, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 80.0),
+		cube_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, cube_collider2);
 	array_push(entities, e);
 #elif DUMP1
 	obj_parse("./res/cube5.obj", &cube_vertices, &cube_indices);
 	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
-	vec3 cube_scale = (vec3){1.0f, 1.0f, 1.0f};
+	vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
 
 	Collider cube_collider1 = create_collider(cube_vertices, cube_indices, cube_scale);
-	entity_create(&e, cube_mesh, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
-		cube_scale, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider1);
+	entity_create(&e, cube_mesh, (vec3){0.0, 2.1, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		cube_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, cube_collider1);
 	array_push(entities, e);
 
 	Collider cube_collider2 = create_collider(cube_vertices, cube_indices, cube_scale);
-	entity_create(&e, cube_mesh, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
-		cube_scale, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider2);
+	entity_create(&e, cube_mesh, (vec3){0.0, 7.1, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 80.0),
+		cube_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, cube_collider2);
 	array_push(entities, e);
 #else
 	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
 	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
-	vec3 cube_scale = (vec3){2.0f, 1.0f, 1.0f};
+	vec3 cube_scale = (vec3){2.0, 1.0, 1.0};
 #if 1
-	r32 y = -2.0f;
+	r64 y = -2.0;
 
-	for (u32 i = 0; i < 6; ++i) {
-		y += 2.1f;
+	for (u32 i = 0; i < 1; ++i) {
+		y += 2.1;
 		Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
-		entity_create(&e, cube_mesh, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
-			cube_scale, (vec4){1.0f, i == 1 ? 1.0f : 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider);
+#ifdef NEAR_ORIGIN
+		entity_create(&e, cube_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+			cube_scale, (vec4){1.0, i == 1 ? 1.0 : 0.0, 0.0, 1.0}, 1.0, cube_collider);
+#else
+		entity_create(&e, cube_mesh, (vec3){5000.0, y, 5000.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+			cube_scale, (vec4){1.0, i == 1 ? 1.0 : 0.0, 0.0, 1.0}, 1.0, cube_collider);
+#endif
 		array_push(entities, e);
 	}
 #else
@@ -149,13 +176,13 @@ int core_init() {
 	entity_create(&e, cube_mesh,
 		(vec3){-0.00032446216209791600704193115234375000000000000000, -0.00048259110189974308013916015625000000000000000000, -0.00083085161168128252029418945312500000000000000000},
 		(Quaternion){0.00008157819684129208326339721679687500000000000000, -0.00005706563752028159797191619873046875000000000000, -0.00012570111721288412809371948242187500000000000000, 1.00000000000000000000000000000000000000000000000000},
-		cube_scale, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider);
+		cube_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, cube_collider);
 	array_push(entities, e);
 	cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
 	entity_create(&e, cube_mesh,
 		(vec3){-0.00334974960424005985260009765625000000000000000000, 1.99841976165771484375000000000000000000000000000000, -0.00400378368794918060302734375000000000000000000000},
 		(Quaternion){-0.00058600632473826408386230468750000000000000000000, -0.00048356491606682538986206054687500000000000000000, -0.00006656459299847483634948730468750000000000000000, 0.99999976158142089843750000000000000000000000000000},
-		cube_scale, (vec4){1.0f, 1.0f, 0.0f, 1.0f}, 1.0f, cube_collider);
+		cube_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, cube_collider);
 	array_push(entities, e);
 #endif
 #endif
@@ -182,7 +209,7 @@ void core_destroy() {
 boolean paused = false;
 int dt_idx = 0;
 
-void core_update(r32 delta_time) {
+void core_update(r64 delta_time) {
 	//if (dt_idx < array_length(dt_arr)) {
 	//	delta_time = dt_arr[dt_idx];
 	//	dt_idx++;
@@ -204,11 +231,11 @@ void core_update(r32 delta_time) {
 	}
 
 #if 1
-	const r32 GRAVITY = 10.0f;
+	const r64 GRAVITY = 10.0;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Physics_Force pf;
-		pf.force = (vec3){0.0f, -GRAVITY * 1.0f / entities[i].inverse_mass, 0.0f};
-		pf.position = (vec3){0.0f, 0.0f, 0.0f};
+		pf.force = (vec3){0.0, -GRAVITY * 1.0 / entities[i].inverse_mass, 0.0};
+		pf.position = (vec3){0.0, 0.0, 0.0};
 		array_push(entities[i].forces, pf);
 	}
 
@@ -226,10 +253,10 @@ void core_render() {
 	//vec3 point2 = _p2;
 	//vec3 normal = _n;
 
-	//graphics_renderer_debug_points(&point1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	//graphics_renderer_debug_points(&point2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	//graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	//graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+	//graphics_renderer_debug_points(&point1, 1, (vec4){1.0, 1.0, 1.0, 1.0});
+	//graphics_renderer_debug_points(&point2, 1, (vec4){1.0, 1.0, 1.0, 1.0});
+	//graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0, 1.0, 1.0, 1.0});
+	//graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0, 1.0, 1.0, 1.0});
 	#else
 	Entity* e1 = &entities[0];
 	Entity* e2 = &entities[1];
@@ -238,17 +265,17 @@ void core_render() {
 	vec3 normal;
 	boolean collision = false;
 	if (gjk_collides(e1->collider.convex_hull.transformed_vertices, e2->collider.convex_hull.transformed_vertices, &simplex)) {
-		r32 pen;
+		r64 pen;
 		if (epa(e1->collider.convex_hull.transformed_vertices, e2->collider.convex_hull.transformed_vertices, &simplex, &normal, &pen)) {
-			e1->diffuse_info.diffuse_color = (vec4){0.0f, 1.0f, 0.0f, 1.0f};
-			e2->diffuse_info.diffuse_color = (vec4){0.0f, 1.0f, 0.0f, 1.0f};
+			e1->diffuse_info.diffuse_color = (vec4){0.0, 1.0, 0.0, 1.0};
+			e2->diffuse_info.diffuse_color = (vec4){0.0, 1.0, 0.0, 1.0};
 
 			contacts = clipping_get_contact_manifold(&e1->collider.convex_hull, &e2->collider.convex_hull, normal);
 			collision = true;
 		}
 	} else {
-		e1->diffuse_info.diffuse_color = (vec4){1.0f, 0.0f, 0.0f, 1.0f};
-		e2->diffuse_info.diffuse_color = (vec4){1.0f, 0.0f, 0.0f, 1.0f};
+		e1->diffuse_info.diffuse_color = (vec4){1.0, 0.0, 0.0, 1.0};
+		e2->diffuse_info.diffuse_color = (vec4){1.0, 0.0, 0.0, 1.0};
 	}
 	if (collision) {
 		for (u32 i = 0; i < array_length(contacts); ++i) {
@@ -256,10 +283,10 @@ void core_render() {
 
 			vec3 cp1 = contact->collision_point1;
 			vec3 cp2 = contact->collision_point2;
-			graphics_renderer_debug_points(&cp1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			graphics_renderer_debug_points(&cp2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			graphics_renderer_debug_vector(cp1, gm_vec3_add(cp1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-			graphics_renderer_debug_vector(cp2, gm_vec3_add(cp2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+			graphics_renderer_debug_points(&cp1, 1, (vec4){1.0, 1.0, 1.0, 1.0});
+			graphics_renderer_debug_points(&cp2, 1, (vec4){1.0, 1.0, 1.0, 1.0});
+			graphics_renderer_debug_vector(cp1, gm_vec3_add(cp1, normal), (vec4){1.0, 1.0, 1.0, 1.0});
+			graphics_renderer_debug_vector(cp2, gm_vec3_add(cp2, normal), (vec4){1.0, 1.0, 1.0, 1.0});
 		}
 	}
 	#endif
@@ -271,14 +298,14 @@ void core_render() {
 	graphics_renderer_primitives_flush(&camera);
 }
 
-void core_input_process(boolean* key_state, r32 delta_time) {
-	r32 movement_speed = 3.0f;
-	r32 rotation_speed = 300.0f;
+void core_input_process(boolean* key_state, r64 delta_time) {
+	r64 movement_speed = 3.0;
+	r64 rotation_speed = 300.0;
 
 	if (key_state[GLFW_KEY_LEFT_SHIFT])
-		movement_speed = 0.5f;
+		movement_speed = 0.5;
 	if (key_state[GLFW_KEY_RIGHT_SHIFT])
-		movement_speed = 0.01f;
+		movement_speed = 0.01;
 
 	if (key_state[GLFW_KEY_W])
 		camera_move_forward(&camera, movement_speed * delta_time);
@@ -292,12 +319,12 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 	{
 		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
 		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, rotation_speed * delta_time);
+			Quaternion rotation = quaternion_new((vec3){1.0, 0.0, 0.0}, rotation_speed * delta_time);
 			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 		else
 		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, -rotation_speed * delta_time);
+			Quaternion rotation = quaternion_new((vec3){1.0, 0.0, 0.0}, -rotation_speed * delta_time);
 			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 	}
@@ -305,12 +332,12 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 	{
 		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
 		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, rotation_speed * delta_time);
+			Quaternion rotation = quaternion_new((vec3){0.0, 1.0, 0.0}, rotation_speed * delta_time);
 			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 		else
 		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, -rotation_speed * delta_time);
+			Quaternion rotation = quaternion_new((vec3){0.0, 1.0, 0.0}, -rotation_speed * delta_time);
 			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 	}
@@ -318,12 +345,12 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 	{
 		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
 		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, rotation_speed * delta_time);
+			Quaternion rotation = quaternion_new((vec3){0.0, 0.0, 1.0}, rotation_speed * delta_time);
 			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 		else
 		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, -rotation_speed * delta_time);
+			Quaternion rotation = quaternion_new((vec3){0.0, 0.0, 1.0}, -rotation_speed * delta_time);
 			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 	}
@@ -348,7 +375,7 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 	if (key_state[GLFW_KEY_SPACE]) {
 		vec3 camera_z = camera_get_z_axis(&camera);
 		vec3 camera_pos = camera.position;
-		r32 distance = 5.0f;
+		r64 distance = 5.0;
 		vec3 diff = gm_vec3_scalar_product(-distance, camera_z);
 		vec3 cube_position = gm_vec3_add(camera_pos, diff);
 
@@ -356,29 +383,29 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 		char* mesh_name;
 		int r = rand();
 		if (r % 3 == 0) {
-			mesh_name = "./res/ico.obj";
+			mesh_name = "./res/cube.obj";
 		} else if (r % 3 == 1) {
-			mesh_name = "./res/ico.obj";
+			mesh_name = "./res/cube.obj";
 		} else {
-			mesh_name = "./res/ico.obj";
+			mesh_name = "./res/cube.obj";
 		}
 		Vertex* vertices;
 		u32* indices;
 		obj_parse(mesh_name, &vertices, &indices);
 		Mesh m = graphics_mesh_create(vertices, indices);
-		vec3 scale = (vec3){1.0f, 1.0f, 1.0f};
+		vec3 scale = (vec3){1.0, 1.0, 1.0};
 		Collider collider = create_collider(vertices, indices, scale);
-		entity_create(&e, m, cube_position, quaternion_new((vec3){0.35f, 0.44f, 0.12f}, 0.0f),
-			scale, (vec4){rand() / (r32)RAND_MAX, rand() / (r32)RAND_MAX, rand() / (r32)RAND_MAX, 1.0f}, 1.0f, collider);
+		entity_create(&e, m, cube_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
+			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 1.0, collider);
 		array_free(vertices);
 		array_free(indices);
 
 		//Physics_Force force;
-		//force.force = gm_vec3_scalar_product(15000.0f, gm_vec3_scalar_product(-1.0f, camera_z));
-		//force.position = (vec3) {0.0f, 0.0f, 0.0f};
+		//force.force = gm_vec3_scalar_product(15000.0, gm_vec3_scalar_product(-1.0, camera_z));
+		//force.position = (vec3) {0.0, 0.0, 0.0};
 		//array_push(e.forces, force);
 
-		e.linear_velocity = gm_vec3_scalar_product(10.0f, gm_vec3_scalar_product(-1.0f, camera_z));
+		e.linear_velocity = gm_vec3_scalar_product(5.0, gm_vec3_scalar_product(-1.0, camera_z));
 
 		//if (array_length(entities) == 2) {
 		//	entities[1] = e;
@@ -406,9 +433,9 @@ void core_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 		vec3 camera_y = camera_get_y_axis(&camera);
 		vec3 camera_x = camera_get_x_axis(&camera);
 
-		static const r32 target_point_move_speed = 0.001f;
-		vec3 y_diff = gm_vec3_scalar_product(-target_point_move_speed * (r32)y_difference, camera_y);
-		vec3 x_diff = gm_vec3_scalar_product(target_point_move_speed * (r32)x_difference, camera_x);
+		static const r64 target_point_move_speed = 0.001;
+		vec3 y_diff = gm_vec3_scalar_product(-target_point_move_speed * (r64)y_difference, camera_y);
+		vec3 x_diff = gm_vec3_scalar_product(target_point_move_speed * (r64)x_difference, camera_x);
 
 		vec3 position = entities[1].world_position;
 		position = gm_vec3_add(position, y_diff);
@@ -416,9 +443,9 @@ void core_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 		entity_set_position(&entities[1], position);
 	} else {
 		// NORMAL CAMERA MOVEMENT!
-		static const r32 camera_mouse_speed = 0.1f;
-		camera_rotate_x(&camera, camera_mouse_speed * (r32)x_difference);
-		camera_rotate_y(&camera, camera_mouse_speed * (r32)y_difference);
+		static const r64 camera_mouse_speed = 0.1;
+		camera_rotate_x(&camera, camera_mouse_speed * (r64)x_difference);
+		camera_rotate_y(&camera, camera_mouse_speed * (r64)y_difference);
 	}
 }
 

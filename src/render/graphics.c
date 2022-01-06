@@ -6,6 +6,7 @@
 #include <stb_image_write.h>
 #include <light_array.h>
 #include <math.h>
+#include "../util.h"
 
 #define PHONG_VERTEX_SHADER_PATH "./shaders/phong_shader.vs"
 #define PHONG_FRAGMENT_SHADER_PATH "./shaders/phong_shader.fs"
@@ -46,8 +47,8 @@ Float_Image_Data graphics_float_image_copy(const Float_Image_Data* image_data)
 
 	fid = *image_data;
 
-	fid.data = malloc(sizeof(r32) * fid.width * fid.height * fid.channels);
-	memcpy(fid.data, image_data->data, sizeof(r32) * fid.width * fid.height * fid.channels);
+	fid.data = malloc(sizeof(r64) * fid.width * fid.height * fid.channels);
+	memcpy(fid.data, image_data->data, sizeof(r64) * fid.width * fid.height * fid.channels);
 	
 	return fid;
 }
@@ -158,10 +159,10 @@ static void light_update_uniforms(const Light* lights, Shader shader)
 		GLint ambient_color_location = glGetUniformLocation(shader, build_light_uniform_name(buffer, i, "ambient_color"));
 		GLint diffuse_color_location = glGetUniformLocation(shader, build_light_uniform_name(buffer, i, "diffuse_color"));
 		GLint specular_color_location = glGetUniformLocation(shader, build_light_uniform_name(buffer, i, "specular_color"));
-		glUniform3f(light_position_location, light.position.x, light.position.y, light.position.z);
-		glUniform4f(ambient_color_location, light.ambient_color.x, light.ambient_color.y, light.ambient_color.z, light.ambient_color.w);
-		glUniform4f(diffuse_color_location, light.diffuse_color.x, light.diffuse_color.y, light.diffuse_color.z, light.diffuse_color.w);
-		glUniform4f(specular_color_location, light.specular_color.x, light.specular_color.y, light.specular_color.z, light.specular_color.w);
+		glUniform3f(light_position_location, (r32)light.position.x, (r32)light.position.y, (r32)light.position.z);
+		glUniform4f(ambient_color_location, (r32)light.ambient_color.x, (r32)light.ambient_color.y, (r32)light.ambient_color.z, (r32)light.ambient_color.w);
+		glUniform4f(diffuse_color_location, (r32)light.diffuse_color.x, (r32)light.diffuse_color.y, (r32)light.diffuse_color.z, (r32)light.diffuse_color.w);
+		glUniform4f(specular_color_location, (r32)light.specular_color.x, (r32)light.specular_color.y, (r32)light.specular_color.z, (r32)light.specular_color.w);
 	}
 
 	GLint light_quantity_location = glGetUniformLocation(shader, "light_quantity");
@@ -186,9 +187,13 @@ void graphics_entity_render_basic_shader(const Perspective_Camera* camera, const
 	GLint view_matrix_location = glGetUniformLocation(shader, "view_matrix");
 	GLint projection_matrix_location = glGetUniformLocation(shader, "projection_matrix");
 	mat4 model_matrix = entity_get_model_matrix(entity);
-	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, (GLfloat*)model_matrix.data);
-	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)camera->view_matrix.data);
-	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)camera->projection_matrix.data);
+	r32 model[16], view[16], proj[16];
+	util_matrix_to_r32_array(&model_matrix, model);
+	util_matrix_to_r32_array(&camera->view_matrix, view);
+	util_matrix_to_r32_array(&camera->projection_matrix, proj);
+	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, (GLfloat*)model);
+	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)view);
+	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)proj);
 	graphics_mesh_render(shader, entity->mesh);
 	glUseProgram(0);
 }
@@ -204,14 +209,18 @@ void graphics_entity_render_phong_shader(const Perspective_Camera* camera, const
 	GLint model_matrix_location = glGetUniformLocation(shader, "model_matrix");
 	GLint view_matrix_location = glGetUniformLocation(shader, "view_matrix");
 	GLint projection_matrix_location = glGetUniformLocation(shader, "projection_matrix");
-	glUniform3f(camera_position_location, camera->position.x, camera->position.y, camera->position.z);
+	glUniform3f(camera_position_location, (r32)camera->position.x, (r32)camera->position.y, (r32)camera->position.z);
 	glUniform1f(shineness_location, 128.0f);
 	mat4 model_matrix = entity_get_model_matrix(entity);
-	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, (GLfloat*)model_matrix.data);
-	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)camera->view_matrix.data);
-	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)camera->projection_matrix.data);
+	r32 model[16], view[16], proj[16];
+	util_matrix_to_r32_array(&model_matrix, model);
+	util_matrix_to_r32_array(&camera->view_matrix, view);
+	util_matrix_to_r32_array(&camera->projection_matrix, proj);
+	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, (GLfloat*)model);
+	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)view);
+	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)proj);
 	GLint diffuse_color_location = glGetUniformLocation(shader, "color");
-	glUniform4f(diffuse_color_location, entity->color.x, entity->color.y, entity->color.z, entity->color.w);
+	glUniform4f(diffuse_color_location, (r32)entity->color.x, (r32)entity->color.y, (r32)entity->color.z, (r32)entity->color.w);
 	graphics_mesh_render(shader, entity->mesh);
 	glUseProgram(0);
 }
@@ -238,7 +247,7 @@ u32 graphics_texture_create_from_data(const Image_Data* image_data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 
 	// Anisotropic Filtering
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0f);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -266,7 +275,7 @@ u32 graphics_texture_create_from_float_data(const Float_Image_Data* image_data)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 
 	// Anisotropic Filtering
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0f);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 4.0);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -297,25 +306,25 @@ void graphics_light_create(Light* light, vec3 position, vec4 ambient_color, vec4
 }
 
 // If memory is null, new memory will be allocated
-Float_Image_Data graphics_image_data_to_float_image_data(Image_Data* image_data, r32* memory)
+Float_Image_Data graphics_image_data_to_float_image_data(Image_Data* image_data, r64* memory)
 {
 	// @TODO: check WHY this is happening
 	s32 image_channels = image_data->channels;
 
 	if (!memory)
-		memory = (r32*)malloc(sizeof(r32) * image_data->height * image_data->width * image_channels);
+		memory = (r64*)malloc(sizeof(r64) * image_data->height * image_data->width * image_channels);
 
 	for (s32 i = 0; i < image_data->height; ++i)
 	{
 		for (s32 j = 0; j < image_data->width; ++j)
 		{
 			memory[i * image_data->width * image_channels + j * image_channels] =
-				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels] / 255.0f;
+				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels] / 255.0;
 			memory[i * image_data->width * image_channels + j * image_channels + 1] =
-				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels + 1] / 255.0f;
+				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels + 1] / 255.0;
 			memory[i * image_data->width * image_channels + j * image_channels + 2] =
-				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels + 2] / 255.0f;
-			memory[i * image_data->width * image_channels + j * image_channels + 3] = 1.0f;
+				image_data->data[i * image_data->width * image_data->channels + j * image_data->channels + 2] / 255.0;
+			memory[i * image_data->width * image_channels + j * image_channels + 3] = 1.0;
 		}
 	}
 
@@ -340,9 +349,9 @@ Image_Data graphics_float_image_data_to_image_data(const Float_Image_Data* float
 	{
 		for (s32 j = 0; j < float_image_data->width; ++j)
 		{
-			memory[i * float_image_data->width * image_channels + j * image_channels] = (u8)round(255.0f * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels]);
-			memory[i * float_image_data->width * image_channels + j * image_channels + 1] = (u8)round(255.0f * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels + 1]);
-			memory[i * float_image_data->width * image_channels + j * image_channels + 2] = (u8)round(255.0f * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels + 2]);
+			memory[i * float_image_data->width * image_channels + j * image_channels] = (u8)round(255.0 * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels]);
+			memory[i * float_image_data->width * image_channels + j * image_channels + 1] = (u8)round(255.0 * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels + 1]);
+			memory[i * float_image_data->width * image_channels + j * image_channels + 2] = (u8)round(255.0 * float_image_data->data[i * float_image_data->width * image_channels + j * image_channels + 2]);
 			if (float_image_data->channels > 3) memory[i * float_image_data->width * image_channels + j * image_channels + 3] = 255;
 		}
 	}
@@ -423,6 +432,10 @@ void graphics_renderer_primitives_flush(const Perspective_Camera* camera)
 	graphics_renderer_primitives_init();
 	glUseProgram(primitives_ctx.shader);
 
+	r32 view[16], proj[16];
+	util_matrix_to_r32_array(&camera->view_matrix, view);
+	util_matrix_to_r32_array(&camera->projection_matrix, proj);
+
 	// Vector
 	glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(primitives_ctx.vector_vao);
@@ -435,8 +448,8 @@ void graphics_renderer_primitives_flush(const Perspective_Camera* camera)
 	GLint view_matrix_location = glGetUniformLocation(primitives_ctx.shader, "view_matrix");
 	GLint projection_matrix_location = glGetUniformLocation(primitives_ctx.shader, "projection_matrix");
 
-	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat *) camera->view_matrix.data);
-	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat *) camera->projection_matrix.data);
+	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)view);
+	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)proj);
 
 	glDrawArrays(GL_LINES, 0, primitives_ctx.vertex_count);
 	primitives_ctx.vertex_count = 0;
@@ -449,10 +462,10 @@ void graphics_renderer_primitives_flush(const Perspective_Camera* camera)
 	glBindBuffer(GL_ARRAY_BUFFER, primitives_ctx.point_vbo);
 	glUnmapBuffer(GL_ARRAY_BUFFER);
 
-	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat *) camera->view_matrix.data);
-	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat *) camera->projection_matrix.data);
+	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)view);
+	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)proj);
 
-	glPointSize(10.0f);
+	glPointSize(10.0);
 	glDrawArrays(GL_POINTS, 0, primitives_ctx.point_count);
 	primitives_ctx.point_count = 0;
 	primitives_ctx.point_data_ptr = 0;

@@ -21,7 +21,7 @@ typedef struct {
 } Image_Data;
 
 typedef struct {
-	r32* data;
+	r64* data;
 	s32 width, height, channels;
 } Float_Image_Data;
 
@@ -31,7 +31,7 @@ Float_Image_Data graphics_float_image_copy(const Float_Image_Data* image_data);
 void graphics_image_free(Image_Data* image_data);
 void graphics_float_image_Free(Float_Image_Data* image_data);
 void graphics_image_save(const s8* image_path, const Image_Data* image_data);
-Float_Image_Data graphics_image_data_to_float_image_data(Image_Data* image_data, r32* memory);
+Float_Image_Data graphics_image_data_to_float_image_data(Image_Data* image_data, r64* memory);
 Image_Data graphics_float_image_data_to_image_data(const Float_Image_Data* float_image_Data, u8* memory);
 void graphics_float_image_save(const s8* image_path, const Float_Image_Data* image_data);
 

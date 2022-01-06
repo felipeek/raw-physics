@@ -4,9 +4,9 @@
 
 #pragma pack(push, 1)
 typedef struct {
-	vec3 position;
-	vec3 normal;
-	vec2 texture_coordinates;
+	fvec3 position;
+	fvec3 normal;
+	fvec2 texture_coordinates;
 } Vertex;
 #pragma pack(pop)
 
