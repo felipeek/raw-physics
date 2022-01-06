@@ -216,13 +216,13 @@ int core_init() {
 		cube_scale, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider2);
 	array_push(entities, e);
 #else
-	obj_parse("./res/cube2.obj", &cube_vertices, &cube_indices);
+	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
 	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
-	vec3 cube_scale = (vec3){1.0f, 1.0f, 1.0f};
+	vec3 cube_scale = (vec3){2.0f, 1.0f, 1.0f};
 #if 1
 	r32 y = -2.0f;
 
-	for (u32 i = 0; i < 9; ++i) {
+	for (u32 i = 0; i < 2; ++i) {
 		y += 2.1f;
 		Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
 		graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),

@@ -168,10 +168,23 @@ static boolean is_neighbor_already_in_vertex_to_neighbors_map(u32* vertex_to_nei
 	return false;
 }
 
+static r32 get_convex_hull_bounding_sphere_radius(const vec3* hull) {
+	r32 max_distance = 0.0f;
+	for (u32 i = 0; i < array_length(hull); ++i) {
+		vec3 v = hull[i];
+		r32 distance = gm_vec3_length(v);
+		if (distance > max_distance) {
+			max_distance = distance;
+		}
+	}
+
+	return max_distance;
+}
+
 // Create a convex hull from the vertices+indices
 // For now, we assume that the mesh is already a convex hull
 // This function only makes sure that vertices are unique - duplicated vertices will be merged.
-static Collider_Convex_Hull collider_convex_hull_create(const vec3* vertices, const u32* indices) {
+static Collider collider_convex_hull_create(const vec3* vertices, const u32* indices) {
 	Hash_Map vertex_to_idx_map;
 	hash_map_create(&vertex_to_idx_map, 1024, sizeof(vec3), sizeof(u32), vertex_compare, vertex_hash);
 
@@ -335,23 +348,21 @@ static Collider_Convex_Hull collider_convex_hull_create(const vec3* vertices, co
 	convex_hull.vertex_to_faces = vertex_to_faces_map;
 	convex_hull.vertex_to_neighbors = vertex_to_neighbors_map;
 	convex_hull.face_to_neighbors = face_to_neighbor_faces_map;
-	return convex_hull;
+
+	Collider collider;
+	collider.type = COLLIDER_TYPE_CONVEX_HULL;
+	collider.bounding_sphere_radius = get_convex_hull_bounding_sphere_radius(hull);
+	collider.convex_hull = convex_hull;
+	return collider;
 }
 
 Collider collider_create(const vec3* vertices, const u32* indices, Collider_Type type) {
-	Collider collider;
-	collider.type = type;
-
 	switch (type) {
 		case COLLIDER_TYPE_CONVEX_HULL: {
-			collider.convex_hull = collider_convex_hull_create(vertices, indices);
-		} break;
-		default: {
-			assert(0);
+			return collider_convex_hull_create(vertices, indices);
 		} break;
 	}
-
-	return collider;
+	assert(0);
 }
 
 void collider_update(Collider* collider, mat4 model_matrix_no_scale) {

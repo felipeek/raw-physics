@@ -5,6 +5,8 @@
 #include "gjk.h"
 #include "epa.h"
 #include "clipping.h"
+#include "broad.h"
+#include "../util.h"
 
 #define NUM_SUBSTEPS 50
 #define NUM_POS_ITERS 1
@@ -346,37 +348,51 @@ void pbd_simulate(r32 dt, Entity* entities) {
 		// Create the constraints array
 		Constraint* constraints = array_new(Constraint);
 
+		Broad_Collision_Pair* broad_collision_pairs = broad_get_collision_pairs(entities);
+		Entity*** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs);
+
+		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
+			Entity** simulation_island = simulation_islands[j];
+			vec4 color = util_pallete(j);
+			for (u32 k = 0; k < array_length(simulation_island); ++k) {
+				Entity* e = simulation_island[k];
+				e->diffuse_info.diffuse_color = color;
+			}
+		}
+
 		// As explained in sec 3.5, in each substep we need to check for collisions
 		// (I am not pre-collecting potential collision pairs.)
 		// Here we just check the plane-cube collision and collect the intersections.
-		for (u32 j = 0; j < array_length(entities); ++j) {
-			for (u32 k = j + 1; k < array_length(entities); ++k) {
-				Entity* e1 = &entities[j];
-				Entity* e2 = &entities[k];
+		//for (u32 j = 0; j < array_length(entities); ++j) {
+		//	for (u32 k = j + 1; k < array_length(entities); ++k) {
+		for (u32 j = 0; j < array_length(broad_collision_pairs); ++j) {
+			Entity* e1 = broad_collision_pairs[j].e1;
+			Entity* e2 = broad_collision_pairs[j].e2;
 
-				mat4 e1_model_matrix = graphics_entity_get_model_matrix_no_scale(e1);
-				mat4 e2_model_matrix = graphics_entity_get_model_matrix_no_scale(e2);
-				collider_update(&e1->collider, e1_model_matrix);
-				collider_update(&e2->collider, e2_model_matrix);
+			mat4 e1_model_matrix = graphics_entity_get_model_matrix_no_scale(e1);
+			mat4 e2_model_matrix = graphics_entity_get_model_matrix_no_scale(e2);
+			collider_update(&e1->collider, e1_model_matrix);
+			collider_update(&e2->collider, e2_model_matrix);
 
-				Collider_Convex_Hull* convex_hull1 = &e1->collider.convex_hull;
-				Collider_Convex_Hull* convex_hull2 = &e2->collider.convex_hull;
-				GJK_Simplex simplex;
-				if (gjk_collides(convex_hull1->transformed_vertices, convex_hull2->transformed_vertices, &simplex)) {
-					vec3 normal;
-					r32 penetration;
-					if (epa(convex_hull1->transformed_vertices, convex_hull2->transformed_vertices, &simplex, &normal, &penetration)) {
-						Clipping_Contact* contacts = clipping_get_contact_manifold(convex_hull1, convex_hull2, normal);
-						for (u32 l = 0; l < array_length(contacts); ++l) {
-							Clipping_Contact* contact = &contacts[l];
-							Constraint constraint;
-							clipping_contact_to_constraint(e1, e2, normal, contact, &constraint);
-							array_push(constraints, constraint);
-						}
+			Collider_Convex_Hull* convex_hull1 = &e1->collider.convex_hull;
+			Collider_Convex_Hull* convex_hull2 = &e2->collider.convex_hull;
+			GJK_Simplex simplex;
+			if (gjk_collides(convex_hull1->transformed_vertices, convex_hull2->transformed_vertices, &simplex)) {
+				vec3 normal;
+				r32 penetration;
+				if (epa(convex_hull1->transformed_vertices, convex_hull2->transformed_vertices, &simplex, &normal, &penetration)) {
+					Clipping_Contact* contacts = clipping_get_contact_manifold(convex_hull1, convex_hull2, normal);
+					for (u32 l = 0; l < array_length(contacts); ++l) {
+						Clipping_Contact* contact = &contacts[l];
+						Constraint constraint;
+						clipping_contact_to_constraint(e1, e2, normal, contact, &constraint);
+						array_push(constraints, constraint);
 					}
 				}
 			}
 		}
+
+		array_free(broad_collision_pairs);
 
 #if 0
 		int size = array_length(constraints);

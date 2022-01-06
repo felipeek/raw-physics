@@ -42,3 +42,33 @@ extern void util_free_file(s8* file)
 {
 	free(file);
 }
+
+#define COLOR_PALETTE_MAX_NUM 17
+static vec4 color_palette[COLOR_PALETTE_MAX_NUM];
+static boolean is_color_palette_initialized;
+
+vec4 util_pallete(u32 n) {
+	if (!is_color_palette_initialized) {
+		color_palette[0] =  (vec4){1.0f, 0.0f, 0.0f, 1.0f};
+		color_palette[1] =  (vec4){0.0f, 1.0f, 0.0f, 1.0f};
+		color_palette[2] =  (vec4){0.0f, 0.0f, 1.0f, 1.0f};
+		color_palette[3] =  (vec4){1.0f, 1.0f, 0.0f, 1.0f};
+		color_palette[4] =  (vec4){0.0f, 1.0f, 1.0f, 1.0f};
+		color_palette[5] =  (vec4){1.0f, 0.0f, 1.0f, 1.0f};
+		color_palette[6] =  (vec4){1.0f, 1.0f, 1.0f, 1.0f};
+		color_palette[7] =  (vec4){0.0f, 0.0f, 0.0f, 1.0f};
+		color_palette[8] =  (vec4){1.0f, 0.5f, 0.0f, 1.0f};
+		color_palette[9] =  (vec4){0.0f, 1.0f, 0.5f, 1.0f};
+		color_palette[10] = (vec4){0.5f, 0.0f, 1.0f, 1.0f};
+		color_palette[11] = (vec4){0.5f, 1.0f, 0.0f, 1.0f};
+		color_palette[12] = (vec4){0.0f, 0.5f, 1.0f, 1.0f};
+		color_palette[13] = (vec4){1.0f, 0.0f, 0.5f, 1.0f};
+		color_palette[14] = (vec4){1.0f, 1.0f, 0.5f, 1.0f};
+		color_palette[15] = (vec4){1.0f, 0.5f, 1.0f, 1.0f};
+		color_palette[16] = (vec4){0.5f, 1.0f, 1.0f, 1.0f};
+		is_color_palette_initialized = true;
+	}
+
+	u32 idx = n % COLOR_PALETTE_MAX_NUM;
+	return color_palette[idx];
+}
