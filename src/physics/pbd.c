@@ -8,10 +8,12 @@
 #include "broad.h"
 #include "../util.h"
 
-#define NUM_SUBSTEPS 50
+#define NUM_SUBSTEPS 70
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
 #define ENABLE_SIMULATION_ISLANDS
+
+extern boolean paused;
 
 // Calculate the sum of all external forces acting on an entity
 static vec3 calculate_external_force(Entity* e) {
@@ -180,11 +182,6 @@ static void solve_positional_constraint(Constraint* constraint, r32 h) {
 	constraint->positional_constraint.lambda += delta_lambda;
 }
 
-extern boolean paused;
-vec3 _p1;
-vec3 _p2;
-vec3 _n;
-
 // Solves the collision constraint, updating the position and orientation of the entities accordingly
 static void solve_collision_constraint(Constraint* constraint, r32 h) {
 	assert(constraint->type == COLLISION_CONSTRAINT);
@@ -206,8 +203,6 @@ static void solve_collision_constraint(Constraint* constraint, r32 h) {
 	vec3 p1 = gm_vec3_add(e1->world_position, r1_wc);
 	vec3 p2 = gm_vec3_add(e2->world_position, r2_wc);
 	r32 d = gm_vec3_dot(gm_vec3_subtract(p1, p2), normal);
-	//if (fabsf(d) > 0.002f) {
-	//}
 	vec3 delta_x = gm_vec3_scalar_product(d, normal);
 
 	if (d > 0.0f) {
@@ -392,7 +387,7 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			vec4 color = util_pallete(j);
 			for (u32 k = 0; k < array_length(simulation_island); ++k) {
 				Entity* e = simulation_island[k];
-				e->diffuse_info.diffuse_color = color;
+				e->color = color;
 			}
 		}
 #else
@@ -401,9 +396,9 @@ void pbd_simulate(r32 dt, Entity* entities) {
 			for (u32 k = 0; k < array_length(simulation_island); ++k) {
 				Entity* e = simulation_island[k];
 				if (e->active) {
-					e->diffuse_info.diffuse_color = util_pallete(1);
+					e->color = util_pallete(1);
 				} else {
-					e->diffuse_info.diffuse_color = util_pallete(0);
+					e->color = util_pallete(0);
 				}
 			}
 		}
@@ -429,8 +424,8 @@ void pbd_simulate(r32 dt, Entity* entities) {
 				continue;
 			}
 
-			mat4 e1_model_matrix = graphics_entity_get_model_matrix_no_scale(e1);
-			mat4 e2_model_matrix = graphics_entity_get_model_matrix_no_scale(e2);
+			mat4 e1_model_matrix = entity_get_model_matrix_no_scale(e1);
+			mat4 e2_model_matrix = entity_get_model_matrix_no_scale(e2);
 			collider_update(&e1->collider, e1_model_matrix);
 			collider_update(&e2->collider, e2_model_matrix);
 

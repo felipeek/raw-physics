@@ -139,83 +139,6 @@ static void init_predefined_shaders()
 	}
 }
 
-Mesh graphics_quad_create()
-{
-	r32 size = 1.0f;
-	Vertex* vertices = array_new(vertices);
-	u32* indices = array_new(u32);
-
-	Vertex v;
-	v.position = (vec3) { 0.0f, 0.0f, 0.0f};
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f};
-	v.texture_coordinates = (vec2) { 0.0f, 0.0f };
-	array_push(vertices, v);
-
-	v.position = (vec3) { size, 0.0f, 0.0f };
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f };
-	v.texture_coordinates = (vec2) { 1.0f, 0.0f };
-	array_push(vertices, v);
-
-	v.position = (vec3) { 0.0f, size, 0.0f };
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f };
-	v.texture_coordinates = (vec2) { 0.0f, 1.0f };
-	array_push(vertices, v);
-
-	v.position = (vec3) { size, size, 0.0f };
-	v.normal = (vec3) { 0.0f, 0.0f, 1.0f };
-	v.texture_coordinates = (vec2) { 1.0f, 1.0f };
-	array_push(vertices, v);
-
-	array_push(indices, 0);
-	array_push(indices, 1);
-	array_push(indices, 2);
-	array_push(indices, 1);
-	array_push(indices, 3);
-	array_push(indices, 2);
-
-	return graphics_mesh_create(vertices, indices);
-}
-
-Mesh graphics_mesh_create(Vertex* vertices, u32* indices)
-{
-	Mesh mesh;
-	GLuint VBO, EBO, VAO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-
-	glBindVertexArray(VAO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, array_length(vertices) * sizeof(Vertex), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, array_length(vertices) * sizeof(Vertex), vertices);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(0 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(2);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, array_length(indices) * sizeof(u32), 0, GL_STATIC_DRAW);
-	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, array_length(indices) * sizeof(u32), indices);
-
-	glBindVertexArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	mesh.VAO = VAO;
-	mesh.VBO = VBO;
-	mesh.EBO = EBO;
-	mesh.num_indices = array_length(indices);
-
-	return mesh;
-}
-
 static s8* build_light_uniform_name(s8* buffer, s32 index, const s8* property)
 {
 	sprintf(buffer, "lights[%d].%s", index, property);
@@ -245,184 +168,13 @@ static void light_update_uniforms(const Light* lights, Shader shader)
 	glUniform1i(light_quantity_location, number_of_lights);
 }
 
-static void diffuse_update_uniforms(const Diffuse_Info* diffuse_info, Shader shader)
-{
-	glUseProgram(shader);
-	GLint use_diffuse_map_location = glGetUniformLocation(shader, "diffuse_info.use_diffuse_map");
-	GLint diffuse_map_location = glGetUniformLocation(shader, "diffuse_info.diffuse_map");
-	GLint diffuse_color_location = glGetUniformLocation(shader, "diffuse_info.diffuse_color");
-	glUniform1i(use_diffuse_map_location, diffuse_info->use_diffuse_map);
-	if (diffuse_info->use_diffuse_map)
-	{
-		glUniform1i(diffuse_map_location, 0);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, diffuse_info->diffuse_map);
-	}
-	else
-		glUniform4f(diffuse_color_location, diffuse_info->diffuse_color.x, diffuse_info->diffuse_color.y,
-			diffuse_info->diffuse_color.z, diffuse_info->diffuse_color.w);
-}
-
-void graphics_mesh_render(Shader shader, Mesh mesh)
+static void graphics_mesh_render(Shader shader, Mesh mesh)
 {
 	glBindVertexArray(mesh.VAO);
 	glUseProgram(shader);
 	glDrawElements(GL_TRIANGLES, mesh.num_indices, GL_UNSIGNED_INT, 0);
 	glUseProgram(0);
 	glBindVertexArray(0);
-}
-
-void graphics_entity_change_diffuse_map(Entity* entity, u32 diffuse_map, boolean delete_diffuse_map)
-{
-	if (delete_diffuse_map && entity->diffuse_info.use_diffuse_map)
-		glDeleteTextures(1, &entity->diffuse_info.diffuse_map);
-
-	entity->diffuse_info.diffuse_map = diffuse_map;
-	entity->diffuse_info.use_diffuse_map = true;
-}
-
-void graphics_entity_change_color(Entity* entity, vec4 color, boolean delete_diffuse_map)
-{
-	if (delete_diffuse_map && entity->diffuse_info.use_diffuse_map)
-		glDeleteTextures(1, &entity->diffuse_info.diffuse_map);
-
-	entity->diffuse_info.use_diffuse_map = false;
-	entity->diffuse_info.diffuse_color = color;
-}
-
-mat4 graphics_entity_get_model_matrix(const Entity* entity)
-{
-	r32 s, c;
-
-	mat4 scale_matrix = (mat4) {
-		entity->world_scale.x, 0.0f, 0.0f, 0.0f,
-			0.0f, entity->world_scale.y, 0.0f, 0.0f,
-			0.0f, 0.0f, entity->world_scale.z, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-	};
-
-	mat4 rotation_matrix = quaternion_get_matrix(&entity->world_rotation);
-
-	mat4 translation_matrix = (mat4) {
-		1.0f, 0.0f, 0.0f, entity->world_position.x,
-			0.0f, 1.0f, 0.0f, entity->world_position.y,
-			0.0f, 0.0f, 1.0f, entity->world_position.z,
-			0.0f, 0.0f, 0.0f, 1.0f
-	};
-
-	mat4 model_matrix = gm_mat4_multiply(&rotation_matrix, &scale_matrix);
-	model_matrix = gm_mat4_multiply(&translation_matrix, &model_matrix);
-	return model_matrix;
-}
-
-mat4 graphics_entity_get_model_matrix_no_scale(const Entity* entity)
-{
-	r32 s, c;
-
-	mat4 rotation_matrix = quaternion_get_matrix(&entity->world_rotation);
-
-	mat4 translation_matrix = (mat4) {
-		1.0f, 0.0f, 0.0f, entity->world_position.x,
-			0.0f, 1.0f, 0.0f, entity->world_position.y,
-			0.0f, 0.0f, 1.0f, entity->world_position.z,
-			0.0f, 0.0f, 0.0f, 1.0f
-	};
-
-	mat4 model_matrix = gm_mat4_multiply(&translation_matrix, &rotation_matrix);
-	return model_matrix;
-}
-
-static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r32 mass) {
-	r32 mass_per_vertex = mass / array_length(vertices);
-	mat3 result = {0};
-	for (u32 i = 0; i < array_length(vertices); ++i) {
-		vec3 v = vertices[i];
-		result.data[0][0] += mass_per_vertex * (v.y * v.y + v.z * v.z);
-		result.data[0][1] += mass_per_vertex * v.x * v.y;
-		result.data[0][2] += mass_per_vertex * v.x * v.z;
-		result.data[1][0] += mass_per_vertex * v.x * v.y;
-		result.data[1][1] += mass_per_vertex * (v.x * v.x + v.z * v.z);
-		result.data[1][2] += mass_per_vertex * v.y * v.z;
-		result.data[2][0] += mass_per_vertex * v.x * v.z;
-		result.data[2][1] += mass_per_vertex * v.y * v.z;
-		result.data[2][2] += mass_per_vertex * (v.x * v.x + v.y * v.y);
-	}
-
-	return result;
-}
-
-void graphics_entity_create_with_color(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r32 mass, Collider collider)
-{
-	entity->mesh = mesh;
-	entity->world_position = world_position;
-	entity->world_rotation = world_rotation;
-	entity->world_scale = world_scale;
-	entity->diffuse_info.diffuse_color = color;
-	entity->diffuse_info.use_diffuse_map = false;
-	entity->angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->previous_angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->previous_linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->inverse_mass = 1.0f / mass;
-	entity->inertia_tensor = get_symmetric_inertia_tensor_for_object(collider.convex_hull.vertices, mass);
-	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
-	entity->forces = array_new(Physics_Force);
-	entity->fixed = false;
-	entity->active = true;
-	entity->deactivationTime = 0.0f;
-	entity->collider = collider;
-}
-
-void graphics_entity_create_with_color_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider)
-{
-	entity->mesh = mesh;
-	entity->world_position = world_position;
-	entity->world_rotation = world_rotation;
-	entity->world_scale = world_scale;
-	entity->diffuse_info.diffuse_color = color;
-	entity->diffuse_info.use_diffuse_map = false;
-	entity->angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->previous_angular_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->previous_linear_velocity = (vec3){0.0f, 0.0f, 0.0f};
-	entity->inverse_mass = 0.0f;
-	entity->inertia_tensor = (mat3){0}; // this is not correct, but it shouldn't make a difference
-	entity->inverse_inertia_tensor = (mat3){0};
-	entity->forces = array_new(Physics_Force);
-	entity->fixed = true;
-	entity->active = true; // meaningless for fixed entities
-	entity->deactivationTime = 0.0f;
-	entity->collider = collider;
-}
-
-void graphics_entity_destroy(Entity* entity)
-{
-	if (entity->diffuse_info.use_diffuse_map)
-		glDeleteTextures(1, &entity->diffuse_info.diffuse_map);
-}
-
-void graphics_entity_mesh_replace(Entity* entity, Mesh mesh, boolean delete_normal_map)
-{
-	glDeleteBuffers(1, &entity->mesh.VBO);
-	glDeleteBuffers(1, &entity->mesh.EBO);
-	glDeleteVertexArrays(1, &entity->mesh.VAO);
-
-	entity->mesh = mesh;
-}
-
-void graphics_entity_set_position(Entity* entity, vec3 world_position)
-{
-	entity->world_position = world_position;
-}
-
-void graphics_entity_set_rotation(Entity* entity, Quaternion world_rotation)
-{
-	entity->world_rotation = world_rotation;
-}
-
-void graphics_entity_set_scale(Entity* entity, vec3 world_scale)
-{
-	entity->world_scale = world_scale;
 }
 
 void graphics_entity_render_basic_shader(const Perspective_Camera* camera, const Entity* entity)
@@ -433,7 +185,7 @@ void graphics_entity_render_basic_shader(const Perspective_Camera* camera, const
 	GLint model_matrix_location = glGetUniformLocation(shader, "model_matrix");
 	GLint view_matrix_location = glGetUniformLocation(shader, "view_matrix");
 	GLint projection_matrix_location = glGetUniformLocation(shader, "projection_matrix");
-	mat4 model_matrix = graphics_entity_get_model_matrix(entity);
+	mat4 model_matrix = entity_get_model_matrix(entity);
 	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, (GLfloat*)model_matrix.data);
 	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)camera->view_matrix.data);
 	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)camera->projection_matrix.data);
@@ -454,11 +206,12 @@ void graphics_entity_render_phong_shader(const Perspective_Camera* camera, const
 	GLint projection_matrix_location = glGetUniformLocation(shader, "projection_matrix");
 	glUniform3f(camera_position_location, camera->position.x, camera->position.y, camera->position.z);
 	glUniform1f(shineness_location, 128.0f);
-	mat4 model_matrix = graphics_entity_get_model_matrix(entity);
+	mat4 model_matrix = entity_get_model_matrix(entity);
 	glUniformMatrix4fv(model_matrix_location, 1, GL_TRUE, (GLfloat*)model_matrix.data);
 	glUniformMatrix4fv(view_matrix_location, 1, GL_TRUE, (GLfloat*)camera->view_matrix.data);
 	glUniformMatrix4fv(projection_matrix_location, 1, GL_TRUE, (GLfloat*)camera->projection_matrix.data);
-	diffuse_update_uniforms(&entity->diffuse_info, shader);
+	GLint diffuse_color_location = glGetUniformLocation(shader, "color");
+	glUniform4f(diffuse_color_location, entity->color.x, entity->color.y, entity->color.z, entity->color.w);
 	graphics_mesh_render(shader, entity->mesh);
 	glUseProgram(0);
 }
@@ -601,17 +354,6 @@ Image_Data graphics_float_image_data_to_image_data(const Float_Image_Data* float
 	id.data = memory;
 
 	return id;
-}
-
-Mesh graphics_mesh_create_from_obj(const s8* obj_path)
-{
-	Vertex* vertices;
-	u32* indices;
-	obj_parse(obj_path, &vertices, &indices);
-	Mesh m = graphics_mesh_create(vertices, indices);
-	array_free(vertices);
-	array_free(indices);
-	return m;
 }
 
 // Render primitives

@@ -37,6 +37,5 @@ typedef struct {
 } Constraint;
 
 void pbd_simulate(r32 dt, Entity* entities);
-void collect_collisions(Entity* entities);
 
 #endif

@@ -10,6 +10,7 @@
 #include "physics/epa.h"
 #include "physics/clipping.h"
 #include "physics/pbd.h"
+#include "entity.h"
 
 #define GIM_ENTITY_COLOR (vec4) {1.0f, 1.0f, 1.0f, 1.0f}
 
@@ -178,7 +179,7 @@ int core_init() {
 	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
 	vec3 floor_scale = (vec3){1.0f, 1.0f, 1.0f};
 	Collider floor_collider = create_collider(floor_vertices, floor_indices, floor_scale);
-	graphics_entity_create_with_color_fixed(&e, floor_mesh, (vec3){0.0f, -2.0f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
+	entity_create_fixed(&e, floor_mesh, (vec3){0.0f, -2.0f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
 		floor_scale, (vec4){1.0f, 1.0f, 1.0f, 1.0f}, floor_collider);
 	array_push(entities, e);
 	array_free(floor_vertices);
@@ -193,12 +194,12 @@ int core_init() {
 	vec3 cube_scale = (vec3){5.0f, 1.0f, 1.0f};
 
 	Collider cube_collider1 = create_collider(cube_vertices, cube_indices, cube_scale);
-	graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
+	entity_create(&e, cube_mesh, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
 		cube_scale, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider1);
 	array_push(entities, e);
 
 	Collider cube_collider2 = create_collider(cube_vertices, cube_indices, cube_scale);
-	graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
+	entity_create(&e, cube_mesh, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
 		cube_scale, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider2);
 	array_push(entities, e);
 #elif DUMP1
@@ -207,12 +208,12 @@ int core_init() {
 	vec3 cube_scale = (vec3){1.0f, 1.0f, 1.0f};
 
 	Collider cube_collider1 = create_collider(cube_vertices, cube_indices, cube_scale);
-	graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
+	entity_create(&e, cube_mesh, (vec3){0.0f, 2.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 0.0f),
 		cube_scale, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider1);
 	array_push(entities, e);
 
 	Collider cube_collider2 = create_collider(cube_vertices, cube_indices, cube_scale);
-	graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
+	entity_create(&e, cube_mesh, (vec3){0.0f, 7.1f, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.5f}, 80.0f),
 		cube_scale, (vec4){0.5f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider2);
 	array_push(entities, e);
 #else
@@ -222,22 +223,22 @@ int core_init() {
 #if 1
 	r32 y = -2.0f;
 
-	for (u32 i = 0; i < 8; ++i) {
+	for (u32 i = 0; i < 6; ++i) {
 		y += 2.1f;
 		Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
-		graphics_entity_create_with_color(&e, cube_mesh, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
+		entity_create(&e, cube_mesh, (vec3){0.0f, y, 0.0f}, quaternion_new((vec3){0.0f, 1.0f, 0.0f}, 0.0f),
 			cube_scale, (vec4){1.0f, i == 1 ? 1.0f : 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider);
 		array_push(entities, e);
 	}
 #else
 	Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
-	graphics_entity_create_with_color(&e, cube_mesh,
+	entity_create(&e, cube_mesh,
 		(vec3){-0.00032446216209791600704193115234375000000000000000, -0.00048259110189974308013916015625000000000000000000, -0.00083085161168128252029418945312500000000000000000},
 		(Quaternion){0.00008157819684129208326339721679687500000000000000, -0.00005706563752028159797191619873046875000000000000, -0.00012570111721288412809371948242187500000000000000, 1.00000000000000000000000000000000000000000000000000},
 		cube_scale, (vec4){1.0f, 0.0f, 0.0f, 1.0f}, 1.0f, cube_collider);
 	array_push(entities, e);
 	cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
-	graphics_entity_create_with_color(&e, cube_mesh,
+	entity_create(&e, cube_mesh,
 		(vec3){-0.00334974960424005985260009765625000000000000000000, 1.99841976165771484375000000000000000000000000000000, -0.00400378368794918060302734375000000000000000000000},
 		(Quaternion){-0.00058600632473826408386230468750000000000000000000, -0.00048356491606682538986206054687500000000000000000, -0.00006656459299847483634948730468750000000000000000, 0.99999976158142089843750000000000000000000000000000},
 		cube_scale, (vec4){1.0f, 1.0f, 0.0f, 1.0f}, 1.0f, cube_collider);
@@ -271,7 +272,7 @@ void core_update(r32 delta_time) {
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
-		mat4 model_matrix = graphics_entity_get_model_matrix_no_scale(e);
+		mat4 model_matrix = entity_get_model_matrix_no_scale(e);
 		collider_update(&e->collider, model_matrix);
 		//printf("e%d: <%.50f, %.50f, %.50f>\n", i, e->world_position.x, e->world_position.y, e->world_position.z);
 		//printf("e%d: rot: <%.50f, %.50f, %.50f, %.50f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
@@ -298,20 +299,16 @@ void core_update(r32 delta_time) {
 #endif
 }
 
-extern vec3 _p1;
-extern vec3 _p2;
-extern vec3 _n;
-
 void core_render() {
 	#if 1
-	vec3 point1 = _p1;
-	vec3 point2 = _p2;
-	vec3 normal = _n;
+	//vec3 point1 = _p1;
+	//vec3 point2 = _p2;
+	//vec3 normal = _n;
 
-	graphics_renderer_debug_points(&point1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	graphics_renderer_debug_points(&point2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
-	graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+	//graphics_renderer_debug_points(&point1, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+	//graphics_renderer_debug_points(&point2, 1, (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+	//graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
+	//graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0f, 1.0f, 1.0f, 1.0f});
 	#else
 	Entity* e1 = &entities[0];
 	Entity* e2 = &entities[1];
@@ -375,12 +372,12 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
 		{
 			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, rotation_speed * delta_time);
-			graphics_entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
+			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 		else
 		{
 			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, -rotation_speed * delta_time);
-			graphics_entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
+			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 	}
 	if (key_state[GLFW_KEY_Y])
@@ -388,12 +385,12 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
 		{
 			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, rotation_speed * delta_time);
-			graphics_entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
+			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 		else
 		{
 			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, -rotation_speed * delta_time);
-			graphics_entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
+			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 	}
 	if (key_state[GLFW_KEY_Z])
@@ -401,12 +398,12 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
 		{
 			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, rotation_speed * delta_time);
-			graphics_entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
+			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 		else
 		{
 			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, -rotation_speed * delta_time);
-			graphics_entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
+			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
 		}
 	}
 	if (key_state[GLFW_KEY_L])
@@ -450,7 +447,7 @@ void core_input_process(boolean* key_state, r32 delta_time) {
 		Mesh m = graphics_mesh_create(vertices, indices);
 		vec3 scale = (vec3){1.0f, 1.0f, 1.0f};
 		Collider collider = create_collider(vertices, indices, scale);
-		graphics_entity_create_with_color(&e, m, cube_position, quaternion_new((vec3){0.35f, 0.44f, 0.12f}, 0.0f),
+		entity_create(&e, m, cube_position, quaternion_new((vec3){0.35f, 0.44f, 0.12f}, 0.0f),
 			scale, (vec4){rand() / (r32)RAND_MAX, rand() / (r32)RAND_MAX, rand() / (r32)RAND_MAX, 1.0f}, 1.0f, collider);
 		array_free(vertices);
 		array_free(indices);
@@ -495,7 +492,7 @@ void core_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 		vec3 position = entities[1].world_position;
 		position = gm_vec3_add(position, y_diff);
 		position = gm_vec3_add(position, x_diff);
-		graphics_entity_set_position(&entities[1], position);
+		entity_set_position(&entities[1], position);
 	} else {
 		// NORMAL CAMERA MOVEMENT!
 		static const r32 camera_mouse_speed = 0.1f;

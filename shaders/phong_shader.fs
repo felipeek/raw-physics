@@ -13,20 +13,12 @@ struct Light
 	vec4 specular_color;
 };
 
-// Diffuse Info
-struct Diffuse_Info
-{
-	bool use_diffuse_map;
-	vec4 diffuse_color;
-	sampler2D diffuse_map;
-};
-
 uniform mat4 model_matrix;
 uniform Light lights[16];
 uniform int light_quantity;
 uniform vec3 camera_position;
 uniform float object_shineness;
-uniform Diffuse_Info diffuse_info;
+uniform vec4 color;
 // Specular map will not be used (<1,1,1,1> assumed)
 
 out vec4 final_color;
@@ -34,8 +26,7 @@ out vec4 final_color;
 vec3 get_point_color_of_light(Light light)
 {
 	vec3 normal = normalize(fragment_normal);
-	vec4 real_diffuse_color = diffuse_info.use_diffuse_map ? texture(diffuse_info.diffuse_map, fragment_texture_coords) :
-		diffuse_info.diffuse_color;
+	vec4 real_diffuse_color = color;
 
 	vec3 fragment_to_point_light_vec = normalize(light.position - fragment_position);
 
