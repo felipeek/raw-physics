@@ -71,24 +71,16 @@ int ex_cube_storm_init() {
 	Entity e;
 	entities = array_new(Entity);
 
-	Vertex* floor_vertices;
-	u32* floor_indices;
-	obj_parse("./res/floor.obj", &floor_vertices, &floor_indices);
-	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
-	vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
-	Collider floor_collider = create_collider(floor_vertices, floor_indices, floor_scale);
-	entity_create_fixed(&e, floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
-	array_push(entities, e);
-	array_free(floor_vertices);
-	array_free(floor_indices);
-
 	Vertex* cube_vertices;
 	u32* cube_indices;
-
 	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
 	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
-	vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
+
+	vec3 floor_scale = (vec3){50.0, 1.0, 50.0};
+	Collider floor_collider = create_collider(cube_vertices, cube_indices, floor_scale);
+	entity_create_fixed(&e, cube_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
+	array_push(entities, e);
 
 	const u32 N = 3;
 	r64 y = 2.0;
@@ -103,6 +95,8 @@ int ex_cube_storm_init() {
 			r64 z = -2.0 * (N / 2.0);
 			for (u32 k = 0; k < N; ++k) {
 				z += gap;
+
+				vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
 				Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
 				entity_create(&e, cube_mesh, (vec3){x, y, z}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
 					cube_scale, util_pallete(i + j + k), 1.0, cube_collider);

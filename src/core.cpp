@@ -5,6 +5,7 @@
 #include "examples/single_cube.h"
 #include "examples/debug.h"
 #include "examples/cube_storm.h"
+#include "examples/seesaw.h"
 #include "render/menu.h"
 
 static Example_Scene selected_scene;
@@ -19,6 +20,9 @@ static int load_selected_scene() {
 		} break;
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			return ex_cube_storm_init();
+		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			return ex_seesaw_init();
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 			return 0;
@@ -40,6 +44,9 @@ static void destroy_selected_scene() {
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			ex_cube_storm_destroy();
 		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			ex_seesaw_destroy();
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -58,6 +65,9 @@ static void update_selected_scene(r64 delta_time) {
 		} break;
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			ex_cube_storm_update(delta_time);
+		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			ex_seesaw_update(delta_time);
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
@@ -78,6 +88,9 @@ static void render_selected_scene() {
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			ex_cube_storm_render();
 		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			ex_seesaw_render();
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -96,6 +109,9 @@ static void input_process_selected_scene(boolean* key_state, r64 delta_time) {
 		} break;
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			ex_cube_storm_input_process(key_state, delta_time);
+		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			ex_seesaw_input_process(key_state, delta_time);
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
@@ -116,6 +132,9 @@ static void mouse_change_process_selected_scene(boolean reset, r64 x_pos, r64 y_
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			ex_cube_storm_mouse_change_process(reset, x_pos, y_pos);
 		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			ex_seesaw_mouse_change_process(reset, x_pos, y_pos);
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -134,6 +153,9 @@ static void mouse_click_process_selected_scene(s32 button, s32 action, r64 x_pos
 		} break;
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			ex_cube_storm_mouse_click_process(button, action, x_pos, y_pos);
+		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			ex_seesaw_mouse_click_process(button, action, x_pos, y_pos);
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
@@ -154,6 +176,9 @@ static void scroll_change_process_selected_scene(r64 x_offset, r64 y_offset) {
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			ex_cube_storm_scroll_change_process(x_offset, y_offset);
 		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			ex_seesaw_scroll_change_process(x_offset, y_offset);
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -173,6 +198,9 @@ static void window_resize_process_selected_scene(s32 width, s32 height) {
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			ex_cube_storm_window_resize_process(width, height);
 		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			ex_seesaw_window_resize_process(width, height);
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -191,6 +219,9 @@ static void menu_properties_update_selected_scene() {
 		} break;
 		case CUBE_STORM_EXAMPLE_SCENE: {
 			ex_cube_storm_menu_update();
+		} break;
+		case SEESAW_EXAMPLE_SCENE: {
+			ex_seesaw_menu_update();
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;

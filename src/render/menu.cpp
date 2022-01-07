@@ -65,6 +65,10 @@ static void draw_main_window()
 			selected = CUBE_STORM_EXAMPLE_SCENE;
 			core_switch_scene(CUBE_STORM_EXAMPLE_SCENE);
 		}
+		if (ImGui::Selectable("Seesaw", selected == SEESAW_EXAMPLE_SCENE)) {
+			selected = SEESAW_EXAMPLE_SCENE;
+			core_switch_scene(SEESAW_EXAMPLE_SCENE);
+		}
 		if (ImGui::Selectable("Debug", selected == DEBUG_EXAMPLE_SCENE)) {
 			selected = DEBUG_EXAMPLE_SCENE;
 			core_switch_scene(DEBUG_EXAMPLE_SCENE);

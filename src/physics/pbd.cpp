@@ -41,7 +41,7 @@ static vec3 calculate_external_torque(Entity* e) {
 
 // Calculate the dynamic inertia tensor of an entity, i.e., the inertia tensor transformed considering entity's rotation
 static mat3 get_dynamic_inertia_tensor(Entity* e) {
-#if 0
+#if 1
 	// Can only be used if the local->world matrix is orthogonal
 	mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
 	mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
@@ -60,7 +60,7 @@ static mat3 get_dynamic_inertia_tensor(Entity* e) {
 
 // Calculate the dynamic inverse inertia tensor of an entity, i.e., the inverse inertia tensor transformed considering entity's rotation
 static mat3 get_dynamic_inverse_inertia_tensor(Entity* e) {
-#if 0
+#if 1
 	// Can only be used if the local->world matrix is orthogonal
 	mat3 rotation_matrix = quaternion_get_matrix3(&e->world_rotation);
 	mat3 transposed_rotation_matrix = gm_mat3_transpose(&rotation_matrix);
@@ -234,7 +234,7 @@ static void solve_collision_constraint(Constraint* constraint, r64 h) {
 
 		// if 'd' is greater than 0.0, we should also add a constraint for static friction, but only if lambda_t < u_s * lambda_n
 		//const r64 static_friction_coefficient = (e1->static_friction_coefficient + e2->static_friction_coefficient) / 2.0f;
-		const r64 static_friction_coefficient = 0.0;
+		const r64 static_friction_coefficient = 0.0001;
 
 		// @NOTE(fek): This inequation shown in 3.5 was changed because the lambdas will always be negative!
 		if (static_friction_coefficient > 0.0 && lambda_t > static_friction_coefficient * lambda_n) {
