@@ -11,7 +11,7 @@
 #define NUM_SUBSTEPS 10
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
-//#define ENABLE_SIMULATION_ISLANDS
+#define ENABLE_SIMULATION_ISLANDS
 #define LINEAR_SLEEPING_THRESHOLD 0.15
 #define ANGULAR_SLEEPING_THRESHOLD 0.15
 #define DEACTIVATION_TIME_TO_BE_INACTIVE 1.0
@@ -233,7 +233,8 @@ static void solve_collision_constraint(Constraint* constraint, r64 h) {
 		p2 = gm_vec3_add(e2->world_position, r2_wc);
 
 		// if 'd' is greater than 0.0, we should also add a constraint for static friction, but only if lambda_t < u_s * lambda_n
-		const r64 static_friction_coefficient = (e1->static_friction_coefficient + e2->static_friction_coefficient) / 1.0f;
+		//const r64 static_friction_coefficient = (e1->static_friction_coefficient + e2->static_friction_coefficient) / 2.0f;
+		const r64 static_friction_coefficient = 0.0;
 
 		// @NOTE(fek): This inequation shown in 3.5 was changed because the lambdas will always be negative!
 		if (static_friction_coefficient > 0.0 && lambda_t > static_friction_coefficient * lambda_n) {

@@ -10,6 +10,7 @@
 #include "../physics/clipping.h"
 #include "../physics/pbd.h"
 #include "../entity.h"
+#include "../util.h"
 
 #define GIM_ENTITY_COLOR (vec4) {1.0, 1.0, 1.0, 1.0}
 
@@ -35,11 +36,15 @@ static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
-	vec3 camera_position = (vec3) { 0.0, 5.0, 15.0 };
+	vec3 camera_position = (vec3) { -15.0, 15.0, 25.0 };
 	r64 camera_near_plane = -0.01;
 	r64 camera_far_plane = -1000.0;
 	r64 camera_fov = 45.0;
 	camera_init(&camera, camera_position, camera_near_plane, camera_far_plane, camera_fov);
+	camera.rotation = (Quaternion){0.210476, 0.000000, 0.000000, 0.977617};
+	camera.yrotation = (Quaternion){0.000000, 0.303208, 0.000000, 0.952945};
+	camera.position = (vec3){-16.194581, 15.336559, 25.110162};
+	camera_force_matrix_recalculation(&camera);
 	return camera;
 }
 
@@ -83,16 +88,28 @@ int ex_cube_storm_init() {
 
 	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
 	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
-	vec3 cube_scale = (vec3){2.0, 1.0, 1.0};
-	r64 y = -2.0;
+	vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
 
-	for (u32 i = 0; i < 5; ++i) {
-		y += 2.1;
-		Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
-		entity_create(&e, cube_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-			cube_scale, (vec4){1.0, i == 1 ? 1.0 : 0.0, 0.0, 1.0}, 1.0, cube_collider);
-		e.static_friction_coefficient = 0.0f;
-		array_push(entities, e);
+	const u32 N = 3;
+	r64 y = 2.0;
+	r64 gap = 2.01;
+	for (u32 i = 0; i < N; ++i) {
+		y += gap;
+
+		r64 x = -2.0 * (N / 2.0);
+		for (u32 j = 0; j < N; ++j) {
+			x += gap;
+
+			r64 z = -2.0 * (N / 2.0);
+			for (u32 k = 0; k < N; ++k) {
+				z += gap;
+				Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
+				entity_create(&e, cube_mesh, (vec3){x, y, z}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+					cube_scale, util_pallete(i + j + k), 1.0, cube_collider);
+				e.static_friction_coefficient = 0.0f;
+				array_push(entities, e);
+			}
+		}
 	}
 
 	array_free(cube_vertices);
@@ -114,6 +131,9 @@ void ex_cube_storm_destroy() {
 }
 
 void ex_cube_storm_update(r64 delta_time) {
+	//printf("(Quaternion){%f, %f, %f, %f}\n", camera.rotation.x, camera.rotation.y, camera.rotation.z, camera.rotation.w);
+	//printf("(Quaternion){%f, %f, %f, %f}\n", camera.yrotation.x, camera.yrotation.y, camera.yrotation.z, camera.yrotation.w);
+	//printf("(vec3){%f, %f, %f}\n", camera.position.x, camera.position.y, camera.position.z);
 	delta_time = 0.016666667; // ~60fps
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
@@ -199,7 +219,7 @@ void ex_cube_storm_input_process(boolean* key_state, r64 delta_time) {
 		vec3 scale = (vec3){1.0, 1.0, 1.0};
 		Collider collider = create_collider(vertices, indices, scale);
 		entity_create(&e, m, cube_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
-			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 1.0, collider);
+			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 10.0, collider);
 		array_free(vertices);
 		array_free(indices);
 
