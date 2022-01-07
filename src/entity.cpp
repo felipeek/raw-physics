@@ -82,6 +82,12 @@ void entity_create(Entity* entity, Mesh mesh, vec3 world_position, Quaternion wo
 	entity->active = true;
 	entity->deactivationTime = 0.0;
 	entity->collider = collider;
+	entity->static_friction_coefficient = 0.0;
+	entity->dynamic_friction_coefficient = 0.0;
+	entity->restitution_coefficient = 0.0;
+	assert(entity->static_friction_coefficient >= 0.0 && entity->static_friction_coefficient <= 1.0);
+	assert(entity->dynamic_friction_coefficient >= 0.0 && entity->dynamic_friction_coefficient <= 1.0);
+	assert(entity->restitution_coefficient >= 0.0 && entity->restitution_coefficient <= 1.0);
 }
 
 void entity_create_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider)
@@ -103,6 +109,12 @@ void entity_create_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quatern
 	entity->active = true; // meaningless for fixed entities
 	entity->deactivationTime = 0.0;
 	entity->collider = collider;
+	entity->static_friction_coefficient = 0.2;
+	entity->dynamic_friction_coefficient = 0.5;
+	entity->restitution_coefficient = 0.0;
+	assert(entity->static_friction_coefficient >= 0.0 && entity->static_friction_coefficient <= 1.0);
+	assert(entity->dynamic_friction_coefficient >= 0.0 && entity->dynamic_friction_coefficient <= 1.0);
+	assert(entity->restitution_coefficient >= 0.0 && entity->restitution_coefficient <= 1.0);
 }
 
 void entity_destroy(Entity* entity)

@@ -29,6 +29,9 @@ typedef struct {
 	boolean fixed;
 	boolean active;
 	r64 deactivationTime;
+	r64 static_friction_coefficient;
+	r64 dynamic_friction_coefficient;
+	r64 restitution_coefficient;
 
 	// PBD Auxilar
 	vec3 previous_world_position;

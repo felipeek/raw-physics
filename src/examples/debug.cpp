@@ -164,6 +164,7 @@ int ex_debug_init() {
 		entity_create(&e, cube_mesh, (vec3){5000.0, y, 5000.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
 			cube_scale, (vec4){1.0, i == 1 ? 1.0 : 0.0, 0.0, 1.0}, 1.0, cube_collider);
 #endif
+		e.static_friction_coefficient = 0.0f;
 		array_push(entities, e);
 	}
 #else
@@ -203,13 +204,7 @@ boolean paused = false;
 int dt_idx = 0;
 
 void ex_debug_update(r64 delta_time) {
-	//if (dt_idx < array_length(dt_arr)) {
-	//	delta_time = dt_arr[dt_idx];
-	//	dt_idx++;
-	//}
-	delta_time = 0.03;
-	//printf("%f\n", delta_time);
-	//fflush(stdout);
+	delta_time = 0.016666667; // ~60fps
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];

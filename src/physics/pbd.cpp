@@ -8,10 +8,13 @@
 #include "broad.h"
 #include "../util.h"
 
-#define NUM_SUBSTEPS 70
+#define NUM_SUBSTEPS 10
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
-#define ENABLE_SIMULATION_ISLANDS
+//#define ENABLE_SIMULATION_ISLANDS
+#define LINEAR_SLEEPING_THRESHOLD 0.15
+#define ANGULAR_SLEEPING_THRESHOLD 0.15
+#define DEACTIVATION_TIME_TO_BE_INACTIVE 1.0
 
 extern boolean paused;
 
@@ -230,7 +233,7 @@ static void solve_collision_constraint(Constraint* constraint, r64 h) {
 		p2 = gm_vec3_add(e2->world_position, r2_wc);
 
 		// if 'd' is greater than 0.0, we should also add a constraint for static friction, but only if lambda_t < u_s * lambda_n
-		const r64 static_friction_coefficient = 0.0;
+		const r64 static_friction_coefficient = (e1->static_friction_coefficient + e2->static_friction_coefficient) / 1.0f;
 
 		// @NOTE(fek): This inequation shown in 3.5 was changed because the lambdas will always be negative!
 		if (static_friction_coefficient > 0.0 && lambda_t > static_friction_coefficient * lambda_n) {
@@ -361,15 +364,12 @@ void pbd_simulate(r64 dt, Entity* entities) {
 
 				r64 linear_velocity_len = gm_vec3_length(e->linear_velocity);
 				r64 angular_velocity_len = gm_vec3_length(e->angular_velocity);
-				const r64 LINEAR_SLEEPING_THRESHOLD = 0.05;
-				const r64 ANGULAR_SLEEPING_THRESHOLD = 0.05;
 				if (linear_velocity_len < LINEAR_SLEEPING_THRESHOLD && angular_velocity_len < ANGULAR_SLEEPING_THRESHOLD) {
-					e->deactivationTime += dt;
+					e->deactivationTime += h; // we should use 'dt' if doing once per frame
 				} else {
 					e->deactivationTime = 0.0;
 				}
 
-				const r64 DEACTIVATION_TIME_TO_BE_INACTIVE = 2.0;
 				if (e->deactivationTime < DEACTIVATION_TIME_TO_BE_INACTIVE) {
 					all_inactive = false;
 				}
@@ -549,7 +549,7 @@ void pbd_simulate(r64 dt, Entity* entities) {
 			vec3 delta_v = (vec3){0.0, 0.0, 0.0};
 			
 			// we start by applying Coloumb's dynamic friction force
-			const r64 dynamic_friction_coefficient = 1.0;
+			const r64 dynamic_friction_coefficient = (e1->dynamic_friction_coefficient + e2->dynamic_friction_coefficient) / 2.0f;
 			r64 fn = lambda_n / h; // simplifly h^2 by ommiting h in the next calculation
 			// @NOTE: equation (30) was modified here
 			r64 fact = MIN(dynamic_friction_coefficient * fabsf(fn), gm_vec3_length(vt));
@@ -564,7 +564,7 @@ void pbd_simulate(r64 dt, Entity* entities) {
 			vec3 v_til = gm_vec3_subtract(gm_vec3_add(old_v1, gm_vec3_cross(old_w1, r1_wc)), gm_vec3_add(old_v2, gm_vec3_cross(old_w2, r2_wc)));
 			r64 vn_til = gm_vec3_dot(n, v_til);
 			//r64 e = (fabsf(vn) > 2.0 * GRAVITY * h) ? 0.8 : 0.0;
-			r64 e = 0.0;
+			r64 e = e1->restitution_coefficient * e2->restitution_coefficient;
 			// @NOTE: equation (34) was modified here
 			fact = -vn + MIN(-e * vn_til, 0.0);
 			// update delta_v

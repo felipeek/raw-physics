@@ -4,6 +4,7 @@
 #include "core.h"
 #include "examples/single_cube.h"
 #include "examples/debug.h"
+#include "examples/cube_storm.h"
 #include "render/menu.h"
 
 static Example_Scene selected_scene;
@@ -15,6 +16,9 @@ static int load_selected_scene() {
 		} break;
 		case SINGLE_CUBE_EXAMPLE_SCENE: {
 			return ex_single_cube_init();
+		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			return ex_cube_storm_init();
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 			return 0;
@@ -33,6 +37,9 @@ static void destroy_selected_scene() {
 		case SINGLE_CUBE_EXAMPLE_SCENE: {
 			ex_single_cube_destroy();
 		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			ex_cube_storm_destroy();
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -48,6 +55,9 @@ static void update_selected_scene(r64 delta_time) {
 		} break;
 		case SINGLE_CUBE_EXAMPLE_SCENE: {
 			ex_single_cube_update(delta_time);
+		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			ex_cube_storm_update(delta_time);
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
@@ -65,6 +75,9 @@ static void render_selected_scene() {
 		case SINGLE_CUBE_EXAMPLE_SCENE: {
 			ex_single_cube_render();
 		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			ex_cube_storm_render();
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -80,6 +93,9 @@ static void input_process_selected_scene(boolean* key_state, r64 delta_time) {
 		} break;
 		case SINGLE_CUBE_EXAMPLE_SCENE: {
 			ex_single_cube_input_process(key_state, delta_time);
+		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			ex_cube_storm_input_process(key_state, delta_time);
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
@@ -97,6 +113,9 @@ static void mouse_change_process_selected_scene(boolean reset, r64 x_pos, r64 y_
 		case SINGLE_CUBE_EXAMPLE_SCENE: {
 			ex_single_cube_mouse_change_process(reset, x_pos, y_pos);
 		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			ex_cube_storm_mouse_change_process(reset, x_pos, y_pos);
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -112,6 +131,9 @@ static void mouse_click_process_selected_scene(s32 button, s32 action, r64 x_pos
 		} break;
 		case SINGLE_CUBE_EXAMPLE_SCENE: {
 			ex_single_cube_mouse_click_process(button, action, x_pos, y_pos);
+		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			ex_cube_storm_mouse_click_process(button, action, x_pos, y_pos);
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
@@ -129,6 +151,9 @@ static void scroll_change_process_selected_scene(r64 x_offset, r64 y_offset) {
 		case SINGLE_CUBE_EXAMPLE_SCENE: {
 			ex_single_cube_scroll_change_process(x_offset, y_offset);
 		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			ex_cube_storm_scroll_change_process(x_offset, y_offset);
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -145,6 +170,9 @@ static void window_resize_process_selected_scene(s32 width, s32 height) {
 		case SINGLE_CUBE_EXAMPLE_SCENE: {
 			ex_single_cube_window_resize_process(width, height);
 		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			ex_cube_storm_window_resize_process(width, height);
+		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;
 		default: {
@@ -160,6 +188,9 @@ static void menu_properties_update_selected_scene() {
 		} break;
 		case DEBUG_EXAMPLE_SCENE: {
 			ex_debug_menu_update();
+		} break;
+		case CUBE_STORM_EXAMPLE_SCENE: {
+			ex_cube_storm_menu_update();
 		} break;
 		case NONE_EXAMPLE_SCENE: {
 		} break;

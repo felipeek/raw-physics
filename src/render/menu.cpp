@@ -15,15 +15,6 @@
 #define GLSL_VERSION "#version 330"
 #define MENU_TITLE "Examples"
 
-typedef void (*Selected_Scene_Callback)(Example_Scene);
-
-static Selected_Scene_Callback selected_scene_callback;
-
-void menu_register_selected_scene_callback(Selected_Scene_Callback f)
-{
-	selected_scene_callback = f;
-}
-
 void menu_char_click_process(GLFWwindow* window, u32 c)
 {
 	ImGui_ImplGlfw_CharCallback(window, c);
@@ -69,6 +60,10 @@ static void draw_main_window()
 		if (ImGui::Selectable("Single Cube", selected == SINGLE_CUBE_EXAMPLE_SCENE)) {
 			selected = SINGLE_CUBE_EXAMPLE_SCENE;
 			core_switch_scene(SINGLE_CUBE_EXAMPLE_SCENE);
+		}
+		if (ImGui::Selectable("Cube Storm", selected == CUBE_STORM_EXAMPLE_SCENE)) {
+			selected = CUBE_STORM_EXAMPLE_SCENE;
+			core_switch_scene(CUBE_STORM_EXAMPLE_SCENE);
 		}
 		if (ImGui::Selectable("Debug", selected == DEBUG_EXAMPLE_SCENE)) {
 			selected = DEBUG_EXAMPLE_SCENE;
