@@ -94,6 +94,10 @@ typedef struct {
 /* creates a new array of type T */
 #define array_new(T) (T*)((char*)&(((Dynamic_ArrayBase*)calloc(1, sizeof(Dynamic_ArrayBase) + sizeof(T)))->capacity = 1) + sizeof(Dynamic_ArrayBase))
 #else
+#define array_new(T) array_dyn_allocate(sizeof(T) + sizeof(Dynamic_ArrayBase))
+/* creates a new array of type T with starting capacity L */
+#define array_new_len(T, L) array_dyn_allocate_capacity(sizeof(T), L)
+#endif
 static LIGHT_ARRAY_API void* array_dyn_allocate(size_t size) {
     void* res = calloc(1, size);
     ((Dynamic_ArrayBase*)res)->capacity = 1;
@@ -104,10 +108,6 @@ static LIGHT_ARRAY_API void* array_dyn_allocate_capacity(size_t size_element, si
     ((Dynamic_ArrayBase*)res)->capacity = capacity;
     return (void*)((char*)res + sizeof(Dynamic_ArrayBase));
 }
-#define array_new(T) array_dyn_allocate(sizeof(T) + sizeof(Dynamic_ArrayBase))
-/* creates a new array of type T with starting capacity L */
-#define array_new_len(T, L) array_dyn_allocate_capacity(sizeof(T), L)
-#endif
 
 /* given an array created by array_new and a value (rvalue) of the base type of the array, puts that value in the last
    position of the current array, it allocates memory automatically when the capacity is reached. The policy to allocate

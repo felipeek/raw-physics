@@ -1,7 +1,5 @@
-CC=gcc
 CCX=g++
 IDIR=include
-CFLAGS=-I$(IDIR) -g -O0
 CPPFLAGS=-I$(IDIR) -g -O0
 
 UNAME_S := $(shell uname -s)
@@ -16,12 +14,12 @@ BIN = raw-physics
 # Put all auto generated stuff to this build dir.
 BUILD_DIR = ./bin/raw-physics
 
-# List of all .c source files.
-C = $(wildcard src/*.c) $(wildcard src/examples/*.c) $(wildcard src/render/*.c) $(wildcard src/physics/*.c)
-CPP = $(wildcard src/render/*.cpp) $(wildcard src/vendor/*.cpp)
+# List of all .cpp source files.
+CPP = $(wildcard src/*.cpp) $(wildcard src/examples/*.cpp) $(wildcard src/render/*.cpp) \
+	$(wildcard src/physics/*.cpp) $(wildcard src/vendor/*.cpp)
 
 # All .o files go to build dir.
-OBJ = $(C:%.c=$(BUILD_DIR)/%.o) $(CPP:%.cpp=$(BUILD_DIR)/%.o)
+OBJ = $(CPP:%.cpp=$(BUILD_DIR)/%.o)
 # Gcc/Clang will create these .d files containing dependencies.
 DEP = $(OBJ:%.o=%.d)
 
@@ -41,12 +39,6 @@ $(BUILD_DIR)/$(BIN) : $(OBJ)
 # Build target for every single object file.
 # The potential dependency on header files is covered
 # by calling `-include $(DEP)`.
-$(BUILD_DIR)/%.o : %.c
-	mkdir -p $(@D)
-	# The -MMD flags additionaly creates a .d file with
-	# the same name as the .o file.
-	$(CC) $(CFLAGS) -MMD -c $< -o $@
-
 $(BUILD_DIR)/%.o : %.cpp
 	mkdir -p $(@D)
 	# The -MMD flags additionaly creates a .d file with

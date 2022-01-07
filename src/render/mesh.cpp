@@ -17,7 +17,7 @@ Mesh graphics_mesh_create_from_obj(const s8* obj_path)
 Mesh graphics_quad_create()
 {
 	r32 size = 1.0f;
-	Vertex* vertices = array_new(vertices);
+	Vertex* vertices = array_new(Vertex);
 	u32* indices = array_new(u32);
 
 	Vertex v;

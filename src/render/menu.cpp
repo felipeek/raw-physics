@@ -2,7 +2,7 @@
 #include "../vendor/imgui.h"
 #include "../vendor/imgui_impl_glfw.h"
 #include "../vendor/imgui_impl_opengl3.h"
-#include "../examples/examples.h"
+#include "../core.h"
 #include <common.h>
 #include <stdio.h>
 
@@ -19,32 +19,32 @@ typedef void (*Selected_Scene_Callback)(Example_Scene);
 
 static Selected_Scene_Callback selected_scene_callback;
 
-extern "C" void menu_register_selected_scene_callback(Selected_Scene_Callback f)
+void menu_register_selected_scene_callback(Selected_Scene_Callback f)
 {
 	selected_scene_callback = f;
 }
 
-extern "C" void menu_char_click_process(GLFWwindow* window, u32 c)
+void menu_char_click_process(GLFWwindow* window, u32 c)
 {
 	ImGui_ImplGlfw_CharCallback(window, c);
 }
 
-extern "C" void menu_key_click_process(GLFWwindow* window, s32 key, s32 scan_code, s32 action, s32 mods)
+void menu_key_click_process(GLFWwindow* window, s32 key, s32 scan_code, s32 action, s32 mods)
 {
 	ImGui_ImplGlfw_KeyCallback(window, key, scan_code, action, mods);
 }
 
-extern "C" void menu_mouse_click_process(GLFWwindow* window, s32 button, s32 action, s32 mods)
+void menu_mouse_click_process(GLFWwindow* window, s32 button, s32 action, s32 mods)
 {
 	ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 }
 
-extern "C" void menu_scroll_change_process(GLFWwindow* window, s64 x_offset, s64 y_offset)
+void menu_scroll_change_process(GLFWwindow* window, s64 x_offset, s64 y_offset)
 {
 	ImGui_ImplGlfw_ScrollCallback(window, x_offset, y_offset);
 }
 
-extern "C" void menu_init(GLFWwindow* window)
+void menu_init(GLFWwindow* window)
 {
 	// Setup Dear ImGui binding
 	IMGUI_CHECKVERSION();
@@ -58,26 +58,6 @@ extern "C" void menu_init(GLFWwindow* window)
 	ImGui::StyleColorsDark();
 }
 
-static void build_example_scene_menu_properties(Example_Scene scene) {
-	switch (scene) {
-		case SINGLE_CUBE_EXAMPLE_SCENE: {
-			ImGui::Text("Single Cube");
-			ImGui::Separator();
-			ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
-		} break;
-		case DEBUG_EXAMPLE_SCENE: {
-			ImGui::Text("Debug");
-			ImGui::Separator();
-			ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
-		} break;
-		case NONE_EXAMPLE_SCENE: {
-		} break;
-		default: {
-			assert(0);
-		} break;
-	}
-}
-
 static void draw_main_window()
 {
     ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_FirstUseEver);
@@ -88,11 +68,11 @@ static void draw_main_window()
         ImGui::BeginChild("left pane", ImVec2(150, 0), true);
 		if (ImGui::Selectable("Single Cube", selected == SINGLE_CUBE_EXAMPLE_SCENE)) {
 			selected = SINGLE_CUBE_EXAMPLE_SCENE;
-			selected_scene_callback(SINGLE_CUBE_EXAMPLE_SCENE);
+			core_switch_scene(SINGLE_CUBE_EXAMPLE_SCENE);
 		}
 		if (ImGui::Selectable("Debug", selected == DEBUG_EXAMPLE_SCENE)) {
 			selected = DEBUG_EXAMPLE_SCENE;
-			selected_scene_callback(DEBUG_EXAMPLE_SCENE);
+			core_switch_scene(DEBUG_EXAMPLE_SCENE);
 		}
         ImGui::EndChild();
         ImGui::SameLine();
@@ -100,7 +80,7 @@ static void draw_main_window()
         // right
         ImGui::BeginGroup();
 		ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
-		build_example_scene_menu_properties(selected);
+		core_menu_properties_update();
 		ImGui::EndChild();
 		//if (ImGui::Button("Revert")) {}
 		//ImGui::SameLine();
@@ -110,7 +90,7 @@ static void draw_main_window()
     ImGui::End();
 }
 
-extern "C" void menu_render()
+void menu_render()
 {
 	// Start the Dear ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
@@ -128,7 +108,7 @@ extern "C" void menu_render()
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-extern "C" void menu_destroy()
+void menu_destroy()
 {
 	// Cleanup
 	ImGui_ImplOpenGL3_Shutdown();

@@ -2,12 +2,11 @@
 #include <math.h>
 #include <assert.h>
 #include "core.h"
-#include "examples/examples.h"
 #include "examples/single_cube.h"
 #include "examples/debug.h"
 #include "render/menu.h"
 
-Example_Scene selected_scene;
+static Example_Scene selected_scene;
 
 static int load_selected_scene() {
 	switch (selected_scene) {
@@ -154,16 +153,25 @@ static void window_resize_process_selected_scene(s32 width, s32 height) {
 	}
 }
 
-static void menu_selected_scene_callback(Example_Scene scene) {
-	destroy_selected_scene();
-	selected_scene = scene;
-	load_selected_scene();
+static void menu_properties_update_selected_scene() {
+	switch (selected_scene) {
+		case SINGLE_CUBE_EXAMPLE_SCENE: {
+			ex_single_cube_menu_update();
+		} break;
+		case DEBUG_EXAMPLE_SCENE: {
+			ex_debug_menu_update();
+		} break;
+		case NONE_EXAMPLE_SCENE: {
+		} break;
+		default: {
+			assert(0);
+		} break;
+	}
 }
 
 int core_init() {
-	menu_register_selected_scene_callback(menu_selected_scene_callback);
 	selected_scene = EXAMPLE_SCENE_INITIAL;
-	return load_selected_scene(selected_scene);
+	return load_selected_scene();
 }
 
 void core_destroy() {
@@ -196,4 +204,14 @@ void core_scroll_change_process(r64 x_offset, r64 y_offset) {
 
 void core_window_resize_process(s32 width, s32 height) {
 	window_resize_process_selected_scene(width, height);
+}
+
+void core_switch_scene(Example_Scene scene) {
+	destroy_selected_scene();
+	selected_scene = scene;
+	load_selected_scene();
+}
+
+void core_menu_properties_update() {
+	menu_properties_update_selected_scene();
 }

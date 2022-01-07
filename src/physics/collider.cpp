@@ -217,24 +217,24 @@ static Collider collider_convex_hull_create(const vec3* vertices, const u32* ind
 		assert(hash_map_get(&vertex_to_idx_map, &v2, &new_i2) == 0);
 		assert(hash_map_get(&vertex_to_idx_map, &v3, &new_i3) == 0);
 		
-		dvec3 triangle = (dvec3){new_i1, new_i2, new_i3};
+		dvec3 triangle = (dvec3){(s32)new_i1, (s32)new_i2, (s32)new_i3};
 		array_push(hull_triangle_faces, triangle);
 	}
 
 	// Prepare vertex to faces map
-	u32** vertex_to_faces_map = malloc(sizeof(u32*) * array_length(hull));
+	u32** vertex_to_faces_map = (u32**)malloc(sizeof(u32*) * array_length(hull));
 	for (u32 i = 0; i < array_length(hull); ++i) {
 		vertex_to_faces_map[i] = array_new(u32);
 	}
 
 	// Prepare vertex to neighbors map
-	u32** vertex_to_neighbors_map = malloc(sizeof(u32*) * array_length(hull));
+	u32** vertex_to_neighbors_map = (u32**)malloc(sizeof(u32*) * array_length(hull));
 	for (u32 i = 0; i < array_length(hull); ++i) {
 		vertex_to_neighbors_map[i] = array_new(u32);
 	}
 
 	// Prepare triangle faces to neighbors map
-	u32** triangle_faces_to_neighbor_faces_map = malloc(sizeof(u32*) * array_length(hull_triangle_faces));
+	u32** triangle_faces_to_neighbor_faces_map = (u32**)malloc(sizeof(u32*) * array_length(hull_triangle_faces));
 	for (u32 i = 0; i < array_length(hull_triangle_faces); ++i) {
 		triangle_faces_to_neighbor_faces_map[i] = array_new(u32);
 	}
@@ -277,7 +277,7 @@ static Collider collider_convex_hull_create(const vec3* vertices, const u32* ind
 
 	// Collect all 'de facto' faces of the convex hull
 	Collider_Convex_Hull_Face* faces = array_new(Collider_Convex_Hull_Face);
-	boolean* is_triangle_face_already_processed_arr = calloc(array_length(hull_triangle_faces), sizeof(boolean));
+	boolean* is_triangle_face_already_processed_arr = (boolean*)calloc(array_length(hull_triangle_faces), sizeof(boolean));
 
 	for (u32 i = 0; i < array_length(hull_triangle_faces); ++i) {
 		if (is_triangle_face_already_processed_arr[i]) {
@@ -313,7 +313,7 @@ static Collider collider_convex_hull_create(const vec3* vertices, const u32* ind
 	}
 
 	// Prepare face to neighbors map
-	u32** face_to_neighbor_faces_map = malloc(sizeof(u32*) * array_length(faces));
+	u32** face_to_neighbor_faces_map = (u32**)malloc(sizeof(u32*) * array_length(faces));
 	for (u32 i = 0; i < array_length(faces); ++i) {
 		face_to_neighbor_faces_map[i] = array_new(u32);
 	}
@@ -344,9 +344,9 @@ static Collider collider_convex_hull_create(const vec3* vertices, const u32* ind
 
 	Collider_Convex_Hull convex_hull;
 	convex_hull.faces = faces;
-	convex_hull.transformed_faces = array_copy(faces);
+	convex_hull.transformed_faces = (Collider_Convex_Hull_Face*)array_copy(faces);
 	convex_hull.vertices = hull;
-	convex_hull.transformed_vertices = array_copy(hull);
+	convex_hull.transformed_vertices = (vec3*)array_copy(hull);
 	convex_hull.vertex_to_faces = vertex_to_faces_map;
 	convex_hull.vertex_to_neighbors = vertex_to_neighbors_map;
 	convex_hull.face_to_neighbors = face_to_neighbor_faces_map;

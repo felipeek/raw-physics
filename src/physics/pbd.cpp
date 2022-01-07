@@ -241,7 +241,7 @@ static void solve_collision_constraint(Constraint* constraint, r64 h) {
 			vec3 delta_p = gm_vec3_subtract(gm_vec3_subtract(p1, p1_til), gm_vec3_subtract(p2, p2_til));
 			vec3 delta_p_t = gm_vec3_subtract(delta_p, gm_vec3_scalar_product(gm_vec3_dot(delta_p, normal), normal));
 
-			Constraint c = {0};
+			Constraint c;
 			c.type = POSITIONAL_CONSTRAINT;
 			c.positional_constraint.compliance = 0.0;
 			c.positional_constraint.delta_x = delta_p_t;

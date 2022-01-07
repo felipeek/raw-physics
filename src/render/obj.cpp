@@ -4,7 +4,7 @@
 #include "graphics.h"
 #include <light_array.h>
 
-extern "C" int obj_parse(const char* obj_path, Vertex** vertices, u32** indices)
+int obj_parse(const char* obj_path, Vertex** vertices, u32** indices)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;

@@ -54,7 +54,7 @@ static void sutherland_hodgman(vec3* input_polygon, int num_clip_planes, const P
 
 	//Create temporary list of vertices
 	// - We will keep ping-pong'ing between the two lists updating them as we go.
-	vec3* input = array_copy(input_polygon);
+	vec3* input = (vec3*)array_copy(input_polygon);
 	vec3* output = array_new(vec3);
 
 	//Iterate over each clip_plane provided

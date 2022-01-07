@@ -2,6 +2,7 @@
 #include <light_array.h>
 #include <stdio.h>
 #include <math.h>
+#include "../vendor/imgui.h"
 #include "../render/graphics.h"
 #include "../render/obj.h"
 #include "../physics/gjk.h"
@@ -251,4 +252,10 @@ void ex_single_cube_scroll_change_process(r64 x_offset, r64 y_offset) {
 
 void ex_single_cube_window_resize_process(s32 width, s32 height) {
 	camera_force_matrix_recalculation(&camera);
+}
+
+void ex_single_cube_menu_update() {
+	ImGui::Text("Single Cube");
+	ImGui::Separator();
+	ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
 }
