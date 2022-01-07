@@ -1,5 +1,5 @@
-#ifndef RAW_PHYSICS_GJK_H
-#define RAW_PHYSICS_GJK_H
+#ifndef RAW_PHYSICS_PHYSICS_GJK_H
+#define RAW_PHYSICS_PHYSICS_GJK_H
 
 #include <common.h>
 #include <gm.h>

@@ -1,5 +1,5 @@
-#ifndef RAW_PHYSICS_OBJ_H
-#define RAW_PHYSICS_OBJ_H
+#ifndef RAW_PHYSICS_RENDER_OBJ_H
+#define RAW_PHYSICS_RENDER_OBJ_H
 
 #include <common.h>
 #include "graphics.h"

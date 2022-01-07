@@ -3,7 +3,6 @@
 
 #include <common.h>
 
-int core_parse_arguments(s32 argc, char** argv);
 int core_init();
 void core_destroy();
 void core_update(r64 delta_time);

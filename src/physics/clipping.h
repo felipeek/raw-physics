@@ -1,5 +1,5 @@
-#ifndef RAW_PHYSICS_CLIPPING_H
-#define RAW_PHYSICS_CLIPPING_H
+#ifndef RAW_PHYSICS_PHYSICS_CLIPPING_H
+#define RAW_PHYSICS_PHYSICS_CLIPPING_H
 #include <gm.h>
 #include "collider.h"
 

@@ -1,5 +1,5 @@
-#ifndef RAW_PHYSICS_MESH_H
-#define RAW_PHYSICS_MESH_H
+#ifndef RAW_PHYSICS_RENDER_MESH_H
+#define RAW_PHYSICS_RENDER_MESH_H
 #include <gm.h>
 
 #pragma pack(push, 1)

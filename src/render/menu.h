@@ -1,11 +1,12 @@
-#ifndef RAW_PHYSICS_MENU_H
-#define RAW_PHYSICS_MENU_H
+#ifndef RAW_PHYSICS_RENDER_MENU_H
+#define RAW_PHYSICS_RENDER_MENU_H
 #include <GLFW/glfw3.h>
 #include <common.h>
+#include "../examples/examples.h"
 
-typedef void (*Dummy_Callback)();
+typedef void (*Selected_Scene_Callback)(Example_Scene);
 
-void menu_register_dummy_callback(Dummy_Callback f);
+void menu_register_selected_scene_callback(Selected_Scene_Callback f);
 void menu_char_click_process(GLFWwindow* window, u32 c);
 void menu_key_click_process(GLFWwindow* window, s32 key, s32 scan_code, s32 action, s32 mods);
 void menu_mouse_click_process(GLFWwindow* window, s32 button, s32 action, s32 mods);

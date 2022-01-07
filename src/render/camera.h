@@ -1,5 +1,5 @@
-#ifndef RAW_PHYSICS_CAMERA_H
-#define RAW_PHYSICS_CAMERA_H
+#ifndef RAW_PHYSICS_RENDER_CAMERA_H
+#define RAW_PHYSICS_RENDER_CAMERA_H
 #include <gm.h>
 #include "../quaternion.h"
 

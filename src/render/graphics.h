@@ -1,5 +1,5 @@
-#ifndef RAW_PHYSICS_GRAPHICS_H
-#define RAW_PHYSICS_GRAPHICS_H
+#ifndef RAW_PHYSICS_RENDER_GRAPHICS_H
+#define RAW_PHYSICS_RENDER_GRAPHICS_H
 #include <gm.h>
 #include "camera.h"
 #include "mesh.h"

@@ -1,5 +1,5 @@
-#ifndef RAW_PHYSICS_EPA_H
-#define RAW_PHYSICS_EPA_H
+#ifndef RAW_PHYSICS_PHYSICS_EPA_H
+#define RAW_PHYSICS_PHYSICS_EPA_H
 
 #include <common.h>
 #include <gm.h>

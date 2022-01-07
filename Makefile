@@ -17,7 +17,7 @@ BIN = raw-physics
 BUILD_DIR = ./bin/raw-physics
 
 # List of all .c source files.
-C = $(wildcard src/*.c) $(wildcard src/render/*.c) $(wildcard src/physics/*.c)
+C = $(wildcard src/*.c) $(wildcard src/examples/*.c) $(wildcard src/render/*.c) $(wildcard src/physics/*.c)
 CPP = $(wildcard src/render/*.cpp) $(wildcard src/vendor/*.cpp)
 
 # All .o files go to build dir.

@@ -1,5 +1,5 @@
-#ifndef RAW_PHYSICS_COLLIDER_H
-#define RAW_PHYSICS_COLLIDER_H
+#ifndef RAW_PHYSICS_PHYSICS_COLLIDER_H
+#define RAW_PHYSICS_PHYSICS_COLLIDER_H
 #include <gm.h>
 
 typedef struct {

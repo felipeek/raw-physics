@@ -1,5 +1,5 @@
-#ifndef RAW_PHYSICS_BROAD_H
-#define RAW_PHYSICS_BROAD_H
+#ifndef RAW_PHYSICS_PHYSICS_BROAD_H
+#define RAW_PHYSICS_PHYSICS_BROAD_H
 #include "../render/graphics.h"
 
 typedef struct {
