@@ -31,7 +31,7 @@ static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
 		position.z *= scale.z;
 		array_push(vertices_positions, position);
 	}
-	return collider_create(vertices_positions, indices, COLLIDER_TYPE_CONVEX_HULL);
+	return collider_convex_hull_create(vertices_positions, indices);
 }
 
 static Perspective_Camera create_camera() {
@@ -132,8 +132,7 @@ void ex_cube_storm_update(r64 delta_time) {
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
-		mat4 model_matrix = entity_get_model_matrix_no_scale(e);
-		collider_update(&e->collider, model_matrix);
+		collider_update(&e->collider, e->world_position, &e->world_rotation);
 	}
 
 	const r64 GRAVITY = 10.0;

@@ -1,6 +1,7 @@
 #include "epa.h"
 #include <light_array.h>
 #include <float.h>
+#include "support.h"
 
 static const r64 EPSILON = 0.001;
 
@@ -103,7 +104,7 @@ static vec3 triangle_centroid(vec3 p1, vec3 p2, vec3 p3) {
 	return centroid;
 }
 
-boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* _normal, r64* _penetration) {
+boolean epa(Collider* collider1, Collider* collider2, GJK_Simplex* simplex, vec3* _normal, r64* _penetration) {
 	vec3* polytope;
 	dvec3* faces;
 
@@ -134,7 +135,7 @@ boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* _normal, r64
 
 	boolean converged = false;
 	for (u32 it = 0; it < 50; ++it) {
-		vec3 support_point = gjk_get_support_point_of_minkowski_difference(shape1, shape2, min_normal);
+		vec3 support_point = support_point_of_minkowski_difference(collider1, collider2, min_normal);
 
 		// If the support time lies on the face currently set as the closest to the origin, we are done.
 		r64 d = gm_vec3_dot(min_normal, support_point);

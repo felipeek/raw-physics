@@ -33,7 +33,7 @@ static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
 		position.z *= scale.z;
 		array_push(vertices_positions, position);
 	}
-	Collider collider = collider_create(vertices_positions, indices, COLLIDER_TYPE_CONVEX_HULL);
+	Collider collider = collider_convex_hull_create(vertices_positions, indices);
 	printf("Vertices positions: %ld\n", array_length(vertices_positions));
 	array_free(vertices_positions);
 
@@ -208,8 +208,7 @@ void ex_debug_update(r64 delta_time) {
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
-		mat4 model_matrix = entity_get_model_matrix_no_scale(e);
-		collider_update(&e->collider, model_matrix);
+		collider_update(&e->collider, e->world_position, &e->world_rotation);
 		//printf("e%d: <%.50f, %.50f, %.50f>\n", i, e->world_position.x, e->world_position.y, e->world_position.z);
 		//printf("e%d: rot: <%.50f, %.50f, %.50f, %.50f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
 	}

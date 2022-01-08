@@ -44,7 +44,6 @@ typedef struct {
 } Entity;
 
 mat4 entity_get_model_matrix(const Entity* entity);
-mat4 entity_get_model_matrix_no_scale(const Entity* entity);
 void entity_create(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider);
 void entity_create_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider);
 void entity_destroy(Entity* entity);

@@ -27,23 +27,6 @@ mat4 entity_get_model_matrix(const Entity* entity)
 	return model_matrix;
 }
 
-mat4 entity_get_model_matrix_no_scale(const Entity* entity)
-{
-	r64 s, c;
-
-	mat4 rotation_matrix = quaternion_get_matrix(&entity->world_rotation);
-
-	mat4 translation_matrix = (mat4) {
-		1.0, 0.0, 0.0, entity->world_position.x,
-			0.0, 1.0, 0.0, entity->world_position.y,
-			0.0, 0.0, 1.0, entity->world_position.z,
-			0.0, 0.0, 0.0, 1.0
-	};
-
-	mat4 model_matrix = gm_mat4_multiply(&translation_matrix, &rotation_matrix);
-	return model_matrix;
-}
-
 static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r64 mass) {
 	r64 mass_per_vertex = mass / array_length(vertices);
 	mat3 result = {0};

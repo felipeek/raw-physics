@@ -2,32 +2,7 @@
 #include <light_array.h>
 #include <float.h>
 #include <math.h>
-
-u32 gjk_get_support_point_index(vec3* shape, vec3 direction) {
-	u32 selected_index;
-	r64 max_dot = -DBL_MAX;
-	for (u32 i = 0; i < array_length(shape); ++i) {
-		r64 dot = gm_vec3_dot(shape[i], direction);
-		if (dot > max_dot) {
-			selected_index = i;
-			max_dot = dot;
-		}
-	}
-
-	return selected_index;
-}
-
-vec3 gjk_get_support_point(vec3* shape, vec3 direction) {
-	u32 selected_index = gjk_get_support_point_index(shape, direction);
-	return shape[selected_index];
-}
-
-vec3 gjk_get_support_point_of_minkowski_difference(vec3* shape1, vec3* shape2, vec3 direction) {
-	vec3 support1 = gjk_get_support_point(shape1, direction);
-	vec3 support2 = gjk_get_support_point(shape2, gm_vec3_scalar_product(-1.0, direction));
-
-	return gm_vec3_subtract(support1, support2);
-}
+#include "support.h"
 
 static void add_to_simplex(GJK_Simplex* simplex, vec3 point) {
 	switch (simplex->num) {
@@ -371,16 +346,16 @@ static boolean do_simplex(GJK_Simplex* simplex, vec3* direction) {
 	assert(0);
 }
 
-boolean gjk_collides(vec3* shape1, vec3* shape2, GJK_Simplex* _simplex) {
+boolean gjk_collides(Collider* collider1, Collider* collider2, GJK_Simplex* _simplex) {
 	GJK_Simplex simplex;
 
-	simplex.a = gjk_get_support_point_of_minkowski_difference(shape1, shape2, (vec3){0.0, 0.0, 1.0});
+	simplex.a = support_point_of_minkowski_difference(collider1, collider2, (vec3){0.0, 0.0, 1.0});
 	simplex.num = 1; 
 
 	vec3 direction = gm_vec3_scalar_product(-1.0, simplex.a);
 
 	for (u32 i = 0; i < 100; ++i) {
-		vec3 next_point = gjk_get_support_point_of_minkowski_difference(shape1, shape2, direction);
+		vec3 next_point = support_point_of_minkowski_difference(collider1, collider2, direction);
 		
 		if (gm_vec3_dot(next_point, direction) < 0.0) {
 			// No intersection.

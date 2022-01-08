@@ -2,6 +2,7 @@
 #include <light_array.h>
 #include <float.h>
 #include "gjk.h"
+#include "support.h"
 
 typedef struct {
 	vec3 normal;
@@ -289,16 +290,17 @@ static vec3* get_vertices_of_faces(Collider_Convex_Hull* hull, Collider_Convex_H
 	return vertices;
 }
 
-Clipping_Contact* clipping_get_contact_manifold(Collider_Convex_Hull* convex_hull1, Collider_Convex_Hull* convex_hull2,
-	vec3 normal) {
+Clipping_Contact* clipping_get_contact_manifold(Collider* collider1, Collider* collider2, vec3 normal) {
 	const r64 EPSILON = 0.0001;
 	Clipping_Contact* contacts = array_new(Clipping_Contact);
 
 	vec3 inverted_normal = gm_vec3_negative(normal);
 
 	vec3 edge_normal;
-	u32 support1_idx = gjk_get_support_point_index(convex_hull1->transformed_vertices, normal);
-	u32 support2_idx = gjk_get_support_point_index(convex_hull2->transformed_vertices, inverted_normal);
+	Collider_Convex_Hull* convex_hull1 = &collider1->convex_hull;
+	Collider_Convex_Hull* convex_hull2 = &collider2->convex_hull;
+	u32 support1_idx = support_point_get_index(convex_hull1, normal);
+	u32 support2_idx = support_point_get_index(convex_hull2, inverted_normal);
 	u32 face1_idx = get_face_with_most_fitting_normal(support1_idx, convex_hull1, normal);
 	u32 face2_idx = get_face_with_most_fitting_normal(support2_idx, convex_hull2, inverted_normal);
 	Collider_Convex_Hull_Face face1 = convex_hull1->transformed_faces[face1_idx];

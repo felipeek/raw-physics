@@ -424,19 +424,15 @@ void pbd_simulate(r64 dt, Entity* entities) {
 				continue;
 			}
 
-			mat4 e1_model_matrix = entity_get_model_matrix_no_scale(e1);
-			mat4 e2_model_matrix = entity_get_model_matrix_no_scale(e2);
-			collider_update(&e1->collider, e1_model_matrix);
-			collider_update(&e2->collider, e2_model_matrix);
+			collider_update(&e1->collider, e1->world_position, &e1->world_rotation);
+			collider_update(&e2->collider, e2->world_position, &e2->world_rotation);
 
-			Collider_Convex_Hull* convex_hull1 = &e1->collider.convex_hull;
-			Collider_Convex_Hull* convex_hull2 = &e2->collider.convex_hull;
 			GJK_Simplex simplex;
-			if (gjk_collides(convex_hull1->transformed_vertices, convex_hull2->transformed_vertices, &simplex)) {
+			if (gjk_collides(&e1->collider, &e2->collider, &simplex)) {
 				vec3 normal;
 				r64 penetration;
-				if (epa(convex_hull1->transformed_vertices, convex_hull2->transformed_vertices, &simplex, &normal, &penetration)) {
-					Clipping_Contact* contacts = clipping_get_contact_manifold(convex_hull1, convex_hull2, normal);
+				if (epa(&e1->collider, &e2->collider, &simplex, &normal, &penetration)) {
+					Clipping_Contact* contacts = clipping_get_contact_manifold(&e1->collider, &e2->collider, normal);
 					for (u32 l = 0; l < array_length(contacts); ++l) {
 						Clipping_Contact* contact = &contacts[l];
 						Constraint constraint;

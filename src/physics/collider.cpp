@@ -3,6 +3,16 @@
 #include <memory.h>
 #include <light_array.h>
 #include <limits.h>
+#include "../util.h"
+
+Collider collider_sphere_create(const r32 radius) {
+	Collider collider;
+	collider.bounding_sphere_radius = radius;
+	collider.type = COLLIDER_TYPE_SPHERE;
+	collider.sphere.radius = radius;
+	collider.sphere.center = (vec3){0.0, 0.0, 0.0};
+	return collider;
+}
 
 static int vertex_compare(const void *key1, const void *key2) {
 	vec3 v1 = *(vec3*)key1;
@@ -185,7 +195,7 @@ static r64 get_convex_hull_bounding_sphere_radius(const vec3* hull) {
 // Create a convex hull from the vertices+indices
 // For now, we assume that the mesh is already a convex hull
 // This function only makes sure that vertices are unique - duplicated vertices will be merged.
-static Collider collider_convex_hull_create(const vec3* vertices, const u32* indices) {
+Collider collider_convex_hull_create(const vec3* vertices, const u32* indices) {
 	Hash_Map vertex_to_idx_map;
 	hash_map_create(&vertex_to_idx_map, 1024, sizeof(vec3), sizeof(u32), vertex_compare, vertex_hash);
 
@@ -383,15 +393,6 @@ static void collider_convex_hull_destroy(Collider* collider) {
 	array_free(collider->convex_hull.transformed_faces);
 }
 
-Collider collider_create(const vec3* vertices, const u32* indices, Collider_Type type) {
-	switch (type) {
-		case COLLIDER_TYPE_CONVEX_HULL: {
-			return collider_convex_hull_create(vertices, indices);
-		} break;
-	}
-	assert(0);
-}
-
 void collider_destroy(Collider* collider) {
 	switch (collider->type) {
 		case COLLIDER_TYPE_CONVEX_HULL: {
@@ -400,9 +401,10 @@ void collider_destroy(Collider* collider) {
 	}
 }
 
-void collider_update(Collider* collider, mat4 model_matrix_no_scale) {
+void collider_update(Collider* collider, vec3 translation, const Quaternion* rotation) {
 	switch (collider->type) {
 		case COLLIDER_TYPE_CONVEX_HULL: {
+			mat4 model_matrix_no_scale = util_get_model_matrix_no_scale(rotation, translation);
 			for (u32 i = 0; i < array_length(collider->convex_hull.transformed_vertices); ++i) {
 				vec4 vertex = (vec4) {
 					collider->convex_hull.vertices[i].x,
@@ -420,6 +422,9 @@ void collider_update(Collider* collider, mat4 model_matrix_no_scale) {
 				vec3 transformed_normal = gm_mat4_multiply_vec3(&model_matrix_no_scale, normal, false);
 				collider->convex_hull.transformed_faces[i].normal = gm_vec3_normalize(transformed_normal);
 			}
+		} break;
+		case COLLIDER_TYPE_SPHERE: {
+			collider->sphere.center = translation;
 		} break;
 		default: {
 			assert(0);

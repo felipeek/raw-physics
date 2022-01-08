@@ -5,6 +5,6 @@
 #include <gm.h>
 #include "gjk.h"
 
-boolean epa(vec3* shape1, vec3* shape2, GJK_Simplex* simplex, vec3* normal, r64* penetration);
+boolean epa(Collider* collider1, Collider* collider2, GJK_Simplex* simplex, vec3* normal, r64* penetration);
 
 #endif

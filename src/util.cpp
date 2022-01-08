@@ -43,6 +43,24 @@ void util_free_file(s8* file)
 	free(file);
 }
 
+mat4 util_get_model_matrix_no_scale(const Quaternion* rotation, vec3 translation)
+{
+	r64 s, c;
+
+	mat4 rotation_matrix = quaternion_get_matrix(rotation);
+
+	mat4 translation_matrix = (mat4) {
+		1.0, 0.0, 0.0, translation.x,
+			0.0, 1.0, 0.0, translation.y,
+			0.0, 0.0, 1.0, translation.z,
+			0.0, 0.0, 0.0, 1.0
+	};
+
+	mat4 model_matrix = gm_mat4_multiply(&translation_matrix, &rotation_matrix);
+	return model_matrix;
+}
+
+
 void util_matrix_to_r32_array(const mat4* m, r32 out[16]) {
 	out[0] =  (r32)m->data[0][0];
 	out[1] =  (r32)m->data[0][1];
