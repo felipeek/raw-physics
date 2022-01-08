@@ -130,6 +130,30 @@ int ex_debug_init() {
 		sphere_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, sphere_collider1);
 	array_push(entities, e);
 
+	vec3 wall_collider1_scale = (vec3){0.1f, 0.5f, 4.0f};
+	Collider wall_collider1 = create_convex_collider(cube_vertices, cube_indices, wall_collider1_scale);
+	entity_create_fixed(&e, cube_mesh, (vec3){-4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		wall_collider1_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider1);
+	array_push(entities, e);
+
+	vec3 wall_collider2_scale = (vec3){0.1f, 0.5f, 4.0f};
+	Collider wall_collider2 = create_convex_collider(cube_vertices, cube_indices, wall_collider2_scale);
+	entity_create_fixed(&e, cube_mesh, (vec3){4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		wall_collider2_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider2);
+	array_push(entities, e);
+
+	vec3 wall_collider3_scale = (vec3){4.0f, 0.5f, 0.1f};
+	Collider wall_collider3 = create_convex_collider(cube_vertices, cube_indices, wall_collider3_scale);
+	entity_create_fixed(&e, cube_mesh, (vec3){0.0, 0.0, -4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		wall_collider3_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider3);
+	array_push(entities, e);
+
+	vec3 wall_collider4_scale = (vec3){4.0f, 0.5f, 0.1f};
+	Collider wall_collider4 = create_convex_collider(cube_vertices, cube_indices, wall_collider4_scale);
+	entity_create_fixed(&e, cube_mesh, (vec3){0.0, 0.0, 4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		wall_collider4_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider4);
+	array_push(entities, e);
+
 	array_free(cube_vertices);
 	array_free(cube_indices);
 	array_free(sphere_vertices);
