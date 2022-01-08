@@ -125,7 +125,7 @@ int ex_debug_init() {
 
 #if 1
 	r64 y = -2.0f;
-	for (u32 i = 0; i < 5; ++i) {
+	for (u32 i = 0; i < 2; ++i) {
 		y += 2.1f;
 		Collider sphere_collider = collider_sphere_create(1.0);
 		entity_create(&e, sphere_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),

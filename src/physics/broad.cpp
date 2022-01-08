@@ -1,7 +1,7 @@
 #include "broad.h"
 #include <light_array.h>
 
-Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities) {
+Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities, r64 delta_time) {
 	Broad_Collision_Pair pair;
 	Broad_Collision_Pair* collision_pairs = array_new(Broad_Collision_Pair);
 
