@@ -5,7 +5,7 @@
 #include "broad.h"
 #include "../util.h"
 
-#define NUM_SUBSTEPS 100
+#define NUM_SUBSTEPS 10
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
 #define ENABLE_SIMULATION_ISLANDS
@@ -347,16 +347,16 @@ void pbd_simulate(r64 dt, Entity* entities) {
 		Broad_Collision_Pair* broad_collision_pairs = broad_get_collision_pairs(entities);
 
 #ifdef ENABLE_SIMULATION_ISLANDS
-		Entity*** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs);
+		u32** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs);
 
 		// All entities will be contained in the simulation islands.
 		// Update deactivation time and also, at the same time, its active status
 		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
-			Entity** simulation_island = simulation_islands[j];
+			u32* simulation_island = simulation_islands[j];
 
 			boolean all_inactive = true;
 			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = simulation_island[k];
+				Entity* e = &entities[simulation_island[k]];
 
 				r64 linear_velocity_len = gm_vec3_length(e->linear_velocity);
 				r64 angular_velocity_len = gm_vec3_length(e->angular_velocity);
@@ -373,7 +373,7 @@ void pbd_simulate(r64 dt, Entity* entities) {
 
 			// We only set entities to inactive if the whole island is inactive!
 			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = simulation_island[k];
+				Entity* e = &entities[simulation_island[k]];
 				e->active = !all_inactive;
 			}
 		}
@@ -388,9 +388,9 @@ void pbd_simulate(r64 dt, Entity* entities) {
 		}
 #else
 		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
-			Entity** simulation_island = simulation_islands[j];
+			u32* simulation_island = simulation_islands[j];
 			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = simulation_island[k];
+				Entity* e = &entities[simulation_island[k]];
 				if (e->active) {
 					e->color = util_pallete(1);
 				} else {
@@ -408,8 +408,8 @@ void pbd_simulate(r64 dt, Entity* entities) {
 		//for (u32 j = 0; j < array_length(entities); ++j) {
 		//	for (u32 k = j + 1; k < array_length(entities); ++k) {
 		for (u32 j = 0; j < array_length(broad_collision_pairs); ++j) {
-			Entity* e1 = broad_collision_pairs[j].e1;
-			Entity* e2 = broad_collision_pairs[j].e2;
+			Entity* e1 = &entities[broad_collision_pairs[j].e1_idx];
+			Entity* e2 = &entities[broad_collision_pairs[j].e2_idx];
 
 			// If e1 is "colliding" with e2, they must be either both active or both inactive
 			if (!e1->fixed && !e2->fixed) {

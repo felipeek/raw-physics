@@ -1,7 +1,8 @@
 #include "broad.h"
 #include <light_array.h>
+#include <hash_map.h>
 
-Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities, r64 delta_time) {
+Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities) {
 	Broad_Collision_Pair pair;
 	Broad_Collision_Pair* collision_pairs = array_new(Broad_Collision_Pair);
 
@@ -12,8 +13,8 @@ Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities, r64 delta_time
 
 			r64 entities_distance = gm_vec3_length(gm_vec3_subtract(e1->world_position, e2->world_position));
 			if (entities_distance <= e1->collider.bounding_sphere_radius + e2->collider.bounding_sphere_radius) {
-				pair.e1 = e1;
-				pair.e2 = e2;
+				pair.e1_idx = i;
+				pair.e2_idx = j;
 				array_push(collision_pairs, pair);
 			}
 		}
@@ -22,84 +23,80 @@ Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities, r64 delta_time
 	return collision_pairs;
 }
 
-static boolean is_entity_already_in_simulation_island(Entity*** simulation_island, Entity* entity) {
-	for (u32 i = 0; i < array_length(*simulation_island); ++i) {
-		Entity* current = (*simulation_island)[i];
-		if (current == entity) {
-			return true;
+static u32 uf_find(const u32* parents, u32 x) {
+	u32 p = parents[x];
+	if (p == x) {
+		return x;
+	}
+
+	return uf_find(parents, p);
+}
+
+static void uf_union(u32* parents, u32 x, u32 y) {
+	parents[uf_find(parents, y)] = parents[uf_find(parents, x)];
+}
+
+static u32* uf_collect_all(Entity* entities, Broad_Collision_Pair* collision_pairs) {
+	u32* parents = array_new_len(u32, array_length(entities));
+	for (u32 i = 0; i < array_length(entities); ++i) {
+		array_push(parents, i);
+	}
+
+	for (u32 i = 0; i < array_length(collision_pairs); ++i) {
+		Broad_Collision_Pair collision_pair = collision_pairs[i];
+		Entity* e1 = &entities[collision_pair.e1_idx];
+		Entity* e2 = &entities[collision_pair.e2_idx];
+		if (!e1->fixed && !e2->fixed) {
+			uf_union(parents, collision_pair.e1_idx, collision_pair.e2_idx);
 		}
 	}
 
-	return false;
+	return parents;
 }
 
-static void remove_computed_entity_from_array(Entity*** entities_to_compute, Entity* entity) {
-	for (u32 i = 0; i < array_length(*entities_to_compute); ++i) {
-		Entity* current = (*entities_to_compute)[i];
-		if (current == entity) {
-			array_remove(*entities_to_compute, i);
-			return;
-		}
-	}
+static int u32_compare(const void *key1, const void *key2) {
+	u32 n1 = *(u32*)key1;
+	u32 n2 = *(u32*)key2;
+	return n1 == n2;
 }
 
-static void collect_simulation_island_recursively(Entity*** entities_to_compute, Broad_Collision_Pair** collision_pairs,
-	Entity*** simulation_island, Entity* target_entity) {
-	if (is_entity_already_in_simulation_island(simulation_island, target_entity)) {
-		return;
-	}
-
-	array_push(*simulation_island, target_entity);
-
-	for (u32 i = 0; i < array_length(*collision_pairs); ++i) {
-		Broad_Collision_Pair* collision_pair = &(*collision_pairs)[i];
-		if (collision_pair->e1 == target_entity) {
-			collect_simulation_island_recursively(entities_to_compute, collision_pairs, simulation_island, collision_pair->e2);
-		} else if (collision_pair->e2 == target_entity) {
-			collect_simulation_island_recursively(entities_to_compute, collision_pairs, simulation_island, collision_pair->e1);
-		}
-	}
-
-	remove_computed_entity_from_array(entities_to_compute, target_entity);
+static unsigned int u32_hash(const void *key) {
+	u32 n = *(u32*)key;
+	return n;
 }
 
-// TEMPORARY: Brute-force algorithm, needs to be rewritten!
-Entity*** broad_collect_simulation_islands(Entity* entities, Broad_Collision_Pair* _collision_pairs) {
-	// @TEMPORARY: Hack to overcome the fact that the entities are not being dynamically allocated,
-	// i.e., their data is being directly stored in the array
-	// we need to implement an 'eid' squiggly-like scheme or, at least, malloc the entities in core and use an Entity** array there
-	Entity** entities_to_compute = array_new(Entity*);
+u32** broad_collect_simulation_islands(Entity* entities, Broad_Collision_Pair* collision_pairs) {
+	Hash_Map simulation_islands_map;
+	u32** simulation_islands = array_new(u32*);
+	u32* parents = uf_collect_all(entities, collision_pairs);
+	assert(!hash_map_create(&simulation_islands_map, 2 * array_length(entities), sizeof(u32), sizeof(u32), u32_compare, u32_hash));
+
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = &entities[i];
-		if (!e->fixed) {
-			array_push(entities_to_compute, e);
+		if (e->fixed) {
+			continue;
 		}
-	}
-
-	Broad_Collision_Pair* collision_pairs = array_new(Broad_Collision_Pair);
-	for (u32 i = 0; i < array_length(_collision_pairs); ++i) {
-		Broad_Collision_Pair collision_pair = _collision_pairs[i];
-		if (!collision_pair.e1->fixed && !collision_pair.e2->fixed) {
-			array_push(collision_pairs, collision_pair);
+		u32 parent = uf_find(parents, i);
+		u32 simulation_island_idx;
+		if (hash_map_get(&simulation_islands_map, &parent, &simulation_island_idx)) {
+			// Simulation Island not created yet.
+			u32* new_simulation_island = array_new(u32);
+			simulation_island_idx = array_length(simulation_islands);
+			array_push(simulation_islands, new_simulation_island);
+			assert(!hash_map_put(&simulation_islands_map, &parent, &simulation_island_idx));
 		}
-	}
-	Entity*** simulation_islands = array_new(Entity**);
 
-	while (array_length(entities_to_compute) > 0) {
-		Entity* e = entities_to_compute[0];
-		Entity** simulation_island = array_new(Entity*);
-		collect_simulation_island_recursively(&entities_to_compute, &collision_pairs, &simulation_island, e);
-		array_push(simulation_islands, simulation_island);
+		array_push(simulation_islands[simulation_island_idx], i);
 	}
 
-	array_free(entities_to_compute);
-	array_free(collision_pairs);
+	hash_map_destroy(&simulation_islands_map);
+	array_free(parents);
 	return simulation_islands;
 }
 
-void broad_simulation_islands_destroy(Entity*** simulation_islands) {
+void broad_simulation_islands_destroy(u32** simulation_islands) {
 	for (u32 i = 0; i < array_length(simulation_islands); ++i) {
-		Entity** simulation_island = simulation_islands[i];
+		u32* simulation_island = simulation_islands[i];
 		array_free(simulation_island);
 	}
 

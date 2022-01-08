@@ -93,6 +93,7 @@ typedef struct {
 #if defined(__cplusplus)
 /* creates a new array of type T */
 #define array_new(T) (T*)((char*)&(((Dynamic_ArrayBase*)calloc(1, sizeof(Dynamic_ArrayBase) + sizeof(T)))->capacity = 1) + sizeof(Dynamic_ArrayBase))
+#define array_new_len(T, L) (T*)((char*)&(((Dynamic_ArrayBase*)calloc(1, sizeof(Dynamic_ArrayBase) + sizeof(T) * L))->capacity = L) + sizeof(Dynamic_ArrayBase))
 #else
 #define array_new(T) array_dyn_allocate(sizeof(T) + sizeof(Dynamic_ArrayBase))
 /* creates a new array of type T with starting capacity L */
