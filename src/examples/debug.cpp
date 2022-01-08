@@ -10,6 +10,7 @@
 #include "../physics/clipping.h"
 #include "../physics/pbd.h"
 #include "../entity.h"
+#include "../util.h"
 
 #define GIM_ENTITY_COLOR (vec4) {1.0, 1.0, 1.0, 1.0}
 
@@ -110,25 +111,25 @@ int ex_debug_init() {
 	Mesh sphere_mesh = graphics_mesh_create(sphere_vertices, sphere_indices);
 	vec3 sphere_scale = (vec3){1.0, 1.0, 1.0};
 
-	Collider cube_collider1 = create_convex_collider(cube_vertices, cube_indices, cube_scale);
-	entity_create(&e, cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		cube_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, cube_collider1);
-	e.world_position = (vec3){-0.99000000000000021316282072803005576133728027343750, -0.00034765957551975701367297233446151949465274810791, -0.99000000000000021316282072803005576133728027343750};
-	e.world_rotation = (Quaternion){0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 1.00000000000000000000000000000000000000000000000000};
-	array_push(entities, e);
+	//Collider cube_collider1 = create_convex_collider(cube_vertices, cube_indices, cube_scale);
+	//entity_create(&e, cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	//	cube_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, cube_collider1);
+	//e.world_position = (vec3){-0.99000000000000021316282072803005576133728027343750, -0.00034765957551975701367297233446151949465274810791, -0.99000000000000021316282072803005576133728027343750};
+	//e.world_rotation = (Quaternion){0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 1.00000000000000000000000000000000000000000000000000};
+	//array_push(entities, e);
 
 	//Collider cube_collider2 = create_convex_collider(cube_vertices, cube_indices, cube_scale);
 	//entity_create(&e, cube_mesh, (vec3){0.0, 2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 	//	cube_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, cube_collider2);
 	//array_push(entities, e);
 
-#if 0
+#if 1
 	r64 y = -2.0f;
 	for (u32 i = 0; i < 5; ++i) {
 		y += 2.1f;
 		Collider sphere_collider = collider_sphere_create(1.0);
 		entity_create(&e, sphere_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-			sphere_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, sphere_collider);
+			sphere_scale, util_pallete(i), 1.0, sphere_collider);
 		array_push(entities, e);
 	}
 
@@ -199,7 +200,7 @@ void ex_debug_update(r64 delta_time) {
 		return;
 	}
 
-#if 0
+#if 1
 	const r64 GRAVITY = 10.0;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Physics_Force pf;
@@ -218,15 +219,6 @@ void ex_debug_update(r64 delta_time) {
 
 void ex_debug_render() {
 	#if 0
-	//vec3 point1 = _p1;
-	//vec3 point2 = _p2;
-	//vec3 normal = _n;
-
-	//graphics_renderer_debug_points(&point1, 1, (vec4){1.0, 1.0, 1.0, 1.0});
-	//graphics_renderer_debug_points(&point2, 1, (vec4){1.0, 1.0, 1.0, 1.0});
-	//graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0, 1.0, 1.0, 1.0});
-	//graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0, 1.0, 1.0, 1.0});
-	#else
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		for (u32 j = i + 1; j < array_length(entities); ++j) {
 			Entity* e1 = &entities[i];
@@ -254,9 +246,9 @@ void ex_debug_render() {
 				e1->color = (vec4){1.0, 0.0, 0.0, 1.0};
 				e2->color = (vec4){1.0, 0.0, 0.0, 1.0};
 			}
-	#endif
 		}
 	}
+	#endif
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, &entities[i], lights);
@@ -333,10 +325,24 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		wireframe = !wireframe;
 		key_state[GLFW_KEY_L] = false;
 	}
+
 	if (key_state[GLFW_KEY_1]) {
 		is_mouse_bound_to_entity_movement = true;
 	} else {
 		is_mouse_bound_to_entity_movement = false;
+	}
+
+	static Physics_Force forces[5];
+	if (key_state[GLFW_KEY_2]) {
+		for (u32 i = 0; i < 5; ++i) {
+			array_push(entities[i + 1].forces, forces[i]);
+		}
+	} else {
+		for (u32 i = 0; i < 5; ++i) {
+			forces[i].force = (vec3){util_random_float(-1.0, 1.0), 0.0, util_random_float(-1.0, 1.0)};
+			forces[i].force = gm_vec3_scalar_product(20.0, gm_vec3_normalize(forces[i].force));
+			forces[i].position = (vec3){0.0f, 0.0f, 0.0f};
+		}
 	}
 
 	if (key_state[GLFW_KEY_SPACE]) {

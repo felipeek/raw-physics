@@ -219,10 +219,6 @@ static void collision_constraint_solve(Constraint* constraint, r64 h) {
 	vec3 p1 = gm_vec3_add(e1->world_position, eppd.r1_wc);
 	vec3 p2 = gm_vec3_add(e2->world_position, eppd.r2_wc);
 	r64 d = gm_vec3_dot(gm_vec3_subtract(p1, p2), constraint->collision_constraint.normal);
-	if (d > 0.38) {
-		paused = true;
-		return;
-	}
 	vec3 delta_x = gm_vec3_scalar_product(d, constraint->collision_constraint.normal);
 
 	if (d > 0.0) {
