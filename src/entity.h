@@ -28,7 +28,7 @@ typedef struct {
 	vec3 linear_velocity;
 	boolean fixed;
 	boolean active;
-	r64 deactivationTime;
+	r64 deactivation_time;
 	r64 static_friction_coefficient;
 	r64 dynamic_friction_coefficient;
 	r64 restitution_coefficient;

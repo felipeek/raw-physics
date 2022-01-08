@@ -9,7 +9,7 @@
 #include "../util.h"
 
 #define NUM_SUBSTEPS 10
-#define NUM_POS_ITERS 10
+#define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
 #define ENABLE_SIMULATION_ISLANDS
 #define LINEAR_SLEEPING_THRESHOLD 0.15
@@ -364,12 +364,12 @@ void pbd_simulate(r64 dt, Entity* entities) {
 				r64 linear_velocity_len = gm_vec3_length(e->linear_velocity);
 				r64 angular_velocity_len = gm_vec3_length(e->angular_velocity);
 				if (linear_velocity_len < LINEAR_SLEEPING_THRESHOLD && angular_velocity_len < ANGULAR_SLEEPING_THRESHOLD) {
-					e->deactivationTime += h; // we should use 'dt' if doing once per frame
+					e->deactivation_time += h; // we should use 'dt' if doing once per frame
 				} else {
-					e->deactivationTime = 0.0;
+					e->deactivation_time = 0.0;
 				}
 
-				if (e->deactivationTime < DEACTIVATION_TIME_TO_BE_INACTIVE) {
+				if (e->deactivation_time < DEACTIVATION_TIME_TO_BE_INACTIVE) {
 					all_inactive = false;
 				}
 			}

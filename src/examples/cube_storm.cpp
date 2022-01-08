@@ -197,7 +197,7 @@ void ex_cube_storm_input_process(boolean* key_state, r64 delta_time) {
 		vec3 cube_position = gm_vec3_add(camera_pos, diff);
 
 		Entity e;
-		char* mesh_name;
+		const char* mesh_name;
 		int r = rand();
 		if (r % 3 == 0) {
 			mesh_name = "./res/ico.obj";

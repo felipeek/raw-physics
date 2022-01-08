@@ -80,7 +80,7 @@ void entity_create(Entity* entity, Mesh mesh, vec3 world_position, Quaternion wo
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = false;
 	entity->active = true;
-	entity->deactivationTime = 0.0;
+	entity->deactivation_time = 0.0;
 	entity->collider = collider;
 	entity->static_friction_coefficient = 0.2;
 	entity->dynamic_friction_coefficient = 1.0;
@@ -107,7 +107,7 @@ void entity_create_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quatern
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = true;
 	entity->active = true; // meaningless for fixed entities
-	entity->deactivationTime = 0.0;
+	entity->deactivation_time = 0.0;
 	entity->collider = collider;
 	entity->static_friction_coefficient = 0.5;
 	entity->dynamic_friction_coefficient = 0.5;
