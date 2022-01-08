@@ -219,6 +219,10 @@ static void collision_constraint_solve(Constraint* constraint, r64 h) {
 	vec3 p1 = gm_vec3_add(e1->world_position, eppd.r1_wc);
 	vec3 p2 = gm_vec3_add(e2->world_position, eppd.r2_wc);
 	r64 d = gm_vec3_dot(gm_vec3_subtract(p1, p2), constraint->collision_constraint.normal);
+	if (d > 0.38) {
+		paused = true;
+		return;
+	}
 	vec3 delta_x = gm_vec3_scalar_product(d, constraint->collision_constraint.normal);
 
 	if (d > 0.0) {
@@ -423,6 +427,10 @@ void pbd_simulate(r64 dt, Entity* entities) {
 
 			collider_update(&e1->collider, e1->world_position, &e1->world_rotation);
 			collider_update(&e2->collider, e2->world_position, &e2->world_rotation);
+			//printf("e1: <%.50f, %.50f, %.50f>\n", e1->world_position.x, e1->world_position.y, e1->world_position.z);
+			//printf("e1: rot: <%.50f, %.50f, %.50f, %.50f>\n", e1->world_rotation.x, e1->world_rotation.y, e1->world_rotation.z, e1->world_rotation.w);
+			//printf("e2: <%.50f, %.50f, %.50f>\n", e2->world_position.x, e2->world_position.y, e2->world_position.z);
+			//printf("e2: rot: <%.50f, %.50f, %.50f, %.50f>\n", e2->world_rotation.x, e2->world_rotation.y, e2->world_rotation.z, e2->world_rotation.w);
 
 			vec3 normal;
 			Collider_Contact* contacts = collider_get_contacts(&e1->collider, &e2->collider, &normal);

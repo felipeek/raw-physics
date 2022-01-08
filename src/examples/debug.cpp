@@ -110,25 +110,27 @@ int ex_debug_init() {
 	Mesh sphere_mesh = graphics_mesh_create(sphere_vertices, sphere_indices);
 	vec3 sphere_scale = (vec3){1.0, 1.0, 1.0};
 
-	//Collider cube_collider1 = create_convex_collider(cube_vertices, cube_indices, cube_scale);
-	//entity_create(&e, cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-	//	cube_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, cube_collider1);
-	//array_push(entities, e);
+	Collider cube_collider1 = create_convex_collider(cube_vertices, cube_indices, cube_scale);
+	entity_create(&e, cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		cube_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, cube_collider1);
+	e.world_position = (vec3){-0.99000000000000021316282072803005576133728027343750, -0.00034765957551975701367297233446151949465274810791, -0.99000000000000021316282072803005576133728027343750};
+	e.world_rotation = (Quaternion){0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 1.00000000000000000000000000000000000000000000000000};
+	array_push(entities, e);
 
 	//Collider cube_collider2 = create_convex_collider(cube_vertices, cube_indices, cube_scale);
 	//entity_create(&e, cube_mesh, (vec3){0.0, 2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 	//	cube_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, cube_collider2);
 	//array_push(entities, e);
 
-	Collider sphere_collider = collider_sphere_create(1.0);
-	entity_create(&e, sphere_mesh, (vec3){0.0, 2.1, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		sphere_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, sphere_collider);
-	array_push(entities, e);
-
-	Collider sphere_collider1 = collider_sphere_create(1.0);
-	entity_create(&e, sphere_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		sphere_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, sphere_collider1);
-	array_push(entities, e);
+#if 0
+	r64 y = -2.0f;
+	for (u32 i = 0; i < 5; ++i) {
+		y += 2.1f;
+		Collider sphere_collider = collider_sphere_create(1.0);
+		entity_create(&e, sphere_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+			sphere_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, sphere_collider);
+		array_push(entities, e);
+	}
 
 	vec3 wall_collider1_scale = (vec3){0.1f, 0.5f, 4.0f};
 	Collider wall_collider1 = create_convex_collider(cube_vertices, cube_indices, wall_collider1_scale);
@@ -153,6 +155,14 @@ int ex_debug_init() {
 	entity_create_fixed(&e, cube_mesh, (vec3){0.0, 0.0, 4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider4_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider4);
 	array_push(entities, e);
+#else
+	//Collider sphere_collider = collider_sphere_create(1.0);
+	//entity_create(&e, sphere_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	//	sphere_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, sphere_collider);
+	//e.world_position = (vec3){0.00000000000000000000000000000000000000000000000000, -0.00332037728014668905712758473214307741727679967880, 0.00000000000000000000000000000000000000000000000000};
+	//e.world_rotation = (Quaternion){0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 1.00000000000000000000000000000000000000000000000000};
+	//array_push(entities, e);
+#endif
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -189,7 +199,7 @@ void ex_debug_update(r64 delta_time) {
 		return;
 	}
 
-#if 1
+#if 0
 	const r64 GRAVITY = 10.0;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Physics_Force pf;
@@ -207,7 +217,7 @@ void ex_debug_update(r64 delta_time) {
 }
 
 void ex_debug_render() {
-	#if 1
+	#if 0
 	//vec3 point1 = _p1;
 	//vec3 point2 = _p2;
 	//vec3 normal = _n;
@@ -217,32 +227,36 @@ void ex_debug_render() {
 	//graphics_renderer_debug_vector(point1, gm_vec3_add(point1, normal), (vec4){1.0, 1.0, 1.0, 1.0});
 	//graphics_renderer_debug_vector(point2, gm_vec3_add(point2, normal), (vec4){1.0, 1.0, 1.0, 1.0});
 	#else
-	Entity* e1 = &entities[0];
-	Entity* e2 = &entities[1];
-	GJK_Simplex simplex;
-	vec3 normal;
-	boolean collision = false;
-	Collider_Contact* contacts = collider_get_contacts(&e1->collider, &e2->collider, &normal);
+	for (u32 i = 0; i < array_length(entities); ++i) {
+		for (u32 j = i + 1; j < array_length(entities); ++j) {
+			Entity* e1 = &entities[i];
+			Entity* e2 = &entities[j];
+			GJK_Simplex simplex;
+			vec3 normal;
+			boolean collision = false;
+			Collider_Contact* contacts = collider_get_contacts(&e1->collider, &e2->collider, &normal);
 
-	if (contacts && array_length(contacts) > 0) {
-		for (u32 i = 0; i < array_length(contacts); ++i) {
-			Collider_Contact* contact = &contacts[i];
+			if (contacts && array_length(contacts) > 0) {
+				for (u32 i = 0; i < array_length(contacts); ++i) {
+					Collider_Contact* contact = &contacts[i];
 
-			vec3 cp1 = contact->collision_point1;
-			vec3 cp2 = contact->collision_point2;
-			graphics_renderer_debug_points(&cp1, 1, (vec4){1.0, 1.0, 1.0, 1.0});
-			graphics_renderer_debug_points(&cp2, 1, (vec4){1.0, 1.0, 1.0, 1.0});
-			graphics_renderer_debug_vector(cp1, gm_vec3_add(cp1, normal), (vec4){1.0, 1.0, 1.0, 1.0});
-			graphics_renderer_debug_vector(cp2, gm_vec3_add(cp2, normal), (vec4){1.0, 1.0, 1.0, 1.0});
-		}
+					vec3 cp1 = contact->collision_point1;
+					vec3 cp2 = contact->collision_point2;
+					graphics_renderer_debug_points(&cp1, 1, (vec4){1.0, 1.0, 1.0, 1.0});
+					graphics_renderer_debug_points(&cp2, 1, (vec4){1.0, 1.0, 1.0, 1.0});
+					graphics_renderer_debug_vector(cp1, gm_vec3_add(cp1, normal), (vec4){1.0, 1.0, 1.0, 1.0});
+					graphics_renderer_debug_vector(cp2, gm_vec3_add(cp2, normal), (vec4){1.0, 1.0, 1.0, 1.0});
+				}
 
-		e1->color = (vec4){0.0, 1.0, 0.0, 1.0};
-		e2->color = (vec4){0.0, 1.0, 0.0, 1.0};
-	} else {
-		e1->color = (vec4){1.0, 0.0, 0.0, 1.0};
-		e2->color = (vec4){1.0, 0.0, 0.0, 1.0};
-	}
+				e1->color = (vec4){0.0, 1.0, 0.0, 1.0};
+				e2->color = (vec4){0.0, 1.0, 0.0, 1.0};
+			} else {
+				e1->color = (vec4){1.0, 0.0, 0.0, 1.0};
+				e2->color = (vec4){1.0, 0.0, 0.0, 1.0};
+			}
 	#endif
+		}
+	}
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, &entities[i], lights);

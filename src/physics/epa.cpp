@@ -38,27 +38,38 @@ void get_face_normal_and_distance_to_origin(dvec3 face, vec3* polytope, vec3* _n
 	vec3 ac = gm_vec3_subtract(c, a);
 	vec3 normal = gm_vec3_normalize(gm_vec3_cross(ab, ac));
 
+	assert(normal.x != 0.0 || normal.y != 0.0 || normal.z != 0.0);
+
+	// When this value is not 0, it is possible that the normals are not found even if the polytope is not degenerate
+	const r64 DISTANCE_TO_ORIGIN_TOLERANCE = 0.0000000000000;
+
 	// the distance from the face's *plane* to the origin (considering an infinite plane).
 	r64 distance = gm_vec3_dot(normal, a);
-	if (distance < -EPSILON) {
+	if (distance < -DISTANCE_TO_ORIGIN_TOLERANCE) {
 		// if the distance is less than 0, it means that our normal is point inwards instead of outwards
 		// in this case, we just invert both normal and distance
 		// this way, we don't need to worry about face's winding
 		normal = gm_vec3_negative(normal);
 		distance = -distance;
-	} else if (distance > -EPSILON && distance < EPSILON) {
+	} else if (distance >= -DISTANCE_TO_ORIGIN_TOLERANCE && distance <= DISTANCE_TO_ORIGIN_TOLERANCE) {
 		// if the distance is exactly 0.0, then it means that the origin is lying exactly on the face.
 		// in this case, we can't directly infer the orientation of the normal.
 		// since our shape is convex, we analyze the other vertices of the hull to deduce the orientation
+		boolean was_able_to_calculate_normal = false;
 		for (u32 i = 0; i < array_length(polytope); ++i) {
 			vec3 current = polytope[i];
 			r64 auxiliar_distance = gm_vec3_dot(normal, current);
-			if (auxiliar_distance < -EPSILON || auxiliar_distance > EPSILON) {
+			if (auxiliar_distance < -DISTANCE_TO_ORIGIN_TOLERANCE || auxiliar_distance > DISTANCE_TO_ORIGIN_TOLERANCE) {
 				// since the shape is convex, the other vertices should always be "behind" the normal plane
-				normal = auxiliar_distance < -EPSILON ? normal : gm_vec3_negative(normal);
+				normal = auxiliar_distance < -DISTANCE_TO_ORIGIN_TOLERANCE ? normal : gm_vec3_negative(normal);
+				was_able_to_calculate_normal = true;
 				break;
 			}
 		}
+
+		// If we were not able to calculate the normal, it means that ALL points of the polytope are in the same plane
+		// Therefore, we either have a degenerate polytope or our tolerance is not big enough
+		assert(was_able_to_calculate_normal);
 	}
 
 	*_normal = normal;
@@ -143,6 +154,7 @@ boolean epa(Collider* collider1, Collider* collider2, GJK_Simplex* simplex, vec3
 			*_normal = min_normal;
 			*_penetration = min_distance;
 			converged = true;
+			//printf("epa: took %d iterations to converge\n", it);
 			break;
 		}
 
