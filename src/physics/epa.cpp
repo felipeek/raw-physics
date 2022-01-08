@@ -3,7 +3,7 @@
 #include <float.h>
 #include "support.h"
 
-static const r64 EPSILON = 0.001;
+static const r64 EPSILON = 0.0001;
 
 void polytope_from_gjk_simplex(const GJK_Simplex* s, vec3** _polytope, dvec3** _faces) {
 	assert(s->num == 4);
@@ -134,7 +134,7 @@ boolean epa(Collider* collider1, Collider* collider2, GJK_Simplex* simplex, vec3
 	}
 
 	boolean converged = false;
-	for (u32 it = 0; it < 50; ++it) {
+	for (u32 it = 0; it < 100; ++it) {
 		vec3 support_point = support_point_of_minkowski_difference(collider1, collider2, min_normal);
 
 		// If the support time lies on the face currently set as the closest to the origin, we are done.

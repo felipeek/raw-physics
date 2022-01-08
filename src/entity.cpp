@@ -27,25 +27,6 @@ mat4 entity_get_model_matrix(const Entity* entity)
 	return model_matrix;
 }
 
-static mat3 get_symmetric_inertia_tensor_for_object(vec3* vertices, r64 mass) {
-	r64 mass_per_vertex = mass / array_length(vertices);
-	mat3 result = {0};
-	for (u32 i = 0; i < array_length(vertices); ++i) {
-		vec3 v = vertices[i];
-		result.data[0][0] += mass_per_vertex * (v.y * v.y + v.z * v.z);
-		result.data[0][1] += mass_per_vertex * v.x * v.y;
-		result.data[0][2] += mass_per_vertex * v.x * v.z;
-		result.data[1][0] += mass_per_vertex * v.x * v.y;
-		result.data[1][1] += mass_per_vertex * (v.x * v.x + v.z * v.z);
-		result.data[1][2] += mass_per_vertex * v.y * v.z;
-		result.data[2][0] += mass_per_vertex * v.x * v.z;
-		result.data[2][1] += mass_per_vertex * v.y * v.z;
-		result.data[2][2] += mass_per_vertex * (v.x * v.x + v.y * v.y);
-	}
-
-	return result;
-}
-
 void entity_create(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider)
 {
 	entity->mesh = mesh;
@@ -58,7 +39,7 @@ void entity_create(Entity* entity, Mesh mesh, vec3 world_position, Quaternion wo
 	entity->previous_angular_velocity = (vec3){0.0, 0.0, 0.0};
 	entity->previous_linear_velocity = (vec3){0.0, 0.0, 0.0};
 	entity->inverse_mass = 1.0 / mass;
-	entity->inertia_tensor = get_symmetric_inertia_tensor_for_object(collider.convex_hull.vertices, mass);
+	entity->inertia_tensor = collider_get_default_inertia_tensor(&collider, mass);
 	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = false;

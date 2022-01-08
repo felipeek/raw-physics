@@ -191,8 +191,8 @@ typedef struct {
 } Render_Primitives_Context;
 
 typedef struct {
-	vec3 position;
-	vec4 color;
+	fvec3 position;
+	fvec4 color;
 } Primitive_3D_Vertex;
 
 static Render_Primitives_Context primitives_ctx;
@@ -307,8 +307,8 @@ void graphics_renderer_debug_points(vec3* points, int point_count, vec4 color)
 
 	for (s32 i = 0; i < point_count; ++i)
 	{
-		verts[i].position = points[i];
-		verts[i].color = color;
+		verts[i].position = (fvec3){(r32)points[i].x, (r32)points[i].y, (r32)points[i].z};
+		verts[i].color = (fvec4){(r32)color.x, (r32)color.y, (r32)color.z, (r32)color.z};
 	}
 
 	primitives_ctx.point_count += point_count;
@@ -321,11 +321,11 @@ void graphics_renderer_debug_vector(vec3 p1, vec3 p2, vec4 color)
 
 	Primitive_3D_Vertex *verts = (Primitive_3D_Vertex *)primitives_ctx.data_ptr + primitives_ctx.vertex_count;
 
-	verts[0].position = p1;
-	verts[0].color = color;
+	verts[0].position = (fvec3){(r32)p1.x, (r32)p1.y, (r32)p1.z};
+	verts[0].color = (fvec4){(r32)color.x, (r32)color.y, (r32)color.z, (r32)color.w};
 
-	verts[1].position = p2;
-	verts[1].color = color;
+	verts[1].position = (fvec3){(r32)p2.x, (r32)p2.y, (r32)p2.z};
+	verts[1].color = (fvec4){(r32)color.x, (r32)color.y, (r32)color.z, (r32)color.w};
 
 	primitives_ctx.vertex_count += 2;
 }

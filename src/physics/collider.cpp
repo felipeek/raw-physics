@@ -4,6 +4,9 @@
 #include <light_array.h>
 #include <limits.h>
 #include "../util.h"
+#include "gjk.h"
+#include "clipping.h"
+#include "epa.h"
 
 Collider collider_sphere_create(const r32 radius) {
 	Collider collider;
@@ -430,4 +433,72 @@ void collider_update(Collider* collider, vec3 translation, const Quaternion* rot
 			assert(0);
 		} break;
 	}
+}
+
+mat3 collider_get_default_inertia_tensor(Collider* collider, r64 mass) {
+	switch(collider->type) {
+		case COLLIDER_TYPE_SPHERE: {
+			r64 I = (2.0 / 5.0) * mass * collider->sphere.radius * collider->sphere.radius;
+			mat3 result = {0};
+			result.data[0][0] = I;
+			result.data[1][1] = I;
+			result.data[2][2] = I;
+			return result;
+		} break;
+		case COLLIDER_TYPE_CONVEX_HULL: {
+			r64 mass_per_vertex = mass / array_length(collider->convex_hull.vertices);
+			mat3 result = {0};
+			for (u32 i = 0; i < array_length(collider->convex_hull.vertices); ++i) {
+				vec3 v = collider->convex_hull.vertices[i];
+				result.data[0][0] += mass_per_vertex * (v.y * v.y + v.z * v.z);
+				result.data[0][1] += mass_per_vertex * v.x * v.y;
+				result.data[0][2] += mass_per_vertex * v.x * v.z;
+				result.data[1][0] += mass_per_vertex * v.x * v.y;
+				result.data[1][1] += mass_per_vertex * (v.x * v.x + v.z * v.z);
+				result.data[1][2] += mass_per_vertex * v.y * v.z;
+				result.data[2][0] += mass_per_vertex * v.x * v.z;
+				result.data[2][1] += mass_per_vertex * v.y * v.z;
+				result.data[2][2] += mass_per_vertex * (v.x * v.x + v.y * v.y);
+			}
+			return result;
+		} break;
+	}
+
+	assert(0);
+}
+
+Collider_Contact* collider_get_contacts(Collider* collider1, Collider* collider2, vec3* normal) {
+	GJK_Simplex simplex;
+	r64 penetration;
+
+	// If both colliders are spheres, calling EPA is not only extremely slow, but also provide bad results.
+	// GJK is also not necessary. In this case, just calculate everything analytically.
+	if (collider1->type == COLLIDER_TYPE_SPHERE && collider2->type == COLLIDER_TYPE_SPHERE) {
+		vec3 distance_vector = gm_vec3_subtract(collider1->sphere.center, collider2->sphere.center);
+		r32 distance_sqd = gm_vec3_dot(distance_vector, distance_vector);
+		r32 min_distance = collider1->sphere.radius + collider2->sphere.radius;
+		if (distance_sqd < (min_distance * min_distance)) {
+			// Spheres are colliding
+			*normal = gm_vec3_normalize(gm_vec3_subtract(collider2->sphere.center, collider1->sphere.center));
+			penetration = min_distance - sqrt(distance_sqd);
+			return clipping_get_contact_manifold(collider1, collider2, *normal, penetration);
+		}
+
+		return NULL;
+	}
+
+	// Call GJK to check if there is a collision
+	if (gjk_collides(collider1, collider2, &simplex)) {
+		// There is a collision.
+
+		// Get the collision normal using EPA
+		if (!epa(collider1, collider2, &simplex, normal, &penetration)) {
+			return NULL;
+		}
+
+		// Finally, clip the results to get the result manifold
+		return clipping_get_contact_manifold(collider1, collider2, *normal, penetration);
+	}
+
+	return NULL;
 }

@@ -290,15 +290,18 @@ static vec3* get_vertices_of_faces(Collider_Convex_Hull* hull, Collider_Convex_H
 	return vertices;
 }
 
-Clipping_Contact* clipping_get_contact_manifold(Collider* collider1, Collider* collider2, vec3 normal) {
+Collider_Contact* convex_convex_contact_manifold(Collider* collider1, Collider* collider2, vec3 normal) {
+	assert(collider1->type == COLLIDER_TYPE_CONVEX_HULL);
+	assert(collider2->type == COLLIDER_TYPE_CONVEX_HULL);
+	Collider_Convex_Hull* convex_hull1 = &collider1->convex_hull;
+	Collider_Convex_Hull* convex_hull2 = &collider2->convex_hull;
+
 	const r64 EPSILON = 0.0001;
-	Clipping_Contact* contacts = array_new(Clipping_Contact);
+	Collider_Contact* contacts = array_new(Collider_Contact);
 
 	vec3 inverted_normal = gm_vec3_negative(normal);
 
 	vec3 edge_normal;
-	Collider_Convex_Hull* convex_hull1 = &collider1->convex_hull;
-	Collider_Convex_Hull* convex_hull2 = &collider2->convex_hull;
 	u32 support1_idx = support_point_get_index(convex_hull1, normal);
 	u32 support2_idx = support_point_get_index(convex_hull2, inverted_normal);
 	u32 face1_idx = get_face_with_most_fitting_normal(support1_idx, convex_hull1, normal);
@@ -319,7 +322,7 @@ Clipping_Contact* clipping_get_contact_manifold(Collider* collider1, Collider* c
 		vec3 p2 = convex_hull2->transformed_vertices[edges.z];
 		vec3 d2 = gm_vec3_subtract(convex_hull2->transformed_vertices[edges.w], p2);
 		assert(collision_distance_between_skew_lines(p1, d1, p2, d2, &l1, &l2, 0, 0));
-		Clipping_Contact contact = (Clipping_Contact){l1, l2};
+		Collider_Contact contact = (Collider_Contact){l1, l2};
 		array_push(contacts, contact);
 	} else {
 		//printf("FACE\n");
@@ -352,7 +355,7 @@ Clipping_Contact* clipping_get_contact_manifold(Collider* collider1, Collider* c
 
 			// we are projecting the points that are in the incident face on the reference planes
 			// so the points that we have are part of the incident object.
-			Clipping_Contact contact;
+			Collider_Contact contact;
 			if (is_face1_the_reference_face) {
 				contact_penetration = gm_vec3_dot(point_diff, normal);
 				contact.collision_point1 = gm_vec3_subtract(point, gm_vec3_scalar_product(contact_penetration, normal));
@@ -380,4 +383,37 @@ Clipping_Contact* clipping_get_contact_manifold(Collider* collider1, Collider* c
 	}
 
 	return contacts;
+}
+
+Collider_Contact* clipping_get_contact_manifold(Collider* collider1, Collider* collider2, vec3 normal, r64 penetration) {
+	// TODO: For now, we only consider CONVEX and SPHERE colliders.
+	// If new colliders are added, we can think about making this more generic.
+
+	if (collider1->type == COLLIDER_TYPE_SPHERE) {
+		Collider_Contact* contacts = array_new(Collider_Contact);
+		vec3 sphere_collision_point = support_point(collider1, normal);
+
+		Collider_Contact contact;
+		contact.collision_point1 = sphere_collision_point;
+		contact.collision_point2 = gm_vec3_subtract(sphere_collision_point, gm_vec3_scalar_product(penetration, normal));
+		array_push(contacts, contact);
+
+		return contacts;
+	} else if (collider2->type == COLLIDER_TYPE_SPHERE) {
+		Collider_Contact* contacts = array_new(Collider_Contact);
+		vec3 inverse_normal = gm_vec3_negative(normal);
+		vec3 sphere_collision_point = support_point(collider2, inverse_normal);
+
+		Collider_Contact contact;
+		contact.collision_point1 = gm_vec3_add(sphere_collision_point, gm_vec3_scalar_product(penetration, normal));
+		contact.collision_point2 = sphere_collision_point;
+		array_push(contacts, contact);
+
+		return contacts;
+	} else {
+		// For now, this case must be convex-convex
+		assert(collider1->type == COLLIDER_TYPE_CONVEX_HULL);
+		assert(collider2->type == COLLIDER_TYPE_CONVEX_HULL);
+		return convex_convex_contact_manifold(collider1, collider2, normal);
+	}
 }

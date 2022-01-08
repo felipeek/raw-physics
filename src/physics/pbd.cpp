@@ -2,16 +2,13 @@
 #include <light_array.h>
 #include <assert.h>
 #include <float.h>
-#include "gjk.h"
-#include "epa.h"
-#include "clipping.h"
 #include "broad.h"
 #include "../util.h"
 
 #define NUM_SUBSTEPS 10
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
-#define ENABLE_SIMULATION_ISLANDS
+//#define ENABLE_SIMULATION_ISLANDS
 #define LINEAR_SLEEPING_THRESHOLD 0.15
 #define ANGULAR_SLEEPING_THRESHOLD 0.15
 #define DEACTIVATION_TIME_TO_BE_INACTIVE 1.0
@@ -275,7 +272,7 @@ static void solve_constraint(Constraint* constraint, r64 h) {
 	assert(0);
 }
 
-void clipping_contact_to_constraint(Entity* e1, Entity* e2, vec3 normal, Clipping_Contact* contact, Constraint* constraint) {
+void clipping_contact_to_constraint(Entity* e1, Entity* e2, vec3 normal, Collider_Contact* contact, Constraint* constraint) {
 	constraint->type = COLLISION_CONSTRAINT;
 	constraint->collision_constraint.e1 = e1;
 	constraint->collision_constraint.e2 = e2;
@@ -427,20 +424,16 @@ void pbd_simulate(r64 dt, Entity* entities) {
 			collider_update(&e1->collider, e1->world_position, &e1->world_rotation);
 			collider_update(&e2->collider, e2->world_position, &e2->world_rotation);
 
-			GJK_Simplex simplex;
-			if (gjk_collides(&e1->collider, &e2->collider, &simplex)) {
-				vec3 normal;
-				r64 penetration;
-				if (epa(&e1->collider, &e2->collider, &simplex, &normal, &penetration)) {
-					Clipping_Contact* contacts = clipping_get_contact_manifold(&e1->collider, &e2->collider, normal);
-					for (u32 l = 0; l < array_length(contacts); ++l) {
-						Clipping_Contact* contact = &contacts[l];
-						Constraint constraint;
-						clipping_contact_to_constraint(e1, e2, normal, contact, &constraint);
-						array_push(constraints, constraint);
-					}
-					array_free(contacts);
+			vec3 normal;
+			Collider_Contact* contacts = collider_get_contacts(&e1->collider, &e2->collider, &normal);
+			if (contacts) {
+				for (u32 l = 0; l < array_length(contacts); ++l) {
+					Collider_Contact* contact = &contacts[l];
+					Constraint constraint;
+					clipping_contact_to_constraint(e1, e2, normal, contact, &constraint);
+					array_push(constraints, constraint);
 				}
+				array_free(contacts);
 			}
 		}
 

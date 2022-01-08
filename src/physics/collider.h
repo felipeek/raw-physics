@@ -4,6 +4,11 @@
 #include "../quaternion.h"
 
 typedef struct {
+	vec3 collision_point1;
+	vec3 collision_point2;
+} Collider_Contact;
+
+typedef struct {
 	u32* elements;
 	vec3 normal;
 } Collider_Convex_Hull_Face;
@@ -44,5 +49,7 @@ Collider collider_convex_hull_create(const vec3* vertices, const u32* indices);
 Collider collider_sphere_create(const r32 radius);
 void collider_update(Collider* collider, vec3 translation, const Quaternion* rotation);
 void collider_destroy(Collider* collider);
+mat3 collider_get_default_inertia_tensor(Collider* collider, r64 mass);
+Collider_Contact* collider_get_contacts(Collider* collider1, Collider* collider2, vec3* normal);
 
 #endif
