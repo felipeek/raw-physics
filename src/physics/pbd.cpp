@@ -297,6 +297,65 @@ void pbd_simulate(r64 dt, Entity* entities) {
 	r64 h = dt / NUM_SUBSTEPS;
 	//r64 h = 0.01;
 
+		Broad_Collision_Pair* broad_collision_pairs = broad_get_collision_pairs(entities);
+
+#ifdef ENABLE_SIMULATION_ISLANDS
+		u32** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs);
+
+		// All entities will be contained in the simulation islands.
+		// Update deactivation time and also, at the same time, its active status
+		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
+			u32* simulation_island = simulation_islands[j];
+
+			boolean all_inactive = true;
+			for (u32 k = 0; k < array_length(simulation_island); ++k) {
+				Entity* e = &entities[simulation_island[k]];
+
+				r64 linear_velocity_len = gm_vec3_length(e->linear_velocity);
+				r64 angular_velocity_len = gm_vec3_length(e->angular_velocity);
+				if (linear_velocity_len < LINEAR_SLEEPING_THRESHOLD && angular_velocity_len < ANGULAR_SLEEPING_THRESHOLD) {
+					e->deactivation_time += dt; // we should use 'dt' if doing once per frame
+				} else {
+					e->deactivation_time = 0.0;
+				}
+
+				if (e->deactivation_time < DEACTIVATION_TIME_TO_BE_INACTIVE) {
+					all_inactive = false;
+				}
+			}
+
+			// We only set entities to inactive if the whole island is inactive!
+			for (u32 k = 0; k < array_length(simulation_island); ++k) {
+				Entity* e = &entities[simulation_island[k]];
+				e->active = !all_inactive;
+			}
+		}
+#if 0
+		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
+			Entity** simulation_island = simulation_islands[j];
+			vec4 color = util_pallete(j);
+			for (u32 k = 0; k < array_length(simulation_island); ++k) {
+				Entity* e = simulation_island[k];
+				e->color = color;
+			}
+		}
+#else
+		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
+			u32* simulation_island = simulation_islands[j];
+			for (u32 k = 0; k < array_length(simulation_island); ++k) {
+				Entity* e = &entities[simulation_island[k]];
+				if (e->active) {
+					e->color = util_pallete(1);
+				} else {
+					e->color = util_pallete(0);
+				}
+			}
+		}
+#endif
+
+		broad_simulation_islands_destroy(simulation_islands);
+#endif
+
 	// The main loop of the PBD simulation
 	for (u32 i = 0; i < NUM_SUBSTEPS; ++i) {
 		for (u32 j = 0; j < array_length(entities); ++j) {
@@ -344,64 +403,6 @@ void pbd_simulate(r64 dt, Entity* entities) {
 		// Create the constraints array
 		Constraint* constraints = array_new(Constraint);
 
-		Broad_Collision_Pair* broad_collision_pairs = broad_get_collision_pairs(entities);
-
-#ifdef ENABLE_SIMULATION_ISLANDS
-		u32** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs);
-
-		// All entities will be contained in the simulation islands.
-		// Update deactivation time and also, at the same time, its active status
-		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
-			u32* simulation_island = simulation_islands[j];
-
-			boolean all_inactive = true;
-			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = &entities[simulation_island[k]];
-
-				r64 linear_velocity_len = gm_vec3_length(e->linear_velocity);
-				r64 angular_velocity_len = gm_vec3_length(e->angular_velocity);
-				if (linear_velocity_len < LINEAR_SLEEPING_THRESHOLD && angular_velocity_len < ANGULAR_SLEEPING_THRESHOLD) {
-					e->deactivation_time += h; // we should use 'dt' if doing once per frame
-				} else {
-					e->deactivation_time = 0.0;
-				}
-
-				if (e->deactivation_time < DEACTIVATION_TIME_TO_BE_INACTIVE) {
-					all_inactive = false;
-				}
-			}
-
-			// We only set entities to inactive if the whole island is inactive!
-			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = &entities[simulation_island[k]];
-				e->active = !all_inactive;
-			}
-		}
-#if 0
-		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
-			Entity** simulation_island = simulation_islands[j];
-			vec4 color = util_pallete(j);
-			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = simulation_island[k];
-				e->color = color;
-			}
-		}
-#else
-		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
-			u32* simulation_island = simulation_islands[j];
-			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = &entities[simulation_island[k]];
-				if (e->active) {
-					e->color = util_pallete(1);
-				} else {
-					e->color = util_pallete(0);
-				}
-			}
-		}
-#endif
-
-		broad_simulation_islands_destroy(simulation_islands);
-#endif
 		// As explained in sec 3.5, in each substep we need to check for collisions
 		// (I am not pre-collecting potential collision pairs.)
 		// Here we just check the plane-cube collision and collect the intersections.
@@ -440,8 +441,6 @@ void pbd_simulate(r64 dt, Entity* entities) {
 				array_free(contacts);
 			}
 		}
-
-		array_free(broad_collision_pairs);
 
 #if 0
 		int size = array_length(constraints);
@@ -580,4 +579,6 @@ void pbd_simulate(r64 dt, Entity* entities) {
 
 		array_free(constraints);
 	}
+		array_free(broad_collision_pairs);
+
 }

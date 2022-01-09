@@ -152,7 +152,7 @@ s32 main(s32 argc, s8** argv)
 		r64 current_frame = glfwGetTime();
 		if ((s32)current_frame > frame_number)
 		{
-			//printf("FPS: %u\n", fps);
+			printf("FPS: %u\n", fps);
 			fps = 0;
 			frame_number++;
 		}
