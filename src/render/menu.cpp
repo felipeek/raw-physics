@@ -6,7 +6,6 @@
 #include <common.h>
 #include <stdio.h>
 
-#include <dirent.h>
 #include <light_array.h>
 
 #include <GL/glew.h>

@@ -344,6 +344,7 @@ static boolean do_simplex(GJK_Simplex* simplex, vec3* direction) {
 	}
 
 	assert(0);
+	return false;
 }
 
 boolean gjk_collides(Collider* collider1, Collider* collider2, GJK_Simplex* _simplex) {

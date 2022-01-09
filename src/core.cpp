@@ -35,6 +35,8 @@ static int load_selected_scene() {
 			assert(0);
 		} break;
 	}
+
+	return 0;
 }
 
 static void destroy_selected_scene() {

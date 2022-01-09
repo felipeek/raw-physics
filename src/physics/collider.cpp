@@ -465,6 +465,7 @@ mat3 collider_get_default_inertia_tensor(Collider* collider, r64 mass) {
 	}
 
 	assert(0);
+	return (mat3){0};
 }
 
 Collider_Contact* collider_get_contacts(Collider* collider1, Collider* collider2, vec3* normal) {

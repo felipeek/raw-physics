@@ -28,6 +28,7 @@ vec3 support_point(Collider* collider, vec3 direction) {
 	}
 	
 	assert(0);
+	return (vec3){0.0, 0.0, 0.0};
 }
 
 vec3 support_point_of_minkowski_difference(Collider* collider1, Collider* collider2, vec3 direction) {
