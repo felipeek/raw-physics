@@ -45,43 +45,7 @@ void menu_init(GLFWwindow* window) {
 
 static void draw_main_window() {
     ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin(MENU_TITLE, NULL, 0)) {
-        // left
-        static Example_Scene selected = EXAMPLE_SCENE_INITIAL;
-        ImGui::BeginChild("left pane", ImVec2(150, 0), true);
-		if (ImGui::Selectable("Single Cube", selected == SINGLE_CUBE_EXAMPLE_SCENE)) {
-			selected = SINGLE_CUBE_EXAMPLE_SCENE;
-			core_switch_scene(SINGLE_CUBE_EXAMPLE_SCENE);
-		}
-		if (ImGui::Selectable("Cube Storm", selected == CUBE_STORM_EXAMPLE_SCENE)) {
-			selected = CUBE_STORM_EXAMPLE_SCENE;
-			core_switch_scene(CUBE_STORM_EXAMPLE_SCENE);
-		}
-		if (ImGui::Selectable("Seesaw", selected == SEESAW_EXAMPLE_SCENE)) {
-			selected = SEESAW_EXAMPLE_SCENE;
-			core_switch_scene(SEESAW_EXAMPLE_SCENE);
-		}
-		if (ImGui::Selectable("Chain", selected == CHAIN_EXAMPLE_SCENE)) {
-			selected = CHAIN_EXAMPLE_SCENE;
-			core_switch_scene(CHAIN_EXAMPLE_SCENE);
-		}
-		if (ImGui::Selectable("Debug", selected == DEBUG_EXAMPLE_SCENE)) {
-			selected = DEBUG_EXAMPLE_SCENE;
-			core_switch_scene(DEBUG_EXAMPLE_SCENE);
-		}
-        ImGui::EndChild();
-        ImGui::SameLine();
-
-        // right
-        ImGui::BeginGroup();
-		ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
-		core_menu_properties_update();
-		ImGui::EndChild();
-		//if (ImGui::Button("Revert")) {}
-		//ImGui::SameLine();
-		//if (ImGui::Button("Save")) {}
-        ImGui::EndGroup();
-    }
+	core_menu_render();
     ImGui::End();
 }
 

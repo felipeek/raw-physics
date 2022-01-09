@@ -1,3 +1,4 @@
+#include "cube_storm.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -11,8 +12,6 @@
 #include "../physics/pbd.h"
 #include "../entity.h"
 #include "../util.h"
-
-#define GIM_ENTITY_COLOR (vec4) {1.0, 1.0, 1.0, 1.0}
 
 static Perspective_Camera camera;
 static Light* lights;
@@ -259,3 +258,17 @@ void ex_cube_storm_menu_update() {
 	ImGui::Separator();
 	ImGui::TextWrapped("Press SPACE to throw objects!");
 }
+
+Example_Scene cube_storm_example_scene = (Example_Scene) {
+	.name = "Cube Storm",
+	.init = ex_cube_storm_init,
+	.destroy = ex_cube_storm_destroy,
+	.input_process = ex_cube_storm_input_process,
+	.menu_properties_update = ex_cube_storm_menu_update,
+	.mouse_change_process = ex_cube_storm_mouse_change_process,
+	.mouse_click_process = ex_cube_storm_mouse_click_process,
+	.render = ex_cube_storm_render,
+	.scroll_change_process = ex_cube_storm_scroll_change_process,
+	.update = ex_cube_storm_update,
+	.window_resize_process = ex_cube_storm_window_resize_process
+};

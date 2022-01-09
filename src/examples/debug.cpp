@@ -1,3 +1,4 @@
+#include "debug.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -11,8 +12,6 @@
 #include "../physics/pbd.h"
 #include "../entity.h"
 #include "../util.h"
-
-#define GIM_ENTITY_COLOR (vec4) {1.0, 1.0, 1.0, 1.0}
 
 static Perspective_Camera camera;
 static Light* lights;
@@ -360,3 +359,17 @@ void ex_debug_menu_update() {
 	ImGui::Separator();
 	ImGui::TextWrapped("Press SPACE to throw objects!");
 }
+
+Example_Scene debug_example_scene = (Example_Scene) {
+	.name = "Debug",
+	.init = ex_debug_init,
+	.destroy = ex_debug_destroy,
+	.input_process = ex_debug_input_process,
+	.menu_properties_update = ex_debug_menu_update,
+	.mouse_change_process = ex_debug_mouse_change_process,
+	.mouse_click_process = ex_debug_mouse_click_process,
+	.render = ex_debug_render,
+	.scroll_change_process = ex_debug_scroll_change_process,
+	.update = ex_debug_update,
+	.window_resize_process = ex_debug_window_resize_process
+};

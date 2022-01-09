@@ -1,3 +1,4 @@
+#include "single_cube.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -258,3 +259,17 @@ void ex_single_cube_menu_update() {
 	ImGui::Separator();
 	ImGui::TextWrapped("Press SPACE to throw objects!");
 }
+
+Example_Scene single_cube_example_scene = (Example_Scene) {
+	.name = "Single Cube",
+	.init = ex_single_cube_init,
+	.destroy = ex_single_cube_destroy,
+	.input_process = ex_single_cube_input_process,
+	.menu_properties_update = ex_single_cube_menu_update,
+	.mouse_change_process = ex_single_cube_mouse_change_process,
+	.mouse_click_process = ex_single_cube_mouse_click_process,
+	.render = ex_single_cube_render,
+	.scroll_change_process = ex_single_cube_scroll_change_process,
+	.update = ex_single_cube_update,
+	.window_resize_process = ex_single_cube_window_resize_process
+};

@@ -1,3 +1,4 @@
+#include "seesaw.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -258,3 +259,17 @@ void ex_seesaw_menu_update() {
 	ImGui::Separator();
 	ImGui::TextWrapped("Press SPACE to throw objects!");
 }
+
+Example_Scene seesaw_example_scene = {
+	.name = "Seesaw",
+	.init = ex_seesaw_init,
+	.destroy = ex_seesaw_destroy,
+	.input_process = ex_seesaw_input_process,
+	.menu_properties_update = ex_seesaw_menu_update,
+	.mouse_change_process = ex_seesaw_mouse_change_process,
+	.mouse_click_process = ex_seesaw_mouse_click_process,
+	.render = ex_seesaw_render,
+	.scroll_change_process = ex_seesaw_scroll_change_process,
+	.update = ex_seesaw_update,
+	.window_resize_process = ex_seesaw_window_resize_process
+};

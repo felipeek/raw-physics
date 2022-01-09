@@ -1,3 +1,4 @@
+#include "chain.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -252,3 +253,17 @@ void ex_chain_menu_update() {
 	ImGui::Separator();
 	ImGui::TextWrapped("Press SPACE to throw objects!");
 }
+
+Example_Scene chain_example_scene = (Example_Scene) {
+	.name = "Chain",
+	.init = ex_chain_init,
+	.destroy = ex_chain_destroy,
+	.input_process = ex_chain_input_process,
+	.menu_properties_update = ex_chain_menu_update,
+	.mouse_change_process = ex_chain_mouse_change_process,
+	.mouse_click_process = ex_chain_mouse_click_process,
+	.render = ex_chain_render,
+	.scroll_change_process = ex_chain_scroll_change_process,
+	.update = ex_chain_update,
+	.window_resize_process = ex_chain_window_resize_process
+};
