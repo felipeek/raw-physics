@@ -109,3 +109,9 @@ void entity_set_scale(Entity* entity, vec3 world_scale)
 {
 	entity->world_scale = world_scale;
 }
+
+void entity_activate(Entity* entity)
+{
+	entity->active = true;
+	entity->deactivation_time = 0.0;
+}

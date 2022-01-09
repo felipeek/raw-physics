@@ -254,5 +254,5 @@ void ex_cube_storm_window_resize_process(s32 width, s32 height) {
 void ex_cube_storm_menu_update() {
 	ImGui::Text("Cube Storm");
 	ImGui::Separator();
-	ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
+	ImGui::TextWrapped("Press SPACE to throw objects!");
 }

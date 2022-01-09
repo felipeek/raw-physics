@@ -51,5 +51,6 @@ void entity_mesh_replace(Entity* entity, Mesh mesh, boolean delete_normal_map);
 void entity_set_position(Entity* entity, vec3 world_position);
 void entity_set_rotation(Entity* entity, Quaternion world_rotation);
 void entity_set_scale(Entity* entity, vec3 world_scale);
+void entity_activate(Entity* entity);
 
 #endif

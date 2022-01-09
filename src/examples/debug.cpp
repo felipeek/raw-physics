@@ -345,6 +345,14 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		}
 	}
 
+	if (key_state[GLFW_KEY_3]) {
+		Physics_Force force;
+		force.force = (vec3){100.0f, 0.0f, 0.0f};
+		array_push(entities[1].forces, force);
+		entity_activate(&entities[1]);
+		//entities[1].linear_velocity = (vec3){10.0, 0.0, 0.0};
+	}
+
 	if (key_state[GLFW_KEY_SPACE]) {
 		vec3 camera_z = camera_get_z_axis(&camera);
 		vec3 camera_pos = camera.position;
@@ -437,5 +445,5 @@ void ex_debug_window_resize_process(s32 width, s32 height) {
 void ex_debug_menu_update() {
 	ImGui::Text("Debug");
 	ImGui::Separator();
-	ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
+	ImGui::TextWrapped("Press SPACE to throw objects!");
 }

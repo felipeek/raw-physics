@@ -3188,7 +3188,7 @@ static void ShowExampleAppLayout(bool* p_open)
             ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
                 ImGui::Text("MyObject: %d", selected);
                 ImGui::Separator();
-                ImGui::TextWrapped("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
+                ImGui::TextWrapped("Press SPACE to throw objects!");
             ImGui::EndChild();
             if (ImGui::Button("Revert")) {}
             ImGui::SameLine();

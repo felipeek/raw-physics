@@ -12,7 +12,11 @@ Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities) {
 			Entity* e2 = &entities[j];
 
 			r64 entities_distance = gm_vec3_length(gm_vec3_subtract(e1->world_position, e2->world_position));
-			if (entities_distance <= e1->collider.bounding_sphere_radius + e2->collider.bounding_sphere_radius) {
+
+			// Increase the distance a little to account for moving objects.
+			// @TODO: We should derivate this value from delta_time, forces, velocities, etc
+			r64 max_distance_for_collision = e1->collider.bounding_sphere_radius + e2->collider.bounding_sphere_radius + 0.1;
+			if (entities_distance <= max_distance_for_collision) {
 				pair.e1_idx = i;
 				pair.e2_idx = j;
 				array_push(collision_pairs, pair);
