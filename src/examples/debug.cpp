@@ -16,7 +16,6 @@
 
 static Perspective_Camera camera;
 static Light* lights;
-static Entity* entities;
 
 // Mouse binding to target positions
 static boolean is_mouse_bound_to_entity_movement;
@@ -78,23 +77,21 @@ static Light* create_lights() {
 }
 
 int ex_debug_init() {
+	entity_module_init();
+
 	// Create camera
 	camera = create_camera();
 	// Create light
 	lights = create_lights();
 	
-	Entity e;
-	entities = array_new(Entity);
-
 	Vertex* floor_vertices;
 	u32* floor_indices;
 	obj_parse("./res/floor.obj", &floor_vertices, &floor_indices);
 	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
 	vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
 	Collider floor_collider = create_convex_collider(floor_vertices, floor_indices, floor_scale);
-	entity_create_fixed(&e, floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+	entity_create_fixed(floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
 		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
-	array_push(entities, e);
 	array_free(floor_vertices);
 	array_free(floor_indices);
 
@@ -128,34 +125,29 @@ int ex_debug_init() {
 	for (u32 i = 0; i < 2; ++i) {
 		y += 2.1f;
 		Collider sphere_collider = collider_sphere_create(1.0);
-		entity_create(&e, sphere_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		entity_create(sphere_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 			sphere_scale, util_pallete(i), 1.0, sphere_collider);
-		array_push(entities, e);
 	}
 
 	vec3 wall_collider1_scale = (vec3){0.1f, 0.5f, 4.0f};
 	Collider wall_collider1 = create_convex_collider(cube_vertices, cube_indices, wall_collider1_scale);
-	entity_create_fixed(&e, cube_mesh, (vec3){-4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	entity_create_fixed(cube_mesh, (vec3){-4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider1_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider1);
-	array_push(entities, e);
 
 	vec3 wall_collider2_scale = (vec3){0.1f, 0.5f, 4.0f};
 	Collider wall_collider2 = create_convex_collider(cube_vertices, cube_indices, wall_collider2_scale);
-	entity_create_fixed(&e, cube_mesh, (vec3){4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	entity_create_fixed(cube_mesh, (vec3){4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider2_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider2);
-	array_push(entities, e);
 
 	vec3 wall_collider3_scale = (vec3){4.0f, 0.5f, 0.1f};
 	Collider wall_collider3 = create_convex_collider(cube_vertices, cube_indices, wall_collider3_scale);
-	entity_create_fixed(&e, cube_mesh, (vec3){0.0, 0.0, -4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, -4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider3_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider3);
-	array_push(entities, e);
 
 	vec3 wall_collider4_scale = (vec3){4.0f, 0.5f, 0.1f};
 	Collider wall_collider4 = create_convex_collider(cube_vertices, cube_indices, wall_collider4_scale);
-	entity_create_fixed(&e, cube_mesh, (vec3){0.0, 0.0, 4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, 4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider4_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider4);
-	array_push(entities, e);
 #else
 	//Collider sphere_collider = collider_sphere_create(1.0);
 	//entity_create(&e, sphere_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
@@ -175,13 +167,16 @@ int ex_debug_init() {
 
 void ex_debug_destroy() {
 	array_free(lights);
+
+	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		Entity* e = &entities[i];
+		Entity* e = entities[i];
 		collider_destroy(&e->collider);
 		mesh_destroy(&e->mesh);
 		entity_destroy(e);
 	}
 	array_free(entities);
+	entity_module_destroy();
 }
 
 boolean paused = false;
@@ -189,8 +184,9 @@ boolean paused = false;
 void ex_debug_update(r64 delta_time) {
 	delta_time = 0.016666667; // ~60fps
 
+	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		Entity* e = &entities[i];
+		Entity* e = entities[i];
 		collider_update(&e->collider, e->world_position, &e->world_rotation);
 		//printf("e%d: <%.50f, %.50f, %.50f>\n", i, e->world_position.x, e->world_position.y, e->world_position.z);
 		//printf("e%d: rot: <%.50f, %.50f, %.50f, %.50f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
@@ -204,20 +200,24 @@ void ex_debug_update(r64 delta_time) {
 	const r64 GRAVITY = 10.0;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Physics_Force pf;
-		pf.force = (vec3){0.0, -GRAVITY * 1.0 / entities[i].inverse_mass, 0.0};
+		pf.force = (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0};
 		pf.position = (vec3){0.0, 0.0, 0.0};
-		array_push(entities[i].forces, pf);
+		array_push(entities[i]->forces, pf);
 	}
 
 	pbd_simulate(delta_time, entities);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		array_clear(entities[i].forces);
+		array_clear(entities[i]->forces);
 	}
 #endif
+
+	array_free(entities);
 }
 
 void ex_debug_render() {
+	Entity** entities = entity_get_all();
+
 	#if 0
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		for (u32 j = i + 1; j < array_length(entities); ++j) {
@@ -251,10 +251,11 @@ void ex_debug_render() {
 	#endif
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		graphics_entity_render_phong_shader(&camera, &entities[i], lights);
+		graphics_entity_render_phong_shader(&camera, entities[i], lights);
 	}
 
 	graphics_renderer_primitives_flush(&camera);
+	array_free(entities);
 }
 
 void ex_debug_input_process(boolean* key_state, r64 delta_time) {
@@ -274,45 +275,6 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		camera_move_right(&camera, -movement_speed * delta_time);
 	if (key_state[GLFW_KEY_D])
 		camera_move_right(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_X])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0, 0.0, 0.0}, rotation_speed * delta_time);
-			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0, 0.0, 0.0}, -rotation_speed * delta_time);
-			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Y])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0, 1.0, 0.0}, rotation_speed * delta_time);
-			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0, 1.0, 0.0}, -rotation_speed * delta_time);
-			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Z])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0, 0.0, 1.0}, rotation_speed * delta_time);
-			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0, 0.0, 1.0}, -rotation_speed * delta_time);
-			entity_set_rotation(&entities[1], quaternion_product(&rotation, &entities[1].world_rotation));
-		}
-	}
 	if (key_state[GLFW_KEY_L])
 	{
 		static boolean wireframe = false;
@@ -333,25 +295,6 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 	}
 
 	static Physics_Force forces[5];
-	if (key_state[GLFW_KEY_2]) {
-		for (u32 i = 0; i < 5; ++i) {
-			array_push(entities[i + 1].forces, forces[i]);
-		}
-	} else {
-		for (u32 i = 0; i < 5; ++i) {
-			forces[i].force = (vec3){util_random_float(-1.0, 1.0), 0.0, util_random_float(-1.0, 1.0)};
-			forces[i].force = gm_vec3_scalar_product(20.0, gm_vec3_normalize(forces[i].force));
-			forces[i].position = (vec3){0.0f, 0.0f, 0.0f};
-		}
-	}
-
-	if (key_state[GLFW_KEY_3]) {
-		Physics_Force force;
-		force.force = (vec3){100.0f, 0.0f, 0.0f};
-		array_push(entities[1].forces, force);
-		entity_activate(&entities[1]);
-		//entities[1].linear_velocity = (vec3){10.0, 0.0, 0.0};
-	}
 
 	if (key_state[GLFW_KEY_SPACE]) {
 		vec3 camera_z = camera_get_z_axis(&camera);
@@ -360,7 +303,6 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		vec3 diff = gm_vec3_scalar_product(-distance, camera_z);
 		vec3 cube_position = gm_vec3_add(camera_pos, diff);
 
-		Entity e;
 		const char* mesh_name;
 		int r = rand();
 		if (r % 3 == 0) {
@@ -376,23 +318,13 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		Mesh m = graphics_mesh_create(vertices, indices);
 		vec3 scale = (vec3){1.0, 1.0, 1.0};
 		Collider collider = create_convex_collider(vertices, indices, scale);
-		entity_create(&e, m, cube_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
+		eid id = entity_create(m, cube_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
 			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 1.0, collider);
 		array_free(vertices);
 		array_free(indices);
 
-		//Physics_Force force;
-		//force.force = gm_vec3_scalar_product(15000.0, gm_vec3_scalar_product(-1.0, camera_z));
-		//force.position = (vec3) {0.0, 0.0, 0.0};
-		//array_push(e.forces, force);
-
-		e.linear_velocity = gm_vec3_scalar_product(10.0, gm_vec3_scalar_product(-1.0, camera_z));
-
-		//if (array_length(entities) == 2) {
-		//	entities[1] = e;
-		//} else {
-			array_push(entities, e);
-		//}
+		Entity* e = entity_get_by_id(id);
+		e->linear_velocity = gm_vec3_scalar_product(10.0, gm_vec3_scalar_product(-1.0, camera_z));
 
 		key_state[GLFW_KEY_SPACE] = false;
 	}
@@ -418,10 +350,12 @@ void ex_debug_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 		vec3 y_diff = gm_vec3_scalar_product(-target_point_move_speed * (r64)y_difference, camera_y);
 		vec3 x_diff = gm_vec3_scalar_product(target_point_move_speed * (r64)x_difference, camera_x);
 
-		vec3 position = entities[1].world_position;
+		Entity** entities = entity_get_all();
+		vec3 position = entities[1]->world_position;
 		position = gm_vec3_add(position, y_diff);
 		position = gm_vec3_add(position, x_diff);
-		entity_set_position(&entities[1], position);
+		entity_set_position(entities[1], position);
+		array_free(entities);
 	} else {
 		// NORMAL CAMERA MOVEMENT!
 		static const r64 camera_mouse_speed = 0.1;

@@ -7,8 +7,8 @@ typedef enum {
 } Static_Constraint_Type;
 
 typedef struct {
-	Entity* e1;
-	Entity* e2;
+	eid e1_id;
+	eid e2_id;
 	vec3 r1_lc;
 	vec3 r2_lc;
 	r64 compliance;
@@ -23,7 +23,7 @@ typedef struct {
 	};
 } Static_Constraint;
 
-void pbd_simulate(r64 dt, Entity* entities);
-void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Constraint* constraints);
+void pbd_simulate(r64 dt, Entity** entities);
+void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Constraint* constraints);
 
 #endif

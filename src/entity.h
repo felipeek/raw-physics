@@ -6,12 +6,16 @@
 #include "physics/collider.h"
 #include "quaternion.h"
 
+typedef u64 eid;
+
 typedef struct {
 	vec3 position;
 	vec3 force;
 } Physics_Force;
 
 typedef struct {
+	eid id;
+
 	Mesh mesh;
 	vec3 world_position;
 	Quaternion world_rotation;
@@ -43,10 +47,15 @@ typedef struct {
 	vec3 updated_angular_velocity;
 } Entity;
 
-mat4 entity_get_model_matrix(const Entity* entity);
-void entity_create(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider);
-void entity_create_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider);
+void entity_module_init();
+void entity_module_destroy();
+
+eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider);
+eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider);
+Entity* entity_get_by_id(eid id);
+Entity** entity_get_all();
 void entity_destroy(Entity* entity);
+mat4 entity_get_model_matrix(const Entity* entity);
 void entity_mesh_replace(Entity* entity, Mesh mesh, boolean delete_normal_map);
 void entity_set_position(Entity* entity, vec3 world_position);
 void entity_set_rotation(Entity* entity, Quaternion world_rotation);

@@ -312,13 +312,13 @@ void static_constraint_to_constraint(const Static_Constraint* static_constraint,
 		case POSITIONAL_STATIC_CONSTRAINT: {
 			constraint->type = POSITIONAL_CONSTRAINT;
 			constraint->positional_constraint.compliance = static_constraint->positional_constraint.compliance;
-			constraint->positional_constraint.e1 = static_constraint->positional_constraint.e1;
-			constraint->positional_constraint.e2 = static_constraint->positional_constraint.e2;
+			constraint->positional_constraint.e1 = entity_get_by_id(static_constraint->positional_constraint.e1_id);
+			constraint->positional_constraint.e2 = entity_get_by_id(static_constraint->positional_constraint.e2_id);
 			constraint->positional_constraint.r1_lc = static_constraint->positional_constraint.r1_lc;
 			constraint->positional_constraint.r2_lc = static_constraint->positional_constraint.r2_lc;
 			constraint->positional_constraint.lambda = 0.0;
-			vec3 attachment_distance = gm_vec3_subtract(static_constraint->positional_constraint.e1->world_position,
-				static_constraint->positional_constraint.e2->world_position);
+			vec3 attachment_distance = gm_vec3_subtract(constraint->positional_constraint.e1->world_position,
+				constraint->positional_constraint.e2->world_position);
 			constraint->positional_constraint.delta_x = gm_vec3_subtract(attachment_distance, static_constraint->positional_constraint.distance);
 		} break;
 		default: {
@@ -347,11 +347,11 @@ void clipping_contact_to_constraint(Entity* e1, Entity* e2, vec3 normal, Collide
 	constraint->collision_constraint.r2_lc = gm_mat3_multiply_vec3(&q2_mat, r2_wc);
 }
 
-void pbd_simulate(r64 dt, Entity* entities) {
+void pbd_simulate(r64 dt, Entity** entities) {
 	pbd_simulate_with_static_constraints(dt, entities, NULL);
 }
 
-void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Constraint* static_constraints) {
+void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Constraint* static_constraints) {
 	if (dt <= 0.0) return;
 	r64 h = dt / NUM_SUBSTEPS;
 
@@ -367,7 +367,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Const
 
 		boolean all_inactive = true;
 		for (u32 k = 0; k < array_length(simulation_island); ++k) {
-			Entity* e = &entities[simulation_island[k]];
+			Entity* e = entities[simulation_island[k]];
 
 			r64 linear_velocity_len = gm_vec3_length(e->linear_velocity);
 			r64 angular_velocity_len = gm_vec3_length(e->angular_velocity);
@@ -384,7 +384,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Const
 
 		// We only set entities to inactive if the whole island is inactive!
 		for (u32 k = 0; k < array_length(simulation_island); ++k) {
-			Entity* e = &entities[simulation_island[k]];
+			Entity* e = entities[simulation_island[k]];
 			e->active = !all_inactive;
 		}
 	}
@@ -401,7 +401,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Const
 	for (u32 j = 0; j < array_length(simulation_islands); ++j) {
 		u32* simulation_island = simulation_islands[j];
 		for (u32 k = 0; k < array_length(simulation_island); ++k) {
-			Entity* e = &entities[simulation_island[k]];
+			Entity* e = entities[simulation_island[k]];
 			if (e->active) {
 				e->color = util_pallete(1);
 			} else {
@@ -417,7 +417,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Const
 	// The main loop of the PBD simulation
 	for (u32 i = 0; i < NUM_SUBSTEPS; ++i) {
 		for (u32 j = 0; j < array_length(entities); ++j) {
-			Entity* e = &entities[j];
+			Entity* e = entities[j];
 			// Stores the previous position and orientation of the entity
 			e->previous_world_position = e->world_position;
 			e->previous_world_rotation = e->world_rotation;
@@ -473,8 +473,8 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Const
 
 		// As explained in sec 3.5, in each substep we need to check for collisions
 		for (u32 j = 0; j < array_length(broad_collision_pairs); ++j) {
-			Entity* e1 = &entities[broad_collision_pairs[j].e1_idx];
-			Entity* e2 = &entities[broad_collision_pairs[j].e2_idx];
+			Entity* e1 = entities[broad_collision_pairs[j].e1_idx];
+			Entity* e2 = entities[broad_collision_pairs[j].e2_idx];
 
 			// If e1 is "colliding" with e2, they must be either both active or both inactive
 			if (!e1->fixed && !e2->fixed) {
@@ -541,7 +541,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Const
 
 		// The PBD velocity update
 		for (u32 j = 0; j < array_length(entities); ++j) {
-			Entity* e = &entities[j];
+			Entity* e = entities[j];
 			if (e->fixed) continue;
 			if (!e->active) continue;
 			

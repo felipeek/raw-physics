@@ -2,14 +2,14 @@
 #include <light_array.h>
 #include <hash_map.h>
 
-Broad_Collision_Pair* broad_get_collision_pairs(Entity* entities) {
+Broad_Collision_Pair* broad_get_collision_pairs(Entity** entities) {
 	Broad_Collision_Pair pair;
 	Broad_Collision_Pair* collision_pairs = array_new(Broad_Collision_Pair);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		Entity* e1 = &entities[i];
+		Entity* e1 = entities[i];
 		for (u32 j = i + 1; j < array_length(entities); ++j) {
-			Entity* e2 = &entities[j];
+			Entity* e2 = entities[j];
 
 			r64 entities_distance = gm_vec3_length(gm_vec3_subtract(e1->world_position, e2->world_position));
 
@@ -40,7 +40,7 @@ static void uf_union(u32* parents, u32 x, u32 y) {
 	parents[uf_find(parents, y)] = parents[uf_find(parents, x)];
 }
 
-static u32* uf_collect_all(Entity* entities, Broad_Collision_Pair* collision_pairs) {
+static u32* uf_collect_all(Entity** entities, Broad_Collision_Pair* collision_pairs) {
 	u32* parents = array_new_len(u32, array_length(entities));
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_push(parents, i);
@@ -48,8 +48,8 @@ static u32* uf_collect_all(Entity* entities, Broad_Collision_Pair* collision_pai
 
 	for (u32 i = 0; i < array_length(collision_pairs); ++i) {
 		Broad_Collision_Pair collision_pair = collision_pairs[i];
-		Entity* e1 = &entities[collision_pair.e1_idx];
-		Entity* e2 = &entities[collision_pair.e2_idx];
+		Entity* e1 = entities[collision_pair.e1_idx];
+		Entity* e2 = entities[collision_pair.e2_idx];
 		if (!e1->fixed && !e2->fixed) {
 			uf_union(parents, collision_pair.e1_idx, collision_pair.e2_idx);
 		}
@@ -69,14 +69,14 @@ static unsigned int u32_hash(const void *key) {
 	return n;
 }
 
-u32** broad_collect_simulation_islands(Entity* entities, Broad_Collision_Pair* collision_pairs) {
+u32** broad_collect_simulation_islands(Entity** entities, Broad_Collision_Pair* collision_pairs) {
 	Hash_Map simulation_islands_map;
 	u32** simulation_islands = array_new(u32*);
 	u32* parents = uf_collect_all(entities, collision_pairs);
 	assert(!hash_map_create(&simulation_islands_map, 2 * array_length(entities), sizeof(u32), sizeof(u32), u32_compare, u32_hash));
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		Entity* e = &entities[i];
+		Entity* e = entities[i];
 		if (e->fixed) {
 			continue;
 		}

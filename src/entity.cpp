@@ -1,6 +1,130 @@
 #include "entity.h"
 #include <light_array.h>
 #include <GL/glew.h>
+#include "hash_map.h"
+
+Entity** entities;
+Hash_Map entities_map;
+eid eid_counter;
+
+static int eid_compare(const void *key1, const void *key2) {
+	eid id1 = *(eid*)key1;
+	eid id2 = *(eid*)key2;
+	return id1 == id2;
+}
+
+static unsigned int eid_hash(const void *key) {
+	eid id = *(eid*)key;
+	return (unsigned int)id;
+}
+
+void entity_module_init() {
+	entities = array_new(Entity*);
+	assert(hash_map_create(&entities_map, 1024, sizeof(eid), sizeof(Entity*), eid_compare, eid_hash) == 0);
+}
+
+void entity_module_destroy() {
+	for (u32 i = 0; i < array_length(entities); ++i) {
+		entity_destroy(entities[i]);
+	}
+	array_free(entities);
+	hash_map_destroy(&entities_map);
+}
+
+eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider)
+{
+	Entity* entity = (Entity*)malloc(sizeof(Entity));
+	entity->id = eid_counter++;
+	entity->mesh = mesh;
+	entity->color = color;
+	entity->world_position = world_position;
+	entity->world_rotation = world_rotation;
+	entity->world_scale = world_scale;
+	entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->previous_angular_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->previous_linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->inverse_mass = 1.0 / mass;
+	entity->inertia_tensor = collider_get_default_inertia_tensor(&collider, mass);
+	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
+	entity->forces = array_new(Physics_Force);
+	entity->fixed = false;
+	entity->active = true;
+	entity->deactivation_time = 0.0;
+	entity->collider = collider;
+	entity->static_friction_coefficient = 0.2;
+	entity->dynamic_friction_coefficient = 1.0;
+	entity->restitution_coefficient = 0.0;
+	assert(entity->static_friction_coefficient >= 0.0 && entity->static_friction_coefficient <= 1.0);
+	assert(entity->dynamic_friction_coefficient >= 0.0 && entity->dynamic_friction_coefficient <= 1.0);
+	assert(entity->restitution_coefficient >= 0.0 && entity->restitution_coefficient <= 1.0);
+
+	array_push(entities, entity);
+	assert(!hash_map_put(&entities_map, &entity->id, &entity));
+	return entity->id;
+}
+
+eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider)
+{
+	Entity* entity = (Entity*)malloc(sizeof(Entity));
+	entity->id = eid_counter++;
+	entity->mesh = mesh;
+	entity->color = color;
+	entity->world_position = world_position;
+	entity->world_rotation = world_rotation;
+	entity->world_scale = world_scale;
+	entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->previous_angular_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->previous_linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->inverse_mass = 0.0;
+	entity->inertia_tensor = (mat3){0}; // this is not correct, but it shouldn't make a difference
+	entity->inverse_inertia_tensor = (mat3){0};
+	entity->forces = array_new(Physics_Force);
+	entity->fixed = true;
+	entity->active = true; // meaningless for fixed entities
+	entity->deactivation_time = 0.0;
+	entity->collider = collider;
+	entity->static_friction_coefficient = 0.5;
+	entity->dynamic_friction_coefficient = 0.5;
+	entity->restitution_coefficient = 1.0;
+	assert(entity->static_friction_coefficient >= 0.0 && entity->static_friction_coefficient <= 1.0);
+	assert(entity->dynamic_friction_coefficient >= 0.0 && entity->dynamic_friction_coefficient <= 1.0);
+	assert(entity->restitution_coefficient >= 0.0 && entity->restitution_coefficient <= 1.0);
+
+	array_push(entities, entity);
+	assert(!hash_map_put(&entities_map, &entity->id, &entity));
+	return entity->id;
+}
+
+Entity* entity_get_by_id(eid id) {
+	Entity* e;
+	if (hash_map_get(&entities_map, &id, &e)) {
+		return NULL;
+	}
+
+	return e;
+}
+
+Entity** entity_get_all() {
+	return (Entity**)array_copy(entities);
+}
+
+void entity_destroy(Entity* entity)
+{
+	array_free(entity->forces);
+
+	// @TODO: avoid the need of this loop
+	for (u32 i = 0; i < array_length(entities); ++i) {
+		if (entities[i]->id == entity->id) {
+			array_remove(entities, i);
+			break;
+		}
+	}
+
+	assert(hash_map_delete(&entities_map, &entity->id) == 0);
+	free(entity);
+}
 
 mat4 entity_get_model_matrix(const Entity* entity)
 {
@@ -27,64 +151,6 @@ mat4 entity_get_model_matrix(const Entity* entity)
 	return model_matrix;
 }
 
-void entity_create(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider)
-{
-	entity->mesh = mesh;
-	entity->color = color;
-	entity->world_position = world_position;
-	entity->world_rotation = world_rotation;
-	entity->world_scale = world_scale;
-	entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
-	entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
-	entity->previous_angular_velocity = (vec3){0.0, 0.0, 0.0};
-	entity->previous_linear_velocity = (vec3){0.0, 0.0, 0.0};
-	entity->inverse_mass = 1.0 / mass;
-	entity->inertia_tensor = collider_get_default_inertia_tensor(&collider, mass);
-	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
-	entity->forces = array_new(Physics_Force);
-	entity->fixed = false;
-	entity->active = true;
-	entity->deactivation_time = 0.0;
-	entity->collider = collider;
-	entity->static_friction_coefficient = 0.2;
-	entity->dynamic_friction_coefficient = 1.0;
-	entity->restitution_coefficient = 0.0;
-	assert(entity->static_friction_coefficient >= 0.0 && entity->static_friction_coefficient <= 1.0);
-	assert(entity->dynamic_friction_coefficient >= 0.0 && entity->dynamic_friction_coefficient <= 1.0);
-	assert(entity->restitution_coefficient >= 0.0 && entity->restitution_coefficient <= 1.0);
-}
-
-void entity_create_fixed(Entity* entity, Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider)
-{
-	entity->mesh = mesh;
-	entity->color = color;
-	entity->world_position = world_position;
-	entity->world_rotation = world_rotation;
-	entity->world_scale = world_scale;
-	entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
-	entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
-	entity->previous_angular_velocity = (vec3){0.0, 0.0, 0.0};
-	entity->previous_linear_velocity = (vec3){0.0, 0.0, 0.0};
-	entity->inverse_mass = 0.0;
-	entity->inertia_tensor = (mat3){0}; // this is not correct, but it shouldn't make a difference
-	entity->inverse_inertia_tensor = (mat3){0};
-	entity->forces = array_new(Physics_Force);
-	entity->fixed = true;
-	entity->active = true; // meaningless for fixed entities
-	entity->deactivation_time = 0.0;
-	entity->collider = collider;
-	entity->static_friction_coefficient = 0.5;
-	entity->dynamic_friction_coefficient = 0.5;
-	entity->restitution_coefficient = 1.0;
-	assert(entity->static_friction_coefficient >= 0.0 && entity->static_friction_coefficient <= 1.0);
-	assert(entity->dynamic_friction_coefficient >= 0.0 && entity->dynamic_friction_coefficient <= 1.0);
-	assert(entity->restitution_coefficient >= 0.0 && entity->restitution_coefficient <= 1.0);
-}
-
-void entity_destroy(Entity* entity)
-{
-	array_free(entity->forces);
-}
 
 void entity_mesh_replace(Entity* entity, Mesh mesh, boolean delete_normal_map)
 {
