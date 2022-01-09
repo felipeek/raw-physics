@@ -17,45 +17,14 @@ Broad_Collision_Pair* broad_get_collision_pairs(Entity** entities) {
 			// @TODO: We should derivate this value from delta_time, forces, velocities, etc
 			r64 max_distance_for_collision = e1->collider.bounding_sphere_radius + e2->collider.bounding_sphere_radius + 0.1;
 			if (entities_distance <= max_distance_for_collision) {
-				pair.e1_idx = i;
-				pair.e2_idx = j;
+				pair.e1_id = e1->id;
+				pair.e2_id = e2->id;
 				array_push(collision_pairs, pair);
 			}
 		}
 	}
 
 	return collision_pairs;
-}
-
-static u32 uf_find(const u32* parents, u32 x) {
-	u32 p = parents[x];
-	if (p == x) {
-		return x;
-	}
-
-	return uf_find(parents, p);
-}
-
-static void uf_union(u32* parents, u32 x, u32 y) {
-	parents[uf_find(parents, y)] = parents[uf_find(parents, x)];
-}
-
-static u32* uf_collect_all(Entity** entities, Broad_Collision_Pair* collision_pairs) {
-	u32* parents = array_new_len(u32, array_length(entities));
-	for (u32 i = 0; i < array_length(entities); ++i) {
-		array_push(parents, i);
-	}
-
-	for (u32 i = 0; i < array_length(collision_pairs); ++i) {
-		Broad_Collision_Pair collision_pair = collision_pairs[i];
-		Entity* e1 = entities[collision_pair.e1_idx];
-		Entity* e2 = entities[collision_pair.e2_idx];
-		if (!e1->fixed && !e2->fixed) {
-			uf_union(parents, collision_pair.e1_idx, collision_pair.e2_idx);
-		}
-	}
-
-	return parents;
 }
 
 static int u32_compare(const void *key1, const void *key2) {
@@ -69,38 +38,89 @@ static unsigned int u32_hash(const void *key) {
 	return n;
 }
 
-u32** broad_collect_simulation_islands(Entity** entities, Broad_Collision_Pair* collision_pairs) {
+static int eid_compare(const void *key1, const void *key2) {
+	eid id1 = *(eid*)key1;
+	eid id2 = *(eid*)key2;
+	return id1 == id2;
+}
+
+static unsigned int eid_hash(const void *key) {
+	eid id = *(eid*)key;
+	return (unsigned int)id;
+}
+
+static eid uf_find(Hash_Map* entity_to_parent_map, eid x) {
+	eid p;
+	assert(!hash_map_get(entity_to_parent_map, &x, &p));
+	if (p == x) {
+		return x;
+	}
+
+	return uf_find(entity_to_parent_map, p);
+}
+
+static void uf_union(Hash_Map* entity_to_parent_map, eid x, eid y) {
+	eid key = uf_find(entity_to_parent_map, y);
+	eid value = uf_find(entity_to_parent_map, x);
+	assert(hash_map_put(entity_to_parent_map, &key, &value));
+}
+
+static Hash_Map uf_collect_all(Entity** entities, Broad_Collision_Pair* collision_pairs) {
+	Hash_Map entity_to_parent_map;
+	assert(!hash_map_create(&entity_to_parent_map, 1024, sizeof(eid), sizeof(eid), eid_compare, eid_hash));
+
+	for (u32 i = 0; i < array_length(entities); ++i) {
+		eid id = entities[i]->id;
+		assert(!hash_map_put(&entity_to_parent_map, &id, &id));
+	}
+
+	for (u32 i = 0; i < array_length(collision_pairs); ++i) {
+		Broad_Collision_Pair collision_pair = collision_pairs[i];
+		eid id1 = collision_pair.e1_id;
+		eid id2 = collision_pair.e2_id;
+		Entity* e1 = entity_get_by_id(id1);
+		Entity* e2 = entity_get_by_id(id2);
+		if (!e1->fixed && !e2->fixed) {
+			uf_union(&entity_to_parent_map, collision_pair.e1_id, collision_pair.e2_id);
+		}
+	}
+
+	return entity_to_parent_map;
+}
+
+eid** broad_collect_simulation_islands(Entity** entities, Broad_Collision_Pair* collision_pairs) {
+	eid** simulation_islands = array_new(eid*);
+	Hash_Map entity_to_parent_map = uf_collect_all(entities, collision_pairs);
+
 	Hash_Map simulation_islands_map;
-	u32** simulation_islands = array_new(u32*);
-	u32* parents = uf_collect_all(entities, collision_pairs);
-	assert(!hash_map_create(&simulation_islands_map, 2 * array_length(entities), sizeof(u32), sizeof(u32), u32_compare, u32_hash));
+	assert(!hash_map_create(&simulation_islands_map, 2 * array_length(entities), sizeof(eid), sizeof(u32), eid_compare, eid_hash));
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];
 		if (e->fixed) {
 			continue;
 		}
-		u32 parent = uf_find(parents, i);
+		eid parent = uf_find(&entity_to_parent_map, e->id);
 		u32 simulation_island_idx;
 		if (hash_map_get(&simulation_islands_map, &parent, &simulation_island_idx)) {
 			// Simulation Island not created yet.
-			u32* new_simulation_island = array_new(u32);
+			eid* new_simulation_island = array_new(eid);
 			simulation_island_idx = array_length(simulation_islands);
 			array_push(simulation_islands, new_simulation_island);
 			assert(!hash_map_put(&simulation_islands_map, &parent, &simulation_island_idx));
 		}
 
-		array_push(simulation_islands[simulation_island_idx], i);
+		array_push(simulation_islands[simulation_island_idx], e->id);
 	}
 
+	hash_map_destroy(&entity_to_parent_map);
 	hash_map_destroy(&simulation_islands_map);
-	array_free(parents);
 	return simulation_islands;
 }
 
-void broad_simulation_islands_destroy(u32** simulation_islands) {
+void broad_simulation_islands_destroy(eid** simulation_islands) {
 	for (u32 i = 0; i < array_length(simulation_islands); ++i) {
-		u32* simulation_island = simulation_islands[i];
+		eid* simulation_island = simulation_islands[i];
 		array_free(simulation_island);
 	}
 
