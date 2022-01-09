@@ -36,7 +36,7 @@ static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
-	vec3 camera_position = (vec3) { 0.0, 2.0, 10.0 };
+	vec3 camera_position = (vec3) { 0.0, 3.0, 10.0 };
 	r64 camera_near_plane = -0.01;
 	r64 camera_far_plane = -1000.0;
 	r64 camera_fov = 45.0;
@@ -250,6 +250,10 @@ void ex_chain_window_resize_process(s32 width, s32 height) {
 
 void ex_chain_menu_update() {
 	ImGui::Text("Chain");
+
+	r32 compliance = (r32)static_constraints[0].positional_constraint.compliance;
+	ImGui::SliderFloat("Compliance", &compliance, 0.0f, 1.0f, "%.4f");
+	static_constraints[0].positional_constraint.compliance = (r64)compliance;
 	ImGui::Separator();
 	ImGui::TextWrapped("Press SPACE to throw objects!");
 }

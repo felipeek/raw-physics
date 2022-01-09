@@ -58,8 +58,11 @@ void menu_render() {
 	ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(550, 680), ImGuiCond_FirstUseEver);
 
+#if 1
 	draw_main_window();
-	//ImGui::ShowDemoWindow();
+#else
+	ImGui::ShowDemoWindow();
+#endif
 
 	// Rendering
 	ImGui::Render();
