@@ -69,6 +69,10 @@ static void draw_main_window()
 			selected = SEESAW_EXAMPLE_SCENE;
 			core_switch_scene(SEESAW_EXAMPLE_SCENE);
 		}
+		if (ImGui::Selectable("Chain", selected == CHAIN_EXAMPLE_SCENE)) {
+			selected = CHAIN_EXAMPLE_SCENE;
+			core_switch_scene(CHAIN_EXAMPLE_SCENE);
+		}
 		if (ImGui::Selectable("Debug", selected == DEBUG_EXAMPLE_SCENE)) {
 			selected = DEBUG_EXAMPLE_SCENE;
 			core_switch_scene(DEBUG_EXAMPLE_SCENE);

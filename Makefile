@@ -25,7 +25,8 @@ CPP = $(wildcard src/*.cpp) $(wildcard src/examples/*.cpp) $(wildcard src/render
 RELEASE_OBJ = $(CPP:%.cpp=$(BUILD_DIR_RELEASE)/%.o)
 DEBUG_OBJ = $(CPP:%.cpp=$(BUILD_DIR_DEBUG)/%.o)
 # Gcc/Clang will create these .d files containing dependencies.
-DEP = $(OBJ:%.o=%.d)
+RELEASE_DEP = $(RELEASE_OBJ:%.o=%.d)
+DEBUG_DEP = $(DEBUG_OBJ:%.o=%.d)
 
 # Default target named after the binary.
 release : $(BUILD_DIR_RELEASE)/$(BIN)
@@ -46,7 +47,8 @@ $(BUILD_DIR_DEBUG)/$(BIN) : $(DEBUG_OBJ)
 	$(CCX) $(CPPFLAGS_DEBUG) $^ $(LDFLAGS) -o $@
 
 # Include all .d files
--include $(DEP)
+-include $(RELEASE_DEP)
+-include $(DEBUG_DEP)
 
 # Build target for every single object file.
 # The potential dependency on header files is covered

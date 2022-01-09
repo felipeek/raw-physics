@@ -3,9 +3,8 @@
 #include "../render/graphics.h"
 
 typedef enum {
-	POSITIONAL_CONSTRAINT,
-	COLLISION_CONSTRAINT
-} Constraint_Type;
+	POSITIONAL_STATIC_CONSTRAINT,
+} Static_Constraint_Type;
 
 typedef struct {
 	Entity* e1;
@@ -13,29 +12,18 @@ typedef struct {
 	vec3 r1_lc;
 	vec3 r2_lc;
 	r64 compliance;
-	vec3 delta_x;
-	r64 lambda;
-} Positional_Constaint;
+	vec3 distance;
+} Static_Positional_Constraint;
 
 typedef struct {
-	Entity* e1;
-	Entity* e2;
-	vec3 r1_lc;
-	vec3 r2_lc;
-	vec3 normal;
-	r64 lambda_t;
-	r64 lambda_n;
-} Collision_Constraint;
-
-typedef struct {
-	Constraint_Type type;
+	Static_Constraint_Type type;
 
 	union {
-		Positional_Constaint positional_constraint;
-		Collision_Constraint collision_constraint;
+		Static_Positional_Constraint positional_constraint;
 	};
-} Constraint;
+} Static_Constraint;
 
 void pbd_simulate(r64 dt, Entity* entities);
+void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Constraint* constraints);
 
 #endif

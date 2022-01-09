@@ -13,6 +13,41 @@
 #define ANGULAR_SLEEPING_THRESHOLD 0.15
 #define DEACTIVATION_TIME_TO_BE_INACTIVE 1.0
 
+typedef enum {
+	POSITIONAL_CONSTRAINT,
+	COLLISION_CONSTRAINT
+} Constraint_Type;
+
+typedef struct {
+	Entity* e1;
+	Entity* e2;
+	vec3 r1_lc;
+	vec3 r2_lc;
+	r64 compliance;
+	vec3 delta_x;
+	r64 lambda;
+} Positional_Constraint;
+
+typedef struct {
+	Entity* e1;
+	Entity* e2;
+	vec3 r1_lc;
+	vec3 r2_lc;
+	vec3 normal;
+	r64 lambda_t;
+	r64 lambda_n;
+} Collision_Constraint;
+
+typedef struct {
+	Constraint_Type type;
+
+	union {
+		Positional_Constraint positional_constraint;
+		Collision_Constraint collision_constraint;
+	};
+} Constraint;
+
+
 extern boolean paused;
 
 // Calculate the sum of all external forces acting on an entity
@@ -272,6 +307,26 @@ static void solve_constraint(Constraint* constraint, r64 h) {
 	assert(0);
 }
 
+void static_constraint_to_constraint(const Static_Constraint* static_constraint, Constraint* constraint) {
+	switch (static_constraint->type) {
+		case POSITIONAL_STATIC_CONSTRAINT: {
+			constraint->type = POSITIONAL_CONSTRAINT;
+			constraint->positional_constraint.compliance = static_constraint->positional_constraint.compliance;
+			constraint->positional_constraint.e1 = static_constraint->positional_constraint.e1;
+			constraint->positional_constraint.e2 = static_constraint->positional_constraint.e2;
+			constraint->positional_constraint.r1_lc = static_constraint->positional_constraint.r1_lc;
+			constraint->positional_constraint.r2_lc = static_constraint->positional_constraint.r2_lc;
+			constraint->positional_constraint.lambda = 0.0;
+			vec3 attachment_distance = gm_vec3_subtract(static_constraint->positional_constraint.e1->world_position,
+				static_constraint->positional_constraint.e2->world_position);
+			constraint->positional_constraint.delta_x = gm_vec3_subtract(attachment_distance, static_constraint->positional_constraint.distance);
+		} break;
+		default: {
+			assert(0);
+		} break;
+	}
+}
+
 void clipping_contact_to_constraint(Entity* e1, Entity* e2, vec3 normal, Collider_Contact* contact, Constraint* constraint) {
 	constraint->type = COLLISION_CONSTRAINT;
 	constraint->collision_constraint.e1 = e1;
@@ -293,67 +348,70 @@ void clipping_contact_to_constraint(Entity* e1, Entity* e2, vec3 normal, Collide
 }
 
 void pbd_simulate(r64 dt, Entity* entities) {
+	pbd_simulate_with_static_constraints(dt, entities, NULL);
+}
+
+void pbd_simulate_with_static_constraints(r64 dt, Entity* entities, Static_Constraint* static_constraints) {
 	if (dt <= 0.0) return;
 	r64 h = dt / NUM_SUBSTEPS;
-	//r64 h = 0.01;
 
-		Broad_Collision_Pair* broad_collision_pairs = broad_get_collision_pairs(entities);
+	Broad_Collision_Pair* broad_collision_pairs = broad_get_collision_pairs(entities);
 
 #ifdef ENABLE_SIMULATION_ISLANDS
-		u32** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs);
+	u32** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs);
 
-		// All entities will be contained in the simulation islands.
-		// Update deactivation time and also, at the same time, its active status
-		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
-			u32* simulation_island = simulation_islands[j];
+	// All entities will be contained in the simulation islands.
+	// Update deactivation time and also, at the same time, its active status
+	for (u32 j = 0; j < array_length(simulation_islands); ++j) {
+		u32* simulation_island = simulation_islands[j];
 
-			boolean all_inactive = true;
-			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = &entities[simulation_island[k]];
+		boolean all_inactive = true;
+		for (u32 k = 0; k < array_length(simulation_island); ++k) {
+			Entity* e = &entities[simulation_island[k]];
 
-				r64 linear_velocity_len = gm_vec3_length(e->linear_velocity);
-				r64 angular_velocity_len = gm_vec3_length(e->angular_velocity);
-				if (linear_velocity_len < LINEAR_SLEEPING_THRESHOLD && angular_velocity_len < ANGULAR_SLEEPING_THRESHOLD) {
-					e->deactivation_time += dt; // we should use 'dt' if doing once per frame
-				} else {
-					e->deactivation_time = 0.0;
-				}
-
-				if (e->deactivation_time < DEACTIVATION_TIME_TO_BE_INACTIVE) {
-					all_inactive = false;
-				}
+			r64 linear_velocity_len = gm_vec3_length(e->linear_velocity);
+			r64 angular_velocity_len = gm_vec3_length(e->angular_velocity);
+			if (linear_velocity_len < LINEAR_SLEEPING_THRESHOLD && angular_velocity_len < ANGULAR_SLEEPING_THRESHOLD) {
+				e->deactivation_time += dt; // we should use 'dt' if doing once per frame
+			} else {
+				e->deactivation_time = 0.0;
 			}
 
-			// We only set entities to inactive if the whole island is inactive!
-			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = &entities[simulation_island[k]];
-				e->active = !all_inactive;
+			if (e->deactivation_time < DEACTIVATION_TIME_TO_BE_INACTIVE) {
+				all_inactive = false;
 			}
 		}
+
+		// We only set entities to inactive if the whole island is inactive!
+		for (u32 k = 0; k < array_length(simulation_island); ++k) {
+			Entity* e = &entities[simulation_island[k]];
+			e->active = !all_inactive;
+		}
+	}
 #if 0
-		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
-			Entity** simulation_island = simulation_islands[j];
-			vec4 color = util_pallete(j);
-			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = simulation_island[k];
-				e->color = color;
-			}
+	for (u32 j = 0; j < array_length(simulation_islands); ++j) {
+		Entity** simulation_island = simulation_islands[j];
+		vec4 color = util_pallete(j);
+		for (u32 k = 0; k < array_length(simulation_island); ++k) {
+			Entity* e = simulation_island[k];
+			e->color = color;
 		}
+	}
 #else
-		for (u32 j = 0; j < array_length(simulation_islands); ++j) {
-			u32* simulation_island = simulation_islands[j];
-			for (u32 k = 0; k < array_length(simulation_island); ++k) {
-				Entity* e = &entities[simulation_island[k]];
-				if (e->active) {
-					e->color = util_pallete(1);
-				} else {
-					e->color = util_pallete(0);
-				}
+	for (u32 j = 0; j < array_length(simulation_islands); ++j) {
+		u32* simulation_island = simulation_islands[j];
+		for (u32 k = 0; k < array_length(simulation_island); ++k) {
+			Entity* e = &entities[simulation_island[k]];
+			if (e->active) {
+				e->color = util_pallete(1);
+			} else {
+				e->color = util_pallete(0);
 			}
 		}
+	}
 #endif
 
-		broad_simulation_islands_destroy(simulation_islands);
+	broad_simulation_islands_destroy(simulation_islands);
 #endif
 
 	// The main loop of the PBD simulation
@@ -403,11 +461,17 @@ void pbd_simulate(r64 dt, Entity* entities) {
 		// Create the constraints array
 		Constraint* constraints = array_new(Constraint);
 
+		// Create dynamic constraints for all static constraints
+		if (static_constraints) {
+			for (u32 j = 0; j < array_length(static_constraints); ++j) {
+				Static_Constraint* static_constraint = &static_constraints[j];
+				Constraint constraint;
+				static_constraint_to_constraint(static_constraint, &constraint);
+				array_push(constraints, constraint);
+			}
+		}
+
 		// As explained in sec 3.5, in each substep we need to check for collisions
-		// (I am not pre-collecting potential collision pairs.)
-		// Here we just check the plane-cube collision and collect the intersections.
-		//for (u32 j = 0; j < array_length(entities); ++j) {
-		//	for (u32 k = j + 1; k < array_length(entities); ++k) {
 		for (u32 j = 0; j < array_length(broad_collision_pairs); ++j) {
 			Entity* e1 = &entities[broad_collision_pairs[j].e1_idx];
 			Entity* e2 = &entities[broad_collision_pairs[j].e2_idx];
@@ -424,10 +488,6 @@ void pbd_simulate(r64 dt, Entity* entities) {
 
 			collider_update(&e1->collider, e1->world_position, &e1->world_rotation);
 			collider_update(&e2->collider, e2->world_position, &e2->world_rotation);
-			//printf("e1: <%.50f, %.50f, %.50f>\n", e1->world_position.x, e1->world_position.y, e1->world_position.z);
-			//printf("e1: rot: <%.50f, %.50f, %.50f, %.50f>\n", e1->world_rotation.x, e1->world_rotation.y, e1->world_rotation.z, e1->world_rotation.w);
-			//printf("e2: <%.50f, %.50f, %.50f>\n", e2->world_position.x, e2->world_position.y, e2->world_position.z);
-			//printf("e2: rot: <%.50f, %.50f, %.50f, %.50f>\n", e2->world_rotation.x, e2->world_rotation.y, e2->world_rotation.z, e2->world_rotation.w);
 
 			vec3 normal;
 			Collider_Contact* contacts = collider_get_contacts(&e1->collider, &e2->collider, &normal);
