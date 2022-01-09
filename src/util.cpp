@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include "entity.h"
+#include <limits.h>
 
 r64 util_random_float(r64 min, r64 max)
 {
@@ -22,12 +24,26 @@ s8* util_read_file(const s8* path, s32* _file_length)
 		fprintf(stderr, "Error opening file [%s]: [%s]\n", path, strerror(errno));
 		return NULL;
 	}
-	fseek(file, 0, SEEK_END);
+
+	if (fseek(file, 0, SEEK_END)) {
+		fprintf(stderr, "Error seeking file [%s]: [%s]\n", path, strerror(errno));
+		return NULL;
+	}
+
 	file_length = ftell(file);
 	rewind(file);
 
 	buffer = (s8*)malloc((file_length + 1) * sizeof(s8));
-	fread(buffer, file_length, 1, file);
+	if (buffer == NULL) {
+		fprintf(stderr, "Error allocating data for file [%s]: [%s]\n", path, strerror(errno));
+		return NULL;
+	}
+
+	if (fread(buffer, 1, file_length, file) != file_length) {
+		fprintf(stderr, "Error reading file [%s]: [%s]\n", path, strerror(errno));
+		return NULL;
+	}
+
 	fclose(file);
 
 	buffer[file_length] = '\0';
@@ -108,4 +124,33 @@ vec4 util_pallete(u32 n) {
 
 	u32 idx = n % COLOR_PALETTE_MAX_NUM;
 	return color_palette[idx];
+}
+
+// Hash Utils
+
+int util_eid_compare(const void *key1, const void *key2) {
+	eid id1 = *(eid*)key1;
+	eid id2 = *(eid*)key2;
+	return id1 == id2;
+}
+
+unsigned int util_eid_hash(const void *key) {
+	eid id = *(eid*)key;
+	return (unsigned int)id;
+}
+
+int util_vec3_compare(const void *key1, const void *key2) {
+	vec3 v1 = *(vec3*)key1;
+	vec3 v2 = *(vec3*)key2;
+	return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
+}
+
+unsigned int util_vec3_hash(const void *key) {
+	vec3 v = *(vec3*)key;
+	unsigned long long x, y, z;
+	assert(sizeof(r64) == sizeof(unsigned long long));
+	memcpy(&x, &v.x, sizeof(r64));
+	memcpy(&y, &v.y, sizeof(r64));
+	memcpy(&z, &v.z, sizeof(r64));
+	return (unsigned int)((x + y + z) % UINT_MAX);
 }

@@ -2,25 +2,15 @@
 #include <light_array.h>
 #include <GL/glew.h>
 #include "hash_map.h"
+#include "util.h"
 
 Entity** entities;
 Hash_Map entities_map;
 eid eid_counter;
 
-static int eid_compare(const void *key1, const void *key2) {
-	eid id1 = *(eid*)key1;
-	eid id2 = *(eid*)key2;
-	return id1 == id2;
-}
-
-static unsigned int eid_hash(const void *key) {
-	eid id = *(eid*)key;
-	return (unsigned int)id;
-}
-
 void entity_module_init() {
 	entities = array_new(Entity*);
-	assert(hash_map_create(&entities_map, 1024, sizeof(eid), sizeof(Entity*), eid_compare, eid_hash) == 0);
+	assert(hash_map_create(&entities_map, 1024, sizeof(eid), sizeof(Entity*), util_eid_compare, util_eid_hash) == 0);
 }
 
 void entity_module_destroy() {

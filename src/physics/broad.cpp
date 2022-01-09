@@ -1,6 +1,7 @@
 #include "broad.h"
 #include <light_array.h>
 #include <hash_map.h>
+#include "../util.h"
 
 Broad_Collision_Pair* broad_get_collision_pairs(Entity** entities) {
 	Broad_Collision_Pair pair;
@@ -27,28 +28,6 @@ Broad_Collision_Pair* broad_get_collision_pairs(Entity** entities) {
 	return collision_pairs;
 }
 
-static int u32_compare(const void *key1, const void *key2) {
-	u32 n1 = *(u32*)key1;
-	u32 n2 = *(u32*)key2;
-	return n1 == n2;
-}
-
-static unsigned int u32_hash(const void *key) {
-	u32 n = *(u32*)key;
-	return n;
-}
-
-static int eid_compare(const void *key1, const void *key2) {
-	eid id1 = *(eid*)key1;
-	eid id2 = *(eid*)key2;
-	return id1 == id2;
-}
-
-static unsigned int eid_hash(const void *key) {
-	eid id = *(eid*)key;
-	return (unsigned int)id;
-}
-
 static eid uf_find(Hash_Map* entity_to_parent_map, eid x) {
 	eid p;
 	assert(!hash_map_get(entity_to_parent_map, &x, &p));
@@ -67,7 +46,7 @@ static void uf_union(Hash_Map* entity_to_parent_map, eid x, eid y) {
 
 static Hash_Map uf_collect_all(Entity** entities, Broad_Collision_Pair* collision_pairs) {
 	Hash_Map entity_to_parent_map;
-	assert(!hash_map_create(&entity_to_parent_map, 1024, sizeof(eid), sizeof(eid), eid_compare, eid_hash));
+	assert(!hash_map_create(&entity_to_parent_map, 1024, sizeof(eid), sizeof(eid), util_eid_compare, util_eid_hash));
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		eid id = entities[i]->id;
@@ -93,7 +72,7 @@ eid** broad_collect_simulation_islands(Entity** entities, Broad_Collision_Pair* 
 	Hash_Map entity_to_parent_map = uf_collect_all(entities, collision_pairs);
 
 	Hash_Map simulation_islands_map;
-	assert(!hash_map_create(&simulation_islands_map, 2 * array_length(entities), sizeof(eid), sizeof(u32), eid_compare, eid_hash));
+	assert(!hash_map_create(&simulation_islands_map, 2 * array_length(entities), sizeof(eid), sizeof(u32), util_eid_compare, util_eid_hash));
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];

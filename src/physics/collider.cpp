@@ -2,11 +2,11 @@
 #include <hash_map.h>
 #include <memory.h>
 #include <light_array.h>
-#include <limits.h>
 #include "../util.h"
 #include "gjk.h"
 #include "clipping.h"
 #include "epa.h"
+#include "../util.h"
 
 Collider collider_sphere_create(const r32 radius) {
 	Collider collider;
@@ -15,22 +15,6 @@ Collider collider_sphere_create(const r32 radius) {
 	collider.sphere.radius = radius;
 	collider.sphere.center = (vec3){0.0, 0.0, 0.0};
 	return collider;
-}
-
-static int vertex_compare(const void *key1, const void *key2) {
-	vec3 v1 = *(vec3*)key1;
-	vec3 v2 = *(vec3*)key2;
-	return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
-}
-
-static unsigned int vertex_hash(const void *key) {
-	vec3 v = *(vec3*)key;
-	unsigned long long x, y, z;
-	assert(sizeof(r64) == sizeof(unsigned long long));
-	memcpy(&x, &v.x, sizeof(r64));
-	memcpy(&y, &v.y, sizeof(r64));
-	memcpy(&z, &v.z, sizeof(r64));
-	return (unsigned int)((x + y + z) % UINT_MAX);
 }
 
 static boolean do_triangles_share_same_vertex(dvec3 t1, dvec3 t2) {
@@ -200,7 +184,7 @@ static r64 get_convex_hull_bounding_sphere_radius(const vec3* hull) {
 // This function only makes sure that vertices are unique - duplicated vertices will be merged.
 Collider collider_convex_hull_create(const vec3* vertices, const u32* indices) {
 	Hash_Map vertex_to_idx_map;
-	hash_map_create(&vertex_to_idx_map, 1024, sizeof(vec3), sizeof(u32), vertex_compare, vertex_hash);
+	hash_map_create(&vertex_to_idx_map, 1024, sizeof(vec3), sizeof(u32), util_vec3_compare, util_vec3_hash);
 
 	vec3* hull = array_new(vec3);
 	
