@@ -390,10 +390,10 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Cons
 	}
 #if 0
 	for (u32 j = 0; j < array_length(simulation_islands); ++j) {
-		Entity** simulation_island = simulation_islands[j];
+		eid* simulation_island = simulation_islands[j];
 		vec4 color = util_pallete(j);
 		for (u32 k = 0; k < array_length(simulation_island); ++k) {
-			Entity* e = simulation_island[k];
+			Entity* e = entity_get_by_id(simulation_island[k]);
 			e->color = color;
 		}
 	}
@@ -507,17 +507,17 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Cons
 		u32* idxs = array_new(u32);
 		for (u32 i = 0; i < size; ++i) {
 			int idx;
-			boolean new;
+			boolean n;
 			do {
-				new = true;
+				n = true;
 				idx = rand() % size;
 				for (u32 j = 0; j < array_length(idxs); ++j) {
 					if (idx == idxs[j]) {
-						new = false;
+						n = false;
 						break;
 					}
 				}
-			} while (!new);
+			} while (!n);
 			array_push(idxs, idx);
 		}
 

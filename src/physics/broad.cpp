@@ -62,7 +62,7 @@ static eid uf_find(Hash_Map* entity_to_parent_map, eid x) {
 static void uf_union(Hash_Map* entity_to_parent_map, eid x, eid y) {
 	eid key = uf_find(entity_to_parent_map, y);
 	eid value = uf_find(entity_to_parent_map, x);
-	assert(hash_map_put(entity_to_parent_map, &key, &value));
+	assert(hash_map_put(entity_to_parent_map, &key, &value) == 0);
 }
 
 static Hash_Map uf_collect_all(Entity** entities, Broad_Collision_Pair* collision_pairs) {

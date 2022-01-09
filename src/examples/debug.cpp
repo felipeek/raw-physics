@@ -108,19 +108,6 @@ int ex_debug_init() {
 	Mesh sphere_mesh = graphics_mesh_create(sphere_vertices, sphere_indices);
 	vec3 sphere_scale = (vec3){1.0, 1.0, 1.0};
 
-	//Collider cube_collider1 = create_convex_collider(cube_vertices, cube_indices, cube_scale);
-	//entity_create(&e, cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-	//	cube_scale, (vec4){1.0, 0.0, 0.0, 1.0}, 1.0, cube_collider1);
-	//e.world_position = (vec3){-0.99000000000000021316282072803005576133728027343750, -0.00034765957551975701367297233446151949465274810791, -0.99000000000000021316282072803005576133728027343750};
-	//e.world_rotation = (Quaternion){0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 1.00000000000000000000000000000000000000000000000000};
-	//array_push(entities, e);
-
-	//Collider cube_collider2 = create_convex_collider(cube_vertices, cube_indices, cube_scale);
-	//entity_create(&e, cube_mesh, (vec3){0.0, 2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-	//	cube_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, cube_collider2);
-	//array_push(entities, e);
-
-#if 1
 	r64 y = -2.0f;
 	for (u32 i = 0; i < 2; ++i) {
 		y += 2.1f;
@@ -148,14 +135,6 @@ int ex_debug_init() {
 	Collider wall_collider4 = create_convex_collider(cube_vertices, cube_indices, wall_collider4_scale);
 	entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, 4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider4_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider4);
-#else
-	//Collider sphere_collider = collider_sphere_create(1.0);
-	//entity_create(&e, sphere_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-	//	sphere_scale, (vec4){0.5, 0.0, 0.0, 1.0}, 1.0, sphere_collider);
-	//e.world_position = (vec3){0.00000000000000000000000000000000000000000000000000, -0.00332037728014668905712758473214307741727679967880, 0.00000000000000000000000000000000000000000000000000};
-	//e.world_rotation = (Quaternion){0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 0.00000000000000000000000000000000000000000000000000, 1.00000000000000000000000000000000000000000000000000};
-	//array_push(entities, e);
-#endif
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -221,8 +200,8 @@ void ex_debug_render() {
 	#if 0
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		for (u32 j = i + 1; j < array_length(entities); ++j) {
-			Entity* e1 = &entities[i];
-			Entity* e2 = &entities[j];
+			Entity* e1 = entities[i];
+			Entity* e2 = entities[j];
 			GJK_Simplex simplex;
 			vec3 normal;
 			boolean collision = false;
