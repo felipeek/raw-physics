@@ -14,28 +14,23 @@
 #define GLSL_VERSION "#version 330"
 #define MENU_TITLE "Examples"
 
-void menu_char_click_process(GLFWwindow* window, u32 c)
-{
+void menu_char_click_process(GLFWwindow* window, u32 c) {
 	ImGui_ImplGlfw_CharCallback(window, c);
 }
 
-void menu_key_click_process(GLFWwindow* window, s32 key, s32 scan_code, s32 action, s32 mods)
-{
+void menu_key_click_process(GLFWwindow* window, s32 key, s32 scan_code, s32 action, s32 mods) {
 	ImGui_ImplGlfw_KeyCallback(window, key, scan_code, action, mods);
 }
 
-void menu_mouse_click_process(GLFWwindow* window, s32 button, s32 action, s32 mods)
-{
+void menu_mouse_click_process(GLFWwindow* window, s32 button, s32 action, s32 mods) {
 	ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
 }
 
-void menu_scroll_change_process(GLFWwindow* window, s64 x_offset, s64 y_offset)
-{
+void menu_scroll_change_process(GLFWwindow* window, s64 x_offset, s64 y_offset) {
 	ImGui_ImplGlfw_ScrollCallback(window, x_offset, y_offset);
 }
 
-void menu_init(GLFWwindow* window)
-{
+void menu_init(GLFWwindow* window) {
 	// Setup Dear ImGui binding
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -48,11 +43,9 @@ void menu_init(GLFWwindow* window)
 	ImGui::StyleColorsDark();
 }
 
-static void draw_main_window()
-{
+static void draw_main_window() {
     ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin(MENU_TITLE, NULL, 0))
-    {
+    if (ImGui::Begin(MENU_TITLE, NULL, 0)) {
         // left
         static Example_Scene selected = EXAMPLE_SCENE_INITIAL;
         ImGui::BeginChild("left pane", ImVec2(150, 0), true);
@@ -92,8 +85,7 @@ static void draw_main_window()
     ImGui::End();
 }
 
-void menu_render()
-{
+void menu_render() {
 	// Start the Dear ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -110,8 +102,7 @@ void menu_render()
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void menu_destroy()
-{
+void menu_destroy() {
 	// Cleanup
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();

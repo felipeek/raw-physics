@@ -676,17 +676,17 @@ vec2 gm_vec2_normalize(vec2 v)
 
 r64 gm_vec4_length(vec4 v)
 {
-	return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
+	return sqrt(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
 }
 
 r64 gm_vec3_length(vec3 v)
 {
-	return sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
+	return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
 r64 gm_vec2_length(vec2 v)
 {
-	return sqrtf(v.x * v.x + v.y * v.y);
+	return sqrt(v.x * v.x + v.y * v.y);
 }
 
 vec4 gm_vec4_add(vec4 v1, vec4 v2)
@@ -736,7 +736,7 @@ r64 gm_vec2_dot(vec2 v1, vec2 v2)
 
 r64 gm_vec2_angle(vec2 v)
 {
-	return atan2f(v.y, v.x);
+	return atan2(v.y, v.x);
 }
 
 r64 gm_radians(r64 degrees)

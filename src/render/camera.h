@@ -3,8 +3,7 @@
 #include <gm.h>
 #include "../quaternion.h"
 
-typedef struct
-{
+typedef struct {
 	vec3 position;
 	r64 near_plane;
 	r64 far_plane;

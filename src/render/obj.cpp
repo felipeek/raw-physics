@@ -4,8 +4,7 @@
 #include "graphics.h"
 #include <light_array.h>
 
-int obj_parse(const char* obj_path, Vertex** vertices, u32** indices)
-{
+int obj_parse(const char* obj_path, Vertex** vertices, u32** indices) {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
 	std::string warn;
@@ -30,10 +29,11 @@ int obj_parse(const char* obj_path, Vertex** vertices, u32** indices)
 
 	bool generate_normals = attrib.normals.size() == 0;
 
-	if (generate_normals)
+	if (generate_normals) {
 		printf("normals not found in model... will be generated\n");
-	else
+	} else {
 		printf("normals are present in model\n");
+	}
 
 	// For now, we are not re-using vertices, i.e., our indices are 0 1 2 3 4 5 6 7...
 	// This is because tinyobj loads the object in such a way that the position, tex coords and normals are completely independent
@@ -80,8 +80,7 @@ int obj_parse(const char* obj_path, Vertex** vertices, u32** indices)
 			v[2].position.y = attrib.vertices[3 * f2 + 1];
 			v[2].position.z = attrib.vertices[3 * f2 + 2];
 
-			if (!generate_normals)
-			{
+			if (!generate_normals) {
 				int nf0 = idx0.normal_index;
 				int nf1 = idx1.normal_index;
 				int nf2 = idx2.normal_index;
@@ -95,9 +94,7 @@ int obj_parse(const char* obj_path, Vertex** vertices, u32** indices)
 				v[2].normal.x = attrib.normals[3 * nf2 + 0];
 				v[2].normal.y = attrib.normals[3 * nf2 + 1];
 				v[2].normal.z = attrib.normals[3 * nf2 + 2];
-			}
-			else
-			{
+			} else {
 				v[0].normal = (fvec3){0.0f, 0.0f, 0.0f};
 				v[1].normal = (fvec3){0.0f, 0.0f, 0.0f};
 				v[2].normal = (fvec3){0.0f, 0.0f, 0.0f};
@@ -109,13 +106,11 @@ int obj_parse(const char* obj_path, Vertex** vertices, u32** indices)
 		}
 	}
 
-	if (generate_normals)
-	{
+	if (generate_normals) {
 		// Calculate normals
 		size_t indices_length = array_length(*indices);
 
-		for (size_t i = 0; i < indices_length; i += 3)
-		{
+		for (size_t i = 0; i < indices_length; i += 3) {
 			Vertex* vertex_a, *vertex_b, *vertex_c;
 			unsigned int i1 = (*indices)[i + 0];
 			unsigned int i2 = (*indices)[i + 1];

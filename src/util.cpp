@@ -6,14 +6,12 @@
 #include "entity.h"
 #include <limits.h>
 
-r64 util_random_float(r64 min, r64 max)
-{
+r64 util_random_float(r64 min, r64 max) {
     r64 scale = rand() / (r64)RAND_MAX;
     return min + scale * (max - min);
 }
 
-s8* util_read_file(const s8* path, s32* _file_length)
-{
+s8* util_read_file(const s8* path, s32* _file_length) {
 	FILE* file;
 	s8* buffer;
 	s32 file_length;
@@ -48,28 +46,27 @@ s8* util_read_file(const s8* path, s32* _file_length)
 
 	buffer[file_length] = '\0';
 
-	if (_file_length)
+	if (_file_length) {
 		*_file_length = file_length;
+	}
 
 	return buffer;
 }
 
-void util_free_file(s8* file)
-{
+void util_free_file(s8* file) {
 	free(file);
 }
 
-mat4 util_get_model_matrix_no_scale(const Quaternion* rotation, vec3 translation)
-{
+mat4 util_get_model_matrix_no_scale(const Quaternion* rotation, vec3 translation) {
 	r64 s, c;
 
 	mat4 rotation_matrix = quaternion_get_matrix(rotation);
 
 	mat4 translation_matrix = (mat4) {
 		1.0, 0.0, 0.0, translation.x,
-			0.0, 1.0, 0.0, translation.y,
-			0.0, 0.0, 1.0, translation.z,
-			0.0, 0.0, 0.0, 1.0
+		0.0, 1.0, 0.0, translation.y,
+		0.0, 0.0, 1.0, translation.z,
+		0.0, 0.0, 0.0, 1.0
 	};
 
 	mat4 model_matrix = gm_mat4_multiply(&translation_matrix, &rotation_matrix);

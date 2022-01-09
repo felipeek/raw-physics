@@ -21,8 +21,7 @@ void entity_module_destroy() {
 	hash_map_destroy(&entities_map);
 }
 
-eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider)
-{
+eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider) {
 	Entity* entity = (Entity*)malloc(sizeof(Entity));
 	entity->id = eid_counter++;
 	entity->mesh = mesh;
@@ -54,8 +53,7 @@ eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec
 	return entity->id;
 }
 
-eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider)
-{
+eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider) {
 	Entity* entity = (Entity*)malloc(sizeof(Entity));
 	entity->id = eid_counter++;
 	entity->mesh = mesh;
@@ -100,8 +98,7 @@ Entity** entity_get_all() {
 	return (Entity**)array_copy(entities);
 }
 
-void entity_destroy(Entity* entity)
-{
+void entity_destroy(Entity* entity) {
 	array_free(entity->forces);
 
 	// @TODO: avoid the need of this loop
@@ -116,24 +113,23 @@ void entity_destroy(Entity* entity)
 	free(entity);
 }
 
-mat4 entity_get_model_matrix(const Entity* entity)
-{
+mat4 entity_get_model_matrix(const Entity* entity) {
 	r64 s, c;
 
 	mat4 scale_matrix = (mat4) {
 		entity->world_scale.x, 0.0, 0.0, 0.0,
-			0.0, entity->world_scale.y, 0.0, 0.0,
-			0.0, 0.0, entity->world_scale.z, 0.0,
-			0.0, 0.0, 0.0, 1.0
+		0.0, entity->world_scale.y, 0.0, 0.0,
+		0.0, 0.0, entity->world_scale.z, 0.0,
+		0.0, 0.0, 0.0, 1.0
 	};
 
 	mat4 rotation_matrix = quaternion_get_matrix(&entity->world_rotation);
 
 	mat4 translation_matrix = (mat4) {
 		1.0, 0.0, 0.0, entity->world_position.x,
-			0.0, 1.0, 0.0, entity->world_position.y,
-			0.0, 0.0, 1.0, entity->world_position.z,
-			0.0, 0.0, 0.0, 1.0
+		0.0, 1.0, 0.0, entity->world_position.y,
+		0.0, 0.0, 1.0, entity->world_position.z,
+		0.0, 0.0, 0.0, 1.0
 	};
 
 	mat4 model_matrix = gm_mat4_multiply(&rotation_matrix, &scale_matrix);
@@ -141,9 +137,7 @@ mat4 entity_get_model_matrix(const Entity* entity)
 	return model_matrix;
 }
 
-
-void entity_mesh_replace(Entity* entity, Mesh mesh, boolean delete_normal_map)
-{
+void entity_mesh_replace(Entity* entity, Mesh mesh, boolean delete_normal_map) {
 	glDeleteBuffers(1, &entity->mesh.VBO);
 	glDeleteBuffers(1, &entity->mesh.EBO);
 	glDeleteVertexArrays(1, &entity->mesh.VAO);
@@ -151,23 +145,19 @@ void entity_mesh_replace(Entity* entity, Mesh mesh, boolean delete_normal_map)
 	entity->mesh = mesh;
 }
 
-void entity_set_position(Entity* entity, vec3 world_position)
-{
+void entity_set_position(Entity* entity, vec3 world_position) {
 	entity->world_position = world_position;
 }
 
-void entity_set_rotation(Entity* entity, Quaternion world_rotation)
-{
+void entity_set_rotation(Entity* entity, Quaternion world_rotation) {
 	entity->world_rotation = world_rotation;
 }
 
-void entity_set_scale(Entity* entity, vec3 world_scale)
-{
+void entity_set_scale(Entity* entity, vec3 world_scale) {
 	entity->world_scale = world_scale;
 }
 
-void entity_activate(Entity* entity)
-{
+void entity_activate(Entity* entity) {
 	entity->active = true;
 	entity->deactivation_time = 0.0;
 }

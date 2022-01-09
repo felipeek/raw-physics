@@ -59,8 +59,7 @@ static void sutherland_hodgman(vec3* input_polygon, int num_clip_planes, const P
 	vec3* input = (vec3*)array_copy(input_polygon);
 	vec3* output = array_new(vec3);
 
-	for (int i = 0; i < num_clip_planes; ++i)
-	{
+	for (int i = 0; i < num_clip_planes; ++i) {
 		// If every single point has already been removed previously, just exit
 		if (array_length(input) == 0) {
 			break;
@@ -70,34 +69,29 @@ static void sutherland_hodgman(vec3* input_polygon, int num_clip_planes, const P
 
 		// Loop through each edge of the polygon and clip that edge against the current plane.
 		vec3 temp_point, start_point = input[array_length(input) - 1];
-		for (u32 j = 0; j < array_length(input); ++j)
-		{
+		for (u32 j = 0; j < array_length(input); ++j) {
 			vec3 end_point = input[j];
 			boolean start_in_plane = is_point_in_plane(plane, start_point);
 			boolean end_in_plane = is_point_in_plane(plane, end_point);
 
-			if (remove_instead_of_clipping)
-			{
-				if (end_in_plane)
+			if (remove_instead_of_clipping) {
+				if (end_in_plane) {
 					array_push(output, end_point);
-			}
-			else
-			{
+				}
+			} else {
 				// If the edge is entirely within the clipping plane, keep it as it is
-				if (start_in_plane && end_in_plane)
-				{
+				if (start_in_plane && end_in_plane) {
 					array_push(output, end_point);
 				}
 				// If the edge interesects the clipping plane, cut the edge along clip plane
-				else if (start_in_plane && !end_in_plane)
-				{
-					if (plane_edge_intersection(plane, start_point, end_point, &temp_point))
+				else if (start_in_plane && !end_in_plane) {
+					if (plane_edge_intersection(plane, start_point, end_point, &temp_point)) {
 						array_push(output, temp_point);
-				}
-				else if (!start_in_plane && end_in_plane)
-				{
-					if (plane_edge_intersection(plane, start_point, end_point, &temp_point))
+					}
+				} else if (!start_in_plane && end_in_plane) {
+					if (plane_edge_intersection(plane, start_point, end_point, &temp_point)) {
 						array_push(output, temp_point);
+					}
 
 					array_push(output, end_point);
 				}
@@ -228,14 +222,18 @@ static boolean collision_distance_between_skew_lines(vec3 p1, vec3 d1, vec3 p2, 
 	r64 n = ((r1 * m2) - (r2 * m1)) / ((n1 * m2) - (n2 * m1));
 	r64 m = ((n1 * r2) - (n2 * r1)) / ((n1 * m2) - (n2 * m1));
 
-	if (l1)
+	if (l1) {
 		*l1 = gm_vec3_add(p1, gm_vec3_scalar_product(m, d1));
-	if (l2)
+	}
+	if (l2) {
 		*l2 = gm_vec3_add(p2, gm_vec3_scalar_product(n, d2));
-	if (_n)
+	}
+	if (_n) {
 		*_n = n;
-	if (_m)
+	}
+	if (_m) {
 		*_m = m;
+	}
 
 	return true;
 }

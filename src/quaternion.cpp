@@ -1,13 +1,13 @@
 #include "quaternion.h"
 
-Quaternion
-quaternion_new_radians(vec3 axis, r64 angle) {
-	if (gm_vec3_length(axis) != 0.0)
+Quaternion quaternion_new_radians(vec3 axis, r64 angle) {
+	if (gm_vec3_length(axis) != 0.0) {
 		axis = gm_vec3_normalize(axis);
-	r64 sang = sinf(angle / 2.0);
+	}
+	r64 sang = sin(angle / 2.0);
 
 	Quaternion quat;
-	quat.w = cosf(angle / 2.0);
+	quat.w = cos(angle / 2.0);
 	quat.x = axis.x * sang;
 	quat.y = axis.y * sang;
 	quat.z = axis.z * sang;
@@ -15,24 +15,22 @@ quaternion_new_radians(vec3 axis, r64 angle) {
 	return quat;
 }
 
-Quaternion
-quaternion_new(vec3 axis, r64 angle)
-{
-  if (gm_vec3_length(axis) != 0.0)
-	axis = gm_vec3_normalize(axis);
-  r64 sang = sinf(gm_radians(angle) / 2.0);
+Quaternion quaternion_new(vec3 axis, r64 angle) {
+	if (gm_vec3_length(axis) != 0.0) {
+		axis = gm_vec3_normalize(axis);
+	}
+	r64 sang = sin(gm_radians(angle) / 2.0);
 
-  Quaternion quat;
-  quat.w = cosf(gm_radians(angle) / 2.0);
-  quat.x = axis.x * sang;
-  quat.y = axis.y * sang;
-  quat.z = axis.z * sang;
+	Quaternion quat;
+	quat.w = cos(gm_radians(angle) / 2.0);
+	quat.x = axis.x * sang;
+	quat.y = axis.y * sang;
+	quat.z = axis.z * sang;
 
-  return quat;
+	return quat;
 }
 
-vec3 quaternion_get_right_inverted(const Quaternion* quat)
-{
+vec3 quaternion_get_right_inverted(const Quaternion* quat) {
 	return (vec3) {
 		1.0 - 2.0 * quat->y * quat->y - 2.0 * quat->z * quat->z,
 		2.0 * quat->x * quat->y - 2.0 * quat->w * quat->z, 2.0 * quat->x * quat->z + 2.0 * quat->w * quat->y
@@ -41,23 +39,21 @@ vec3 quaternion_get_right_inverted(const Quaternion* quat)
 
 vec3 quaternion_get_up_inverted(const Quaternion* quat) {
 	return (vec3) {
-		2.0 *quat->x * quat->y + 2.0 * quat->w * quat->z, 
+		2.0 * quat->x * quat->y + 2.0 * quat->w * quat->z, 
 		1.0 - (2.0 * quat->x * quat->x) - (2.0 * quat->z * quat->z),
 		2.0 * quat->y * quat->z - 2.0 * quat->w * quat->x
 	};
 }
 
-vec3 quaternion_get_forward_inverted(const Quaternion* quat)
-{
+vec3 quaternion_get_forward_inverted(const Quaternion* quat) {
 	return (vec3) {
-		2.0 *quat->x * quat->z - 2.0 * quat->w * quat->y, 
+		2.0 * quat->x * quat->z - 2.0 * quat->w * quat->y, 
 		2.0 * quat->y * quat->z + 2.0 * quat->w * quat->x, 
 		1.0 - (2.0 * quat->x * quat->x) - (2.0 * quat->y * quat->y)
 	};
 }
 
-vec3 quaternion_get_right(const Quaternion* quat)
-{
+vec3 quaternion_get_right(const Quaternion* quat) {
 	return (vec3) {
 		1.0 - 2.0 * quat->y * quat->y - 2.0 * quat->z * quat->z,
 		2.0 * quat->x * quat->y - 2.0 * -quat->w * quat->z, 
@@ -65,26 +61,23 @@ vec3 quaternion_get_right(const Quaternion* quat)
 	};
 }
 
-vec3 quaternion_get_up(const Quaternion* quat)
-{
+vec3 quaternion_get_up(const Quaternion* quat) {
 	return (vec3) {
-		2.0 *quat->x * quat->y + 2.0 * -quat->w * quat->z, 
+		2.0 * quat->x * quat->y + 2.0 * -quat->w * quat->z, 
 		1.0 - (2.0 * quat->x * quat->x) - (2.0 * quat->z * quat->z),
 		2.0 * quat->y * quat->z - 2.0 * -quat->w * quat->x
 	};
 }
 
-vec3 quaternion_get_forward(const Quaternion* quat)
-{
+vec3 quaternion_get_forward(const Quaternion* quat) {
 	return (vec3) {
-		2.0 *quat->x * quat->z - 2.0 * -quat->w * quat->y, 
+		2.0 * quat->x * quat->z - 2.0 * -quat->w * quat->y, 
 		2.0 * quat->y * quat->z + 2.0 * -quat->w * quat->x, 
 		1.0 - (2.0 * quat->x * quat->x) - (2.0 * quat->y * quat->y)
 	};
 }
 
-Quaternion quaternion_inverse(const Quaternion* q)
-{
+Quaternion quaternion_inverse(const Quaternion* q) {
 	Quaternion result;
 	result.x = -q->x;
 	result.y = -q->y;
@@ -93,8 +86,7 @@ Quaternion quaternion_inverse(const Quaternion* q)
 	return result;
 }
 
-mat3 quaternion_get_matrix3(const Quaternion* quat)
-{
+mat3 quaternion_get_matrix3(const Quaternion* quat) {
 	mat3 result;
 
 	result.data[0][0] = 1.0 - 2.0 * quat->y * quat->y - 2.0 * quat->z * quat->z;
@@ -112,8 +104,7 @@ mat3 quaternion_get_matrix3(const Quaternion* quat)
 	return result;
 }
 
-mat4 quaternion_get_matrix(const Quaternion* quat)
-{
+mat4 quaternion_get_matrix(const Quaternion* quat) {
 	mat4 result;
 
 	result.data[0][0] = 1.0 - 2.0 * quat->y * quat->y - 2.0 * quat->z * quat->z;
@@ -139,8 +130,7 @@ mat4 quaternion_get_matrix(const Quaternion* quat)
 	return result;
 }
 
-Quaternion quaternion_product(const Quaternion* q1, const Quaternion* q2)
-{
+Quaternion quaternion_product(const Quaternion* q1, const Quaternion* q2) {
 	Quaternion res;
 
 	res.w = q1->w * q2->w - q1->x * q2->x - q1->y * q2->y - q1->z * q2->z;
@@ -151,20 +141,17 @@ Quaternion quaternion_product(const Quaternion* q1, const Quaternion* q2)
 	return res;
 }
 
-Quaternion quaternion_normalize(const Quaternion* q)
-{
-	r64 len = sqrtf(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
+Quaternion quaternion_normalize(const Quaternion* q) {
+	r64 len = sqrt(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
 	return (Quaternion) { q->x / len, q->y / len, q->z / len, q->w / len };
 }
 
-Quaternion quaternion_slerp(const Quaternion* _q1, const Quaternion* _q2, r64 t)
-{
+Quaternion quaternion_slerp(const Quaternion* _q1, const Quaternion* _q2, r64 t) {
 	Quaternion q1 = *_q1, q2 = *_q2, qm;
 
 	// Calculate angle between them.
 	r64 cos_half_theta = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
-	if (cos_half_theta < 0)
-	{
+	if (cos_half_theta < 0) {
 		q2.w = -q2.w;
 		q2.x = -q2.x;
 		q2.y = -q2.y;
@@ -172,8 +159,7 @@ Quaternion quaternion_slerp(const Quaternion* _q1, const Quaternion* _q2, r64 t)
 		cos_half_theta = -cos_half_theta;
 	}
 	// if qa=qb or qa=-qb then theta = 0 and we can return qa
-	if (fabsf(cos_half_theta) >= 1.0)
-	{
+	if (fabs(cos_half_theta) >= 1.0) {
 		qm.w = q1.w;
 		qm.x = q1.x;
 		qm.y = q1.y;
@@ -181,13 +167,12 @@ Quaternion quaternion_slerp(const Quaternion* _q1, const Quaternion* _q2, r64 t)
 		return qm;
 	}
 	// Calculate temporary values.
-	r64 half_theta = acosf(cos_half_theta);
-	r64 sin_half_theta = sqrtf(1.0 - cos_half_theta * cos_half_theta);
+	r64 half_theta = acos(cos_half_theta);
+	r64 sin_half_theta = sqrt(1.0 - cos_half_theta * cos_half_theta);
 
 	// if theta = 180 degrees then result is not fully defined
 	// we could rotate around any axis normal to qa or qb
-	if (fabsf(sin_half_theta) < 0.001)
-	{
+	if (fabs(sin_half_theta) < 0.001) {
 		qm.w = (q1.w * 0.5 + q2.w * 0.5);
 		qm.x = (q1.x * 0.5 + q2.x * 0.5);
 		qm.y = (q1.y * 0.5 + q2.y * 0.5);
@@ -195,8 +180,8 @@ Quaternion quaternion_slerp(const Quaternion* _q1, const Quaternion* _q2, r64 t)
 		return qm;
 	}
 
-	r64 ratio_a = sinf((1 - t) * half_theta) / sin_half_theta;
-	r64 ratio_b = sinf(t * half_theta) / sin_half_theta;
+	r64 ratio_a = sin((1 - t) * half_theta) / sin_half_theta;
+	r64 ratio_b = sin(t * half_theta) / sin_half_theta;
 
 	// Calculate Quaternion
 	qm.w = (q1.w * ratio_a + q2.w * ratio_b);
@@ -206,21 +191,17 @@ Quaternion quaternion_slerp(const Quaternion* _q1, const Quaternion* _q2, r64 t)
 	return qm;
 }
 
-Quaternion quaternion_nlerp(const Quaternion* _q1, const Quaternion* _q2, r64 t)
-{
+Quaternion quaternion_nlerp(const Quaternion* _q1, const Quaternion* _q2, r64 t) {
 	Quaternion q1 = *_q1, q2 = *_q2, qm;
 	Quaternion result;
 	r64 dot = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
 	r64 blend_i = 1.0 - t;
-	if (dot < 0)
-	{
+	if (dot < 0) {
 		result.w = blend_i * q1.w + t * -q2.w;
 		result.x = blend_i * q1.x + t * -q2.x;
 		result.y = blend_i * q1.y + t * -q2.y;
 		result.z = blend_i * q1.z + t * -q2.z;
-	}
-	else
-	{
+	} else {
 		result.w = blend_i * q1.w + t * q2.w;
 		result.x = blend_i * q1.x + t * q2.x;
 		result.y = blend_i * q1.y + t * q2.y;
@@ -236,42 +217,33 @@ Quaternion quaternion_nlerp(const Quaternion* _q1, const Quaternion* _q2, r64 t)
 //
 // when dealing with transform matrices, usually this should be true unless there is a scale
 // (not sure if any scale or only for non-symetrical scales)
-Quaternion quaternion_from_matrix(const mat4* m)
-{
+Quaternion quaternion_from_matrix(const mat4* m) {
 	Quaternion q = { 0 };
 	mat4 a = *m;
 
 	r64 trace = a.data[0][0] + a.data[1][1] + a.data[2][2];       // I removed + 1.0; see discussion with Ethan
 
-	if (trace > 0) // I changed M_EPSILON to 0
-	{
-		r64 s = 0.5 / sqrtf(trace + 1.0);
+	if (trace > 0) { // I changed M_EPSILON to 0
+		r64 s = 0.5 / sqrt(trace + 1.0);
 		q.w = 0.25 / s;
 		q.x = (a.data[2][1] - a.data[1][2]) * s;
 		q.y = (a.data[0][2] - a.data[2][0]) * s;
 		q.z = (a.data[1][0] - a.data[0][1]) * s;
-	}
-	else
-	{
-		if (a.data[0][0] > a.data[1][1] && a.data[0][0] > a.data[2][2])
-		{
-			r64 s = 2.0 * sqrtf(1.0 + a.data[0][0] - a.data[1][1] - a.data[2][2]);
+	} else {
+		if (a.data[0][0] > a.data[1][1] && a.data[0][0] > a.data[2][2]) {
+			r64 s = 2.0 * sqrt(1.0 + a.data[0][0] - a.data[1][1] - a.data[2][2]);
 			q.w = (a.data[2][1] - a.data[1][2]) / s;
 			q.x = 0.25 * s;
 			q.y = (a.data[0][1] + a.data[1][0]) / s;
 			q.z = (a.data[0][2] + a.data[2][0]) / s;
-		}
-		else if (a.data[1][1] > a.data[2][2])
-		{
-			r64 s = 2.0 * sqrtf(1.0 + a.data[1][1] - a.data[0][0] - a.data[2][2]);
+		} else if (a.data[1][1] > a.data[2][2]) {
+			r64 s = 2.0 * sqrt(1.0 + a.data[1][1] - a.data[0][0] - a.data[2][2]);
 			q.w = (a.data[0][2] - a.data[2][0]) / s;
 			q.x = (a.data[0][1] + a.data[1][0]) / s;
 			q.y = 0.25 * s;
 			q.z = (a.data[1][2] + a.data[2][1]) / s;
-		}
-		else
-		{
-			r64 s = 2.0 * sqrtf(1.0 + a.data[2][2] - a.data[0][0] - a.data[1][1]);
+		} else {
+			r64 s = 2.0 * sqrt(1.0 + a.data[2][2] - a.data[0][0] - a.data[1][1]);
 			q.w = (a.data[1][0] - a.data[0][1]) / s;
 			q.x = (a.data[0][2] + a.data[2][0]) / s;
 			q.y = (a.data[1][2] + a.data[2][1]) / s;

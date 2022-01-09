@@ -150,7 +150,7 @@ boolean epa(Collider* collider1, Collider* collider2, GJK_Simplex* simplex, vec3
 
 		// If the support time lies on the face currently set as the closest to the origin, we are done.
 		r64 d = gm_vec3_dot(min_normal, support_point);
-		if (fabsf(d - min_distance) < EPSILON) {
+		if (fabs(d - min_distance) < EPSILON) {
 			*_normal = min_normal;
 			*_penetration = min_distance;
 			converged = true;

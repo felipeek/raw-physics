@@ -600,7 +600,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Cons
 			const r64 dynamic_friction_coefficient = (e1->dynamic_friction_coefficient + e2->dynamic_friction_coefficient) / 2.0f;
 			r64 fn = lambda_n / h; // simplifly h^2 by ommiting h in the next calculation
 			// @NOTE: equation (30) was modified here
-			r64 fact = MIN(dynamic_friction_coefficient * fabsf(fn), gm_vec3_length(vt));
+			r64 fact = MIN(dynamic_friction_coefficient * fabs(fn), gm_vec3_length(vt));
 			// update delta_v
 			delta_v = gm_vec3_add(delta_v, gm_vec3_scalar_product(-fact, gm_vec3_normalize(vt)));
 
@@ -611,7 +611,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Cons
 			vec3 old_w2 = e2->previous_angular_velocity;
 			vec3 v_til = gm_vec3_subtract(gm_vec3_add(old_v1, gm_vec3_cross(old_w1, eppd.r1_wc)), gm_vec3_add(old_v2, gm_vec3_cross(old_w2, eppd.r2_wc)));
 			r64 vn_til = gm_vec3_dot(n, v_til);
-			//r64 e = (fabsf(vn) > 2.0 * GRAVITY * h) ? 0.8 : 0.0;
+			//r64 e = (fabs(vn) > 2.0 * GRAVITY * h) ? 0.8 : 0.0;
 			r64 e = e1->restitution_coefficient * e2->restitution_coefficient;
 			// @NOTE: equation (34) was modified here
 			fact = -vn + MIN(-e * vn_til, 0.0);

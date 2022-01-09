@@ -3,8 +3,7 @@
 #include <light_array.h>
 #include "obj.h"
 
-Mesh graphics_mesh_create_from_obj(const s8* obj_path)
-{
+Mesh graphics_mesh_create_from_obj(const s8* obj_path) {
 	Vertex* vertices;
 	u32* indices;
 	obj_parse(obj_path, &vertices, &indices);
@@ -14,8 +13,7 @@ Mesh graphics_mesh_create_from_obj(const s8* obj_path)
 	return m;
 }
 
-Mesh graphics_quad_create()
-{
+Mesh graphics_quad_create() {
 	r32 size = 1.0f;
 	Vertex* vertices = array_new(Vertex);
 	u32* indices = array_new(u32);
@@ -51,8 +49,7 @@ Mesh graphics_quad_create()
 	return graphics_mesh_create(vertices, indices);
 }
 
-Mesh graphics_mesh_create(Vertex* vertices, u32* indices)
-{
+Mesh graphics_mesh_create(Vertex* vertices, u32* indices) {
 	Mesh mesh;
 	GLuint VBO, EBO, VAO;
 	glGenVertexArrays(1, &VAO);

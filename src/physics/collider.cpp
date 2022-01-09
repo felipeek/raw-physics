@@ -420,7 +420,7 @@ void collider_update(Collider* collider, vec3 translation, const Quaternion* rot
 }
 
 mat3 collider_get_default_inertia_tensor(Collider* collider, r64 mass) {
-	switch(collider->type) {
+	switch (collider->type) {
 		case COLLIDER_TYPE_SPHERE: {
 			r64 I = (2.0 / 5.0) * mass * collider->sphere.radius * collider->sphere.radius;
 			mat3 result = {0};

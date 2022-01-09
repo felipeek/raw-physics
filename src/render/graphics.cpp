@@ -13,8 +13,7 @@
 #define BASIC_VERTEX_SHADER_PATH "./shaders/basic_shader.vs"
 #define BASIC_FRAGMENT_SHADER_PATH "./shaders/basic_shader.fs"
 
-Shader graphics_shader_create(const s8* vertex_shader_path, const s8* fragment_shader_path)
-{
+Shader graphics_shader_create(const s8* vertex_shader_path, const s8* fragment_shader_path) {
 	s8* vertex_shader_code = util_read_file(vertex_shader_path, 0);
 	s8* fragment_shader_code = util_read_file(fragment_shader_path, 0);
 
@@ -27,16 +26,14 @@ Shader graphics_shader_create(const s8* vertex_shader_path, const s8* fragment_s
 
 	glCompileShader(vertex_shader);
 	glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
+	if (!success) {
 		glGetShaderInfoLog(vertex_shader, 1024, 0, info_log_buffer);
 		printf("Error compiling vertex shader: %s\n", info_log_buffer);
 	}
 
 	glCompileShader(fragment_shader);
 	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
+	if (!success) {
 		glGetShaderInfoLog(fragment_shader, 1024, 0, info_log_buffer);
 		printf("Error compiling fragment shader: %s\n", info_log_buffer);
 	}
@@ -48,8 +45,7 @@ Shader graphics_shader_create(const s8* vertex_shader_path, const s8* fragment_s
 	glLinkProgram(shader_program);
 
 	glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-	if (!success)
-	{
+	if (!success) {
 		glGetShaderInfoLog(shader_program, 1024, 0, info_log_buffer);
 		printf("Error linking program: %s\n", info_log_buffer);
 	}
@@ -67,30 +63,25 @@ typedef struct {
 
 Predefined_Shaders predefined_shaders;
 
-static void init_predefined_shaders()
-{
-	if (!predefined_shaders.initialized)
-	{
+static void init_predefined_shaders() {
+	if (!predefined_shaders.initialized) {
 		predefined_shaders.phong_shader = graphics_shader_create(PHONG_VERTEX_SHADER_PATH, PHONG_FRAGMENT_SHADER_PATH);
 		predefined_shaders.basic_shader = graphics_shader_create(BASIC_VERTEX_SHADER_PATH, BASIC_FRAGMENT_SHADER_PATH);
 		predefined_shaders.initialized = true;
 	}
 }
 
-static s8* build_light_uniform_name(s8* buffer, s32 index, const s8* property)
-{
+static s8* build_light_uniform_name(s8* buffer, s32 index, const s8* property) {
 	sprintf(buffer, "lights[%d].%s", index, property);
 	return buffer;
 }
 
-static void light_update_uniforms(const Light* lights, Shader shader)
-{
+static void light_update_uniforms(const Light* lights, Shader shader) {
 	s32 number_of_lights = array_length(lights);
 	s8 buffer[64];
 	glUseProgram(shader);
 
-	for (s32 i = 0; i < number_of_lights; ++i)
-	{
+	for (s32 i = 0; i < number_of_lights; ++i) {
 		Light light = lights[i];
 		GLint light_position_location = glGetUniformLocation(shader, build_light_uniform_name(buffer, i, "position"));
 		GLint ambient_color_location = glGetUniformLocation(shader, build_light_uniform_name(buffer, i, "ambient_color"));
@@ -106,8 +97,7 @@ static void light_update_uniforms(const Light* lights, Shader shader)
 	glUniform1i(light_quantity_location, number_of_lights);
 }
 
-static void graphics_mesh_render(Shader shader, Mesh mesh)
-{
+static void graphics_mesh_render(Shader shader, Mesh mesh) {
 	glBindVertexArray(mesh.VAO);
 	glUseProgram(shader);
 	glDrawElements(GL_TRIANGLES, mesh.num_indices, GL_UNSIGNED_INT, 0);
@@ -115,8 +105,7 @@ static void graphics_mesh_render(Shader shader, Mesh mesh)
 	glBindVertexArray(0);
 }
 
-void graphics_entity_render_basic_shader(const Perspective_Camera* camera, const Entity* entity)
-{
+void graphics_entity_render_basic_shader(const Perspective_Camera* camera, const Entity* entity) {
 	init_predefined_shaders();
 	Shader shader = predefined_shaders.basic_shader;
 	glUseProgram(shader);
@@ -135,8 +124,7 @@ void graphics_entity_render_basic_shader(const Perspective_Camera* camera, const
 	glUseProgram(0);
 }
 
-void graphics_entity_render_phong_shader(const Perspective_Camera* camera, const Entity* entity, const Light* lights)
-{
+void graphics_entity_render_phong_shader(const Perspective_Camera* camera, const Entity* entity, const Light* lights) {
 	init_predefined_shaders();
 	Shader shader = predefined_shaders.phong_shader;
 	glUseProgram(shader);
@@ -162,8 +150,7 @@ void graphics_entity_render_phong_shader(const Perspective_Camera* camera, const
 	glUseProgram(0);
 }
 
-void graphics_light_create(Light* light, vec3 position, vec4 ambient_color, vec4 diffuse_color, vec4 specular_color)
-{
+void graphics_light_create(Light* light, vec3 position, vec4 ambient_color, vec4 diffuse_color, vec4 specular_color) {
 	light->position = position;
 	light->ambient_color = ambient_color;
 	light->diffuse_color = diffuse_color;
@@ -197,8 +184,7 @@ typedef struct {
 
 static Render_Primitives_Context primitives_ctx;
 
-void graphics_renderer_primitives_init()
-{
+void graphics_renderer_primitives_init() {
 	if (primitives_ctx.initialized) return;
 	primitives_ctx.initialized = true;
 
@@ -232,8 +218,7 @@ void graphics_renderer_primitives_init()
 	glUseProgram(0);
 }
 
-void graphics_renderer_primitives_flush(const Perspective_Camera* camera)
-{
+void graphics_renderer_primitives_flush(const Perspective_Camera* camera) {
 	graphics_renderer_primitives_init();
 	glUseProgram(primitives_ctx.shader);
 
@@ -279,34 +264,28 @@ void graphics_renderer_primitives_flush(const Perspective_Camera* camera)
 	glUseProgram(0);
 }
 
-static void setup_primitives_render()
-{
-	if (primitives_ctx.data_ptr == 0)
-	{
+static void setup_primitives_render() {
+	if (primitives_ctx.data_ptr == 0) {
 		glBindVertexArray(primitives_ctx.vector_vao);
 		glBindBuffer(GL_ARRAY_BUFFER, primitives_ctx.vector_vbo);
 		primitives_ctx.data_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 	}
 }
 
-static void setup_primitives_point_render()
-{
-	if (primitives_ctx.point_data_ptr == 0)
-	{
+static void setup_primitives_point_render() {
+	if (primitives_ctx.point_data_ptr == 0) {
 		glBindVertexArray(primitives_ctx.point_vao);
 		glBindBuffer(GL_ARRAY_BUFFER, primitives_ctx.point_vbo);
 		primitives_ctx.point_data_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 	}
 }
 
-void graphics_renderer_debug_points(vec3* points, int point_count, vec4 color)
-{
+void graphics_renderer_debug_points(vec3* points, int point_count, vec4 color) {
 	graphics_renderer_primitives_init();
 	setup_primitives_point_render();
 	Primitive_3D_Vertex *verts = (Primitive_3D_Vertex *)primitives_ctx.point_data_ptr + primitives_ctx.point_count;
 
-	for (s32 i = 0; i < point_count; ++i)
-	{
+	for (s32 i = 0; i < point_count; ++i) {
 		verts[i].position = (fvec3){(r32)points[i].x, (r32)points[i].y, (r32)points[i].z};
 		verts[i].color = (fvec4){(r32)color.x, (r32)color.y, (r32)color.z, (r32)color.z};
 	}
@@ -314,8 +293,7 @@ void graphics_renderer_debug_points(vec3* points, int point_count, vec4 color)
 	primitives_ctx.point_count += point_count;
 }
 
-void graphics_renderer_debug_vector(vec3 p1, vec3 p2, vec4 color)
-{
+void graphics_renderer_debug_vector(vec3 p1, vec3 p2, vec4 color) {
 	graphics_renderer_primitives_init();
 	setup_primitives_render();
 
