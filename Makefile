@@ -68,4 +68,4 @@ $(BUILD_DIR_DEBUG)/%.o : %.cpp
 .PHONY : clean
 clean :
 	# This should remove all generated files.
-	-rm $(BUILD_DIR)/$(BIN) $(OBJ) $(DEP)
+	-rm -r $(BUILD_DIR)
