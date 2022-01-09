@@ -26,19 +26,19 @@ static boolean plane_edge_intersection(const Plane* plane, const vec3 start, con
 	// We do this by projecting the line (start - A, End - B) ab along the plane
 	float ab_p = gm_vec3_dot(plane->normal, ab);
 	if (fabs(ab_p) > EPSILON) {
-		//Generate a random point on the plane (any point on the plane will suffice)
+		// Generate a random point on the plane (any point on the plane will suffice)
 		float distance = -gm_vec3_dot(plane->normal, plane->point);
 		vec3 p_co = gm_vec3_scalar_product(-distance, plane->normal);
 
-		//Work out the edge factor to scale edge by
+		// Work out the edge factor to scale edge by
 		// e.g. how far along the edge to traverse before it meets the plane.
-		//      This is computed by: -proj<plane_nrml>(edge_start - any_planar_point) / proj<plane_nrml>(edge_start - edge_end)
+		// This is computed by: -proj<plane_nrml>(edge_start - any_planar_point) / proj<plane_nrml>(edge_start - edge_end)
 		float fac = -gm_vec3_dot(plane->normal, gm_vec3_subtract(start, p_co)) / ab_p;
 
-		//Stop any large floating point divide issues with almost parallel planes
+		// Stop any large floating point divide issues with almost parallel planes
 		fac = MIN(MAX(fac, 0.0), 1.0); 
 
-		//Return point on edge
+		// Return point on edge
 		*out_point = gm_vec3_add(start, gm_vec3_scalar_product(fac, ab));
 		return true;
 	}
@@ -46,30 +46,29 @@ static boolean plane_edge_intersection(const Plane* plane, const vec3 start, con
 	return false;
 }
 
-//Performs sutherland hodgman clipping algorithm to clip the provided mesh
-//    or polygon in regards to each of the provided clipping planes.
+// Clips the input polygon to the input clip planes
+// If remove_instead_of_clipping is true, vertices that are lying outside the clipping planes will be removed instead of clipped
+// Based on https://research.ncl.ac.uk/game/mastersdegree/gametechnologies/previousinformation/physics5collisionmanifolds/
 static void sutherland_hodgman(vec3* input_polygon, int num_clip_planes, const Plane* clip_planes, vec3** out_polygon,
-	boolean remove_not_clip_to_plane) {
+	boolean remove_instead_of_clipping) {
 	assert(out_polygon != NULL);
 	assert(num_clip_planes > 0);
 
-	//Create temporary list of vertices
-	// - We will keep ping-pong'ing between the two lists updating them as we go.
+	// Create temporary list of vertices
+	// We will keep ping-pong'ing between the two lists updating them as we go.
 	vec3* input = (vec3*)array_copy(input_polygon);
 	vec3* output = array_new(vec3);
 
-	//Iterate over each clip_plane provided
 	for (int i = 0; i < num_clip_planes; ++i)
 	{
-		//If every single point on our shape has already been removed previously, just exit
+		// If every single point has already been removed previously, just exit
 		if (array_length(input) == 0) {
 			break;
 		}
 
 		const Plane* plane = &clip_planes[i];
 
-		//Loop through each edge of the polygon (see line_loop from gfx) and clip
-		// that edge against the current plane.
+		// Loop through each edge of the polygon and clip that edge against the current plane.
 		vec3 temp_point, start_point = input[array_length(input) - 1];
 		for (u32 j = 0; j < array_length(input); ++j)
 		{
@@ -77,22 +76,19 @@ static void sutherland_hodgman(vec3* input_polygon, int num_clip_planes, const P
 			boolean start_in_plane = is_point_in_plane(plane, start_point);
 			boolean end_in_plane = is_point_in_plane(plane, end_point);
 
-			//If it's the final pass, just remove all points outside the reference plane
-			// - This won't return a true polygon if set, but is needed for the last step
-			//   we do in the manifold generation
-			if (remove_not_clip_to_plane)
+			if (remove_instead_of_clipping)
 			{
 				if (end_in_plane)
 					array_push(output, end_point);
 			}
 			else
 			{
-				//If the edge is entirely within the clipping plane, keep it as it is
+				// If the edge is entirely within the clipping plane, keep it as it is
 				if (start_in_plane && end_in_plane)
 				{
 					array_push(output, end_point);
 				}
-				//If the edge interesects the clipping plane, cut the edge along clip plane
+				// If the edge interesects the clipping plane, cut the edge along clip plane
 				else if (start_in_plane && !end_in_plane)
 				{
 					if (plane_edge_intersection(plane, start_point, end_point, &temp_point))
@@ -106,12 +102,12 @@ static void sutherland_hodgman(vec3* input_polygon, int num_clip_planes, const P
 					array_push(output, end_point);
 				}
 			}
-			//..otherwise the edge is entirely outside the clipping plane and should be removed/ignored
+			// ..otherwise the edge is entirely outside the clipping plane and should be removed/ignored
 
 			start_point = end_point;
 		}
 
-		//Swap input/output polygons, and clear output list for us to generate afresh
+		// Swap input/output polygons, and clear output list for us to generate afresh
 		vec3* tmp = input;
 		input = output;
 		output = tmp;
@@ -120,29 +116,6 @@ static void sutherland_hodgman(vec3* input_polygon, int num_clip_planes, const P
 
 	*out_polygon = input;
 	array_free(output);
-}
-
-// Gets the closest point x on the line (edge) to point (pos)
-static vec3 get_closest_point(vec3 pos, vec3 e1, vec3 e2) {
-	//As we have a line not two points, the final value could be anywhere between the edge points A/B
-	//	We solve this by projecting the point (pos) onto the line described by the edge, and then
-	//  clamping it so can it has to be between the line's start and end points.
-	//  - Notation: A - Line Start, B - Line End, P - Point not on the line we want to project
-	vec3 diff_AP = gm_vec3_subtract(pos, e1);
-	vec3 diff_AB = gm_vec3_subtract(e2, e1);
-
-	//Distance along the line of point 'pos' in world distance 
-	float ABAPproduct = gm_vec3_dot(diff_AP, diff_AB);
-	float magnitudeAB = gm_vec3_dot(diff_AB, diff_AB);
-
-	//Distance along the line of point 'pos' between 0-1 where 0 is line start and 1 is line end
-	float distance = ABAPproduct / magnitudeAB;
-
-	//Clamp distance so it cant go beyond the line's start/end in either direction
-	distance = MAX(MIN(distance, 1.0), 0.0);
-
-	//Use distance from line start (0-1) to compute the actual position
-	return gm_vec3_add(e1, gm_vec3_scalar_product(distance, diff_AB));
 }
 
 static vec3 get_closest_point_polygon(vec3 position, Plane* reference_plane) {
@@ -232,23 +205,6 @@ static dvec4 get_edge_with_most_fitting_normal(u32 support1_idx, u32 support2_id
 	return selected_edges;
 }
 
-// Solve 2x2 linear system
-// a1*x + b1*y = c1
-// a2*x + b2*y = c2
-// Outputs: x and y
-static boolean solve_2x2_linear_system(r64 a1, r64 b1, r64 c1, r64 a2, r64 b2, r64 c2, r64* x, r64* y) {
-	if ((a1 * b2) - (a2 * b1) == 0)
-		return false;
-
-	if (x)
-		*x = ((c1 * b2) - (c2 * b1)) / ((a1 * b2) - (a2 * b1));
-
-	if (y)
-		*y = ((a1 * c2) - (a2 * c1)) / ((a1 * b2) - (a2 * b1));
-
-  return true;
-}
-
 // This function calculates the distance between two indepedent skew lines in the 3D world
 // The first line is given by a known point P1 and a direction vector D1
 // The second line is given by a known point P2 and a direction vector D2
@@ -265,10 +221,12 @@ static boolean collision_distance_between_skew_lines(vec3 p1, vec3 d1, vec3 p2, 
 	r64 r1 = -d1.x * p2.x + d1.x * p1.x - d1.y * p2.y + d1.y * p1.y - d1.z * p2.z + d1.z * p1.z;
 	r64 r2 = -d2.x * p2.x + d2.x * p1.x - d2.y * p2.y + d2.y * p1.y - d2.z * p2.z + d2.z * p1.z;
 
-	r64 m, n;
-	if (!solve_2x2_linear_system(n1, m1, r1, n2, m2, r2, &n, &m)) {
+	// Solve 2x2 linear system
+	if ((n1 * m2) - (n2 * m1) == 0) {
 		return false;
 	}
+	r64 n = ((r1 * m2) - (r2 * m1)) / ((n1 * m2) - (n2 * m1));
+	r64 m = ((n1 * r2) - (n2 * r1)) / ((n1 * m2) - (n2 * m1));
 
 	if (l1)
 		*l1 = gm_vec3_add(p1, gm_vec3_scalar_product(m, d1));
