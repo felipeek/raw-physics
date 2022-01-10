@@ -5,7 +5,7 @@
 #include "broad.h"
 #include "../util.h"
 
-#define NUM_SUBSTEPS 20
+#define NUM_SUBSTEPS 0
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
 #define ENABLE_SIMULATION_ISLANDS

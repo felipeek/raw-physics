@@ -10,7 +10,7 @@ Build and run to see more examples!
 
 ## Building
 
-### Linux
+### Linux and OS X
 
 You need libglew-dev and libglfw3-dev. Simply run:
 
@@ -22,10 +22,10 @@ The binary will be available in `./bin/release/raw-physics`.
 
 ### Windows
 
-MSVC is a pre-requisite. Simply run:
+MSVC is a prerequisite. Simply run:
 
 ```bat
 > build.bat
 ```
 
-The binary will be available in: `./bin/raw-physics`.
+The binary will be available in `./bin/raw-physics`.
