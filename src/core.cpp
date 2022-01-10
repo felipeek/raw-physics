@@ -7,6 +7,7 @@
 #include "examples/cube_storm.h"
 #include "examples/seesaw.h"
 #include "examples/chain.h"
+#include "examples/brick_wall.h"
 #include "render/menu.h"
 #include "vendor/imgui.h"
 
@@ -29,6 +30,7 @@ int core_init() {
 	example_scenes[CUBE_STORM_EXAMPLE_SCENE] = cube_storm_example_scene;
 	example_scenes[SEESAW_EXAMPLE_SCENE] = seesaw_example_scene;
 	example_scenes[CHAIN_EXAMPLE_SCENE] = chain_example_scene;
+	example_scenes[BRICK_WALL_EXAMPLE_SCENE] = stack_example_scene;
 
 	selected_scene = EXAMPLE_SCENE_INITIAL;
 	return load_selected_scene();

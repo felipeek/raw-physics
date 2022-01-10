@@ -5,7 +5,7 @@
 #include "broad.h"
 #include "../util.h"
 
-#define NUM_SUBSTEPS 10
+#define NUM_SUBSTEPS 20
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
 #define ENABLE_SIMULATION_ISLANDS
@@ -398,6 +398,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Cons
 		}
 	}
 #else
+/*
 	for (u32 j = 0; j < array_length(simulation_islands); ++j) {
 		eid* simulation_island = simulation_islands[j];
 		for (u32 k = 0; k < array_length(simulation_island); ++k) {
@@ -409,6 +410,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Cons
 			}
 		}
 	}
+*/
 #endif
 
 	broad_simulation_islands_destroy(simulation_islands);

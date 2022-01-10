@@ -7,7 +7,7 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 	LDFLAGS=-framework OpenGL -lm -lglfw -lglew
 else
-	LDFLAGS=-lm -lglfw -lGLEW -lGL -lpng -lz
+	LDFLAGS=-lm -lglfw -lGLEW -lGL
 endif
 
 # Final binary
