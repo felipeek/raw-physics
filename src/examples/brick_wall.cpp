@@ -180,14 +180,14 @@ void ex_stack_input_process(boolean* key_state, r64 delta_time) {
 		camera_move_right(&camera, -movement_speed * delta_time);
 	if (key_state[GLFW_KEY_D])
 		camera_move_right(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_L])
-	{
+	if (key_state[GLFW_KEY_L]) {
 		static boolean wireframe = false;
 
-		if (wireframe)
+		if (wireframe) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		else
+		} else {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
 
 		wireframe = !wireframe;
 		key_state[GLFW_KEY_L] = false;
@@ -198,8 +198,9 @@ void ex_stack_input_process(boolean* key_state, r64 delta_time) {
 		vec3 camera_pos = camera.position;
 		r64 distance = 5.0;
 		vec3 diff = gm_vec3_scalar_product(-distance, camera_z);
-		vec3 cube_position = gm_vec3_add(camera_pos, diff);
+		vec3 object_position = gm_vec3_add(camera_pos, diff);
 
+#if 1
 		const char* mesh_name;
 		int r = rand();
 		if (r % 3 == 0) {
@@ -215,10 +216,23 @@ void ex_stack_input_process(boolean* key_state, r64 delta_time) {
 		Mesh m = graphics_mesh_create(vertices, indices);
 		vec3 scale = (vec3){1.0, 1.0, 1.0};
 		Collider collider = create_collider(vertices, indices, scale);
-		eid id = entity_create(m, cube_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
+		eid id = entity_create(m, object_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
 			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 10.0, collider);
 		array_free(vertices);
 		array_free(indices);
+#else
+		const char* mesh_name = "./res/sphere.obj";
+		Vertex* vertices;
+		u32* indices;
+		obj_parse(mesh_name, &vertices, &indices);
+		Mesh m = graphics_mesh_create(vertices, indices);
+		vec3 scale = (vec3){1.0, 1.0, 1.0};
+		Collider collider = collider_sphere_create(1.0);
+		eid id = entity_create(m, object_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
+			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 10.0, collider);
+		array_free(vertices);
+		array_free(indices);
+#endif
 
 		Entity* e = entity_get_by_id(id);
 		e->linear_velocity = gm_vec3_scalar_product(10.0, gm_vec3_scalar_product(-1.0, camera_z));
