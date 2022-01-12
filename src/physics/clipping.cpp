@@ -126,7 +126,7 @@ static Plane* build_boundary_planes(Collider_Convex_Hull* convex_hull, u32 targe
 		Collider_Convex_Hull_Face neighbor_face = convex_hull->transformed_faces[face_neighbors[i]];
 		Plane p;
 		p.point = convex_hull->transformed_vertices[neighbor_face.elements[0]];
-		p.normal = gm_vec3_negative(neighbor_face.normal);
+		p.normal = gm_vec3_invert(neighbor_face.normal);
 		array_push(result, p);
 	}
 
@@ -153,7 +153,7 @@ static u32 get_face_with_most_fitting_normal(u32 support_idx, const Collider_Con
 
 static dvec4 get_edge_with_most_fitting_normal(u32 support1_idx, u32 support2_idx, const Collider_Convex_Hull* convex_hull1,
 	const Collider_Convex_Hull* convex_hull2, vec3 normal, vec3* edge_normal) {
-	vec3 inverted_normal = gm_vec3_negative(normal);
+	vec3 inverted_normal = gm_vec3_invert(normal);
 
 	vec3 support1 = convex_hull1->transformed_vertices[support1_idx];
 	vec3 support2 = convex_hull2->transformed_vertices[support2_idx];
@@ -172,7 +172,7 @@ static dvec4 get_edge_with_most_fitting_normal(u32 support1_idx, u32 support2_id
 			vec3 edge2 = gm_vec3_subtract(support2, neighbor2);
 
 			vec3 current_normal = gm_vec3_normalize(gm_vec3_cross(edge1, edge2));
-			vec3 current_normal_inverted = gm_vec3_negative(current_normal);
+			vec3 current_normal_inverted = gm_vec3_invert(current_normal);
 
 			r64 dot = gm_vec3_dot(current_normal, normal);
 			if (dot > max_dot) {
@@ -255,7 +255,7 @@ Collider_Contact* convex_convex_contact_manifold(Collider* collider1, Collider* 
 	const r64 EPSILON = 0.0001;
 	Collider_Contact* contacts = array_new(Collider_Contact);
 
-	vec3 inverted_normal = gm_vec3_negative(normal);
+	vec3 inverted_normal = gm_vec3_invert(normal);
 
 	vec3 edge_normal;
 	u32 support1_idx = support_point_get_index(convex_hull1, normal);
@@ -295,8 +295,8 @@ Collider_Contact* convex_convex_contact_manifold(Collider* collider1, Collider* 
 		sutherland_hodgman(incident_face_support_points, array_length(boundary_planes), boundary_planes, &clipped_points, false);
 
 		Plane reference_plane;
-		reference_plane.normal = is_face1_the_reference_face ? gm_vec3_negative(face1.normal) :
-			gm_vec3_negative(face2.normal);
+		reference_plane.normal = is_face1_the_reference_face ? gm_vec3_invert(face1.normal) :
+			gm_vec3_invert(face2.normal);
 		reference_plane.point = reference_face_support_points[0];
 
 		vec3* final_clipped_points;
@@ -357,7 +357,7 @@ Collider_Contact* clipping_get_contact_manifold(Collider* collider1, Collider* c
 		return contacts;
 	} else if (collider2->type == COLLIDER_TYPE_SPHERE) {
 		Collider_Contact* contacts = array_new(Collider_Contact);
-		vec3 inverse_normal = gm_vec3_negative(normal);
+		vec3 inverse_normal = gm_vec3_invert(normal);
 		vec3 sphere_collision_point = support_point(collider2, inverse_normal);
 
 		Collider_Contact contact;

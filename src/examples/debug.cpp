@@ -15,6 +15,7 @@
 
 static Perspective_Camera camera;
 static Light* lights;
+static Static_Constraint* static_constraints;
 
 // Mouse binding to target positions
 static boolean is_mouse_bound_to_entity_movement;
@@ -49,7 +50,6 @@ static Collider create_convex_collider(Vertex* vertices, u32* indices, vec3 scal
 
 	return collider;
 }
-
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -107,38 +107,55 @@ int ex_debug_init() {
 	Mesh sphere_mesh = graphics_mesh_create(sphere_vertices, sphere_indices);
 	vec3 sphere_scale = (vec3){1.0, 1.0, 1.0};
 
-	r64 y = -2.0f;
-	for (u32 i = 0; i < 2; ++i) {
-		y += 2.1f;
-		Collider sphere_collider = collider_sphere_create(1.0);
-		entity_create(sphere_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-			sphere_scale, util_pallete(i), 1.0, sphere_collider);
-	}
+	//r64 y = -2.0f;
+	//for (u32 i = 0; i < 2; ++i) {
+	//	y += 2.1f;
+	//	Collider sphere_collider = collider_sphere_create(1.0);
+	//	entity_create(sphere_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	//		sphere_scale, util_pallete(i), 1.0, sphere_collider);
+	//}
 
-	vec3 wall_collider1_scale = (vec3){0.1f, 0.5f, 4.0f};
+	vec3 wall_collider1_scale = (vec3){0.1, 0.5, 4.0};
 	Collider wall_collider1 = create_convex_collider(cube_vertices, cube_indices, wall_collider1_scale);
 	entity_create_fixed(cube_mesh, (vec3){-4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider1_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider1);
 
-	vec3 wall_collider2_scale = (vec3){0.1f, 0.5f, 4.0f};
+	vec3 wall_collider2_scale = (vec3){0.1, 0.5, 4.0};
 	Collider wall_collider2 = create_convex_collider(cube_vertices, cube_indices, wall_collider2_scale);
 	entity_create_fixed(cube_mesh, (vec3){4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider2_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider2);
 
-	vec3 wall_collider3_scale = (vec3){4.0f, 0.5f, 0.1f};
+	vec3 wall_collider3_scale = (vec3){4.0, 0.5, 0.1};
 	Collider wall_collider3 = create_convex_collider(cube_vertices, cube_indices, wall_collider3_scale);
 	entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, -4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider3_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider3);
 
-	vec3 wall_collider4_scale = (vec3){4.0f, 0.5f, 0.1f};
+	vec3 wall_collider4_scale = (vec3){4.0, 0.5, 0.1};
 	Collider wall_collider4 = create_convex_collider(cube_vertices, cube_indices, wall_collider4_scale);
 	entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, 4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		wall_collider4_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider4);
+
+	vec3 cube_collider_scale = (vec3){1.0, 1.0, 1.0};
+	Collider cube_collider1 = create_convex_collider(cube_vertices, cube_indices, cube_collider_scale);
+	eid cube1 = entity_create(cube_mesh, (vec3){1.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		cube_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, cube_collider1);
+
+	Collider cube_collider2 = create_convex_collider(cube_vertices, cube_indices, cube_collider_scale);
+	eid cube2 = entity_create(cube_mesh, (vec3){-1.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		cube_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, cube_collider2);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
 	array_free(sphere_vertices);
 	array_free(sphere_indices);
+
+	static_constraints = array_new(Static_Constraint);
+	Static_Constraint static_constraint;
+	static_constraint.type = MUTUAL_ORIENTATION_STATIC_CONSTRAINT;
+	static_constraint.mutual_orientation_constraint.e1_id = cube1;
+	static_constraint.mutual_orientation_constraint.e2_id = cube2;
+	static_constraint.mutual_orientation_constraint.compliance = 0.0;
+	array_push(static_constraints, static_constraint);
 
 	return 0;
 }
@@ -183,7 +200,7 @@ void ex_debug_update(r64 delta_time) {
 		array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate(delta_time, entities);
+	pbd_simulate_with_static_constraints(delta_time, entities, static_constraints);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);

@@ -4,6 +4,7 @@
 
 typedef enum {
 	POSITIONAL_STATIC_CONSTRAINT,
+	MUTUAL_ORIENTATION_STATIC_CONSTRAINT
 } Static_Constraint_Type;
 
 typedef struct {
@@ -16,10 +17,17 @@ typedef struct {
 } Static_Positional_Constraint;
 
 typedef struct {
+	eid e1_id;
+	eid e2_id;
+	r64 compliance;
+} Static_Mutual_Orientation_Constraint;
+
+typedef struct {
 	Static_Constraint_Type type;
 
 	union {
 		Static_Positional_Constraint positional_constraint;
+		Static_Mutual_Orientation_Constraint mutual_orientation_constraint;
 	};
 } Static_Constraint;
 

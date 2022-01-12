@@ -37,7 +37,7 @@ static boolean do_simplex_2(GJK_Simplex* simplex, vec3* direction) {
 	vec3 a = simplex->a; // the last point added
 	vec3 b = simplex->b;
 
-	vec3 ao = gm_vec3_negative(a);
+	vec3 ao = gm_vec3_invert(a);
 	vec3 ab = gm_vec3_subtract(b, a);
 
 	if (gm_vec3_dot(ab, ao) >= 0.0) {
@@ -59,7 +59,7 @@ static boolean do_simplex_3(GJK_Simplex* simplex, vec3* direction) {
 	vec3 b = simplex->b;
 	vec3 c = simplex->c;
 
-	vec3 ao = gm_vec3_negative(a);
+	vec3 ao = gm_vec3_invert(a);
 	vec3 ab = gm_vec3_subtract(b, a);
 	vec3 ac = gm_vec3_subtract(c, a);
 	vec3 abc = gm_vec3_cross(ab, ac);
@@ -111,7 +111,7 @@ static boolean do_simplex_3(GJK_Simplex* simplex, vec3* direction) {
 				simplex->b = c;
 				simplex->c = b;
 				simplex->num = 3;
-				*direction = gm_vec3_negative(abc);
+				*direction = gm_vec3_invert(abc);
 			}
 		}
 	}
@@ -125,7 +125,7 @@ static boolean do_simplex_4(GJK_Simplex* simplex, vec3* direction) {
 	vec3 c = simplex->c;
 	vec3 d = simplex->d;
 
-	vec3 ao = gm_vec3_negative(a);
+	vec3 ao = gm_vec3_invert(a);
 	vec3 ab = gm_vec3_subtract(b, a);
 	vec3 ac = gm_vec3_subtract(c, a);
 	vec3 ad = gm_vec3_subtract(d, a);

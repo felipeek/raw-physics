@@ -187,7 +187,8 @@ r64   gm_vec3_dot(vec3 v1, vec3 v2);
 vec3  gm_vec3_cross(vec3 v1, vec3 v2);
 char* gm_vec3_to_string(char* buffer, vec3 v);
 vec3  gm_vec4_to_vec3(vec4 v);
-vec3  gm_vec3_negative(vec3 v);
+vec3  gm_vec3_invert(vec3 v);
+int   gm_vec3_is_zero(vec3 v);
 
 // vec2
 vec2  gm_vec2_add(vec2 v1, vec2 v2);
@@ -607,8 +608,12 @@ vec3 gm_mat4_translation_from_matrix(const mat4* m)
 	return (vec3){m->data[0][3], m->data[1][3], m->data[2][3]};
 }
 
-vec3 gm_vec3_negative(vec3 v) {
+vec3 gm_vec3_invert(vec3 v) {
 	return gm_vec3_subtract((vec3){0.0, 0.0, 0.0}, v);
+}
+
+int gm_vec3_is_zero(vec3 v) {
+	return v.x == 0.0 && v.y == 0.0 && v.z == 0.0;
 }
 
 int gm_vec2_equal(vec2 v1, vec2 v2)

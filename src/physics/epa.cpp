@@ -49,7 +49,7 @@ void get_face_normal_and_distance_to_origin(dvec3 face, vec3* polytope, vec3* _n
 		// if the distance is less than 0, it means that our normal is point inwards instead of outwards
 		// in this case, we just invert both normal and distance
 		// this way, we don't need to worry about face's winding
-		normal = gm_vec3_negative(normal);
+		normal = gm_vec3_invert(normal);
 		distance = -distance;
 	} else if (distance >= -DISTANCE_TO_ORIGIN_TOLERANCE && distance <= DISTANCE_TO_ORIGIN_TOLERANCE) {
 		// if the distance is exactly 0.0, then it means that the origin is lying exactly on the face.
@@ -61,7 +61,7 @@ void get_face_normal_and_distance_to_origin(dvec3 face, vec3* polytope, vec3* _n
 			r64 auxiliar_distance = gm_vec3_dot(normal, current);
 			if (auxiliar_distance < -DISTANCE_TO_ORIGIN_TOLERANCE || auxiliar_distance > DISTANCE_TO_ORIGIN_TOLERANCE) {
 				// since the shape is convex, the other vertices should always be "behind" the normal plane
-				normal = auxiliar_distance < -DISTANCE_TO_ORIGIN_TOLERANCE ? normal : gm_vec3_negative(normal);
+				normal = auxiliar_distance < -DISTANCE_TO_ORIGIN_TOLERANCE ? normal : gm_vec3_invert(normal);
 				was_able_to_calculate_normal = true;
 				break;
 			}
