@@ -180,21 +180,21 @@ int ex_debug_init() {
 	static_constraint.positional_constraint.distance = gm_vec3_subtract(support_entity->world_position, cube2_entity->world_position);
 	array_push(static_constraints, static_constraint);
 
-	//static_constraint.type = MUTUAL_ORIENTATION_STATIC_CONSTRAINT;
-	//static_constraint.mutual_orientation_constraint.e1_id = cube1;
-	//static_constraint.mutual_orientation_constraint.e2_id = cube2;
-	//static_constraint.mutual_orientation_constraint.compliance = 0.0001;
+	static_constraint.type = MUTUAL_ORIENTATION_STATIC_CONSTRAINT;
+	static_constraint.mutual_orientation_constraint.e1_id = cube1;
+	static_constraint.mutual_orientation_constraint.e2_id = cube2;
+	static_constraint.mutual_orientation_constraint.compliance = 0.0;
 	//array_push(static_constraints, static_constraint);
 
-	//static_constraint.type = HINGE_JOINT_STATIC_CONSTRAINT;
-	//static_constraint.hinge_joint_constraint.e1_id = cube1;
-	//static_constraint.hinge_joint_constraint.e2_id = cube2;
-	//static_constraint.hinge_joint_constraint.compliance = 0.0;
-	//static_constraint.hinge_joint_constraint.r1_lc = (vec3){1.0, 0.0, 0.0};
-	//static_constraint.hinge_joint_constraint.r2_lc = (vec3){1.0, 0.0, 0.0};
-	//static_constraint.hinge_joint_constraint.e1_a = (vec3){1.0, 0.0, 0.0};
-	//static_constraint.hinge_joint_constraint.e2_a = (vec3){1.0, 0.0, 0.0};
-	//array_push(static_constraints, static_constraint);
+	static_constraint.type = HINGE_JOINT_STATIC_CONSTRAINT;
+	static_constraint.hinge_joint_constraint.e1_id = cube1;
+	static_constraint.hinge_joint_constraint.e2_id = cube2;
+	static_constraint.hinge_joint_constraint.compliance = 0.01;
+	static_constraint.hinge_joint_constraint.r1_lc = (vec3){1.0, 0.0, 0.0};
+	static_constraint.hinge_joint_constraint.r2_lc = (vec3){1.0, 0.0, 0.0};
+	static_constraint.hinge_joint_constraint.e1_a = (vec3){1.0, 0.0, 0.0};
+	static_constraint.hinge_joint_constraint.e2_a = (vec3){1.0, 0.0, 0.0};
+	array_push(static_constraints, static_constraint);
 
 	return 0;
 }
