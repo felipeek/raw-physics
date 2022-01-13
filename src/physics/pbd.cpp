@@ -8,7 +8,7 @@
 #define NUM_SUBSTEPS 20
 #define NUM_POS_ITERS 1
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
-#define ENABLE_SIMULATION_ISLANDS
+//#define ENABLE_SIMULATION_ISLANDS
 #define LINEAR_SLEEPING_THRESHOLD 0.15
 #define ANGULAR_SLEEPING_THRESHOLD 0.15
 #define DEACTIVATION_TIME_TO_BE_INACTIVE 1.0
@@ -193,13 +193,14 @@ static r64 angular_constraint_get_delta_lambda(Angular_Constraint_Preprocessed_D
 	Entity* e2 = acpd->e2;
 	mat3 e1_inverse_inertia_tensor = acpd->e1_inverse_inertia_tensor;
 	mat3 e2_inverse_inertia_tensor = acpd->e2_inverse_inertia_tensor;
-	// split delta_x into n and c.
+
+	// split delta_q into n and c.
 	vec3 n = gm_vec3_normalize(delta_q);
 	r64 theta = gm_vec3_length(delta_q);
 
 	// calculate the inverse masses of both entities
-	r64 w1 = gm_vec3_dot(n, gm_mat3_multiply_vec3(&acpd->e1_inverse_inertia_tensor, n));
-	r64 w2 = gm_vec3_dot(n, gm_mat3_multiply_vec3(&acpd->e2_inverse_inertia_tensor, n));
+	r64 w1 = gm_vec3_dot(n, gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, n));
+	r64 w2 = gm_vec3_dot(n, gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, n));
 
 	// calculate the delta_lambda (XPBD) and updates the constraint
 	r64 til_compliance = compliance / (h * h);
@@ -280,6 +281,7 @@ static void angular_constraint_apply(Angular_Constraint_Preprocessed_Data* acpd,
 	Entity* e2 = acpd->e2;
 	mat3 e1_inverse_inertia_tensor = acpd->e1_inverse_inertia_tensor;
 	mat3 e2_inverse_inertia_tensor = acpd->e2_inverse_inertia_tensor;
+
 	vec3 n = gm_vec3_normalize(delta_q);
 
 	// calculates the positional impulse
@@ -348,6 +350,12 @@ static void positional_constraint_solve(Constraint* constraint, r64 h) {
 
 static void angular_constraint_solve(Constraint* constraint, r64 h) {
 	assert(constraint->type == ANGULAR_CONSTRAINT);
+
+	// TEST
+	//Quaternion q2_inv = quaternion_inverse(&constraint->angular_constraint.e2->world_rotation);
+	//Quaternion aux = quaternion_product(&constraint->angular_constraint.e1->world_rotation, &q2_inv);
+	//constraint->angular_constraint.delta_q = (vec3){2.0 * aux.x, 2.0 * aux.y, 2.0 * aux.z};
+	// end-TEST
 
 	if (gm_vec3_is_zero(constraint->angular_constraint.delta_q)) {
 		return;
@@ -454,6 +462,18 @@ void static_constraint_to_constraint(const Static_Constraint* static_constraint,
 			Quaternion q2_inv = quaternion_inverse(&constraint->angular_constraint.e2->world_rotation);
 			Quaternion aux = quaternion_product(&constraint->angular_constraint.e1->world_rotation, &q2_inv);
 			constraint->angular_constraint.delta_q = (vec3){2.0 * aux.x, 2.0 * aux.y, 2.0 * aux.z};
+		} break;
+		case HINGE_JOINT_STATIC_CONSTRAINT: {
+			constraint->type = ANGULAR_CONSTRAINT;
+			constraint->angular_constraint.compliance = static_constraint->hinge_joint_constraint.compliance;
+			constraint->angular_constraint.e1 = entity_get_by_id(static_constraint->hinge_joint_constraint.e1_id);
+			constraint->angular_constraint.e2 = entity_get_by_id(static_constraint->hinge_joint_constraint.e2_id);
+			constraint->angular_constraint.lambda = 0.0;
+			mat3 e1_rot = quaternion_get_matrix3(&constraint->angular_constraint.e1->world_rotation);
+			mat3 e2_rot = quaternion_get_matrix3(&constraint->angular_constraint.e2->world_rotation);
+			vec3 e1_a_wc = gm_mat3_multiply_vec3(&e1_rot, static_constraint->hinge_joint_constraint.e1_a);
+			vec3 e2_a_wc = gm_mat3_multiply_vec3(&e2_rot, static_constraint->hinge_joint_constraint.e2_a);
+			constraint->angular_constraint.delta_q = gm_vec3_cross(e1_a_wc, e2_a_wc);
 		} break;
 		default: {
 			assert(0);

@@ -75,6 +75,8 @@ static Light* create_lights() {
 	return lights;
 }
 
+eid support_id, cube1, cube2;
+
 int ex_debug_init() {
 	entity_module_init();
 
@@ -89,8 +91,8 @@ int ex_debug_init() {
 	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
 	vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
 	Collider floor_collider = create_convex_collider(floor_vertices, floor_indices, floor_scale);
-	entity_create_fixed(floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
+	//entity_create_fixed(floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+	//	floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
 	array_free(floor_vertices);
 	array_free(floor_indices);
 
@@ -115,33 +117,38 @@ int ex_debug_init() {
 	//		sphere_scale, util_pallete(i), 1.0, sphere_collider);
 	//}
 
-	vec3 wall_collider1_scale = (vec3){0.1, 0.5, 4.0};
-	Collider wall_collider1 = create_convex_collider(cube_vertices, cube_indices, wall_collider1_scale);
-	entity_create_fixed(cube_mesh, (vec3){-4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		wall_collider1_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider1);
+	//vec3 wall_collider1_scale = (vec3){0.1, 0.5, 4.0};
+	//Collider wall_collider1 = create_convex_collider(cube_vertices, cube_indices, wall_collider1_scale);
+	//entity_create_fixed(cube_mesh, (vec3){-4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	//	wall_collider1_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider1);
 
-	vec3 wall_collider2_scale = (vec3){0.1, 0.5, 4.0};
-	Collider wall_collider2 = create_convex_collider(cube_vertices, cube_indices, wall_collider2_scale);
-	entity_create_fixed(cube_mesh, (vec3){4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		wall_collider2_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider2);
+	//vec3 wall_collider2_scale = (vec3){0.1, 0.5, 4.0};
+	//Collider wall_collider2 = create_convex_collider(cube_vertices, cube_indices, wall_collider2_scale);
+	//entity_create_fixed(cube_mesh, (vec3){4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	//	wall_collider2_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider2);
 
-	vec3 wall_collider3_scale = (vec3){4.0, 0.5, 0.1};
-	Collider wall_collider3 = create_convex_collider(cube_vertices, cube_indices, wall_collider3_scale);
-	entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, -4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		wall_collider3_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider3);
+	//vec3 wall_collider3_scale = (vec3){4.0, 0.5, 0.1};
+	//Collider wall_collider3 = create_convex_collider(cube_vertices, cube_indices, wall_collider3_scale);
+	//entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, -4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	//	wall_collider3_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider3);
 
-	vec3 wall_collider4_scale = (vec3){4.0, 0.5, 0.1};
-	Collider wall_collider4 = create_convex_collider(cube_vertices, cube_indices, wall_collider4_scale);
-	entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, 4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		wall_collider4_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider4);
+	//vec3 wall_collider4_scale = (vec3){4.0, 0.5, 0.1};
+	//Collider wall_collider4 = create_convex_collider(cube_vertices, cube_indices, wall_collider4_scale);
+	//entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, 4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	//	wall_collider4_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider4);
+
+	vec3 support_scale = (vec3){0.1, 0.1, 0.1};
+	Collider support_collider = create_convex_collider(cube_vertices, cube_indices, support_scale);
+	support_id = entity_create(cube_mesh, (vec3){0.0, 2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		support_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, support_collider);
 
 	vec3 cube_collider_scale = (vec3){1.0, 1.0, 1.0};
 	Collider cube_collider1 = create_convex_collider(cube_vertices, cube_indices, cube_collider_scale);
-	eid cube1 = entity_create(cube_mesh, (vec3){1.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	cube1 = entity_create(cube_mesh, (vec3){2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		cube_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, cube_collider1);
 
 	Collider cube_collider2 = create_convex_collider(cube_vertices, cube_indices, cube_collider_scale);
-	eid cube2 = entity_create(cube_mesh, (vec3){-1.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	cube2 = entity_create(cube_mesh, (vec3){-2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
 		cube_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, cube_collider2);
 
 	array_free(cube_vertices);
@@ -149,13 +156,45 @@ int ex_debug_init() {
 	array_free(sphere_vertices);
 	array_free(sphere_indices);
 
+	Entity* support_entity = entity_get_by_id(support_id);
+	Entity* cube1_entity = entity_get_by_id(cube1);
+	Entity* cube2_entity = entity_get_by_id(cube2);
+
 	static_constraints = array_new(Static_Constraint);
 	Static_Constraint static_constraint;
-	static_constraint.type = MUTUAL_ORIENTATION_STATIC_CONSTRAINT;
-	static_constraint.mutual_orientation_constraint.e1_id = cube1;
-	static_constraint.mutual_orientation_constraint.e2_id = cube2;
-	static_constraint.mutual_orientation_constraint.compliance = 0.0;
+	static_constraint.type = POSITIONAL_STATIC_CONSTRAINT;
+	static_constraint.positional_constraint.e1_id = support_id;
+	static_constraint.positional_constraint.e2_id = cube1;
+	static_constraint.positional_constraint.compliance = 0.0;
+	static_constraint.positional_constraint.r1_lc = (vec3){0.0, 0.0, 0.0};
+	static_constraint.positional_constraint.r2_lc = (vec3){0.0, 0.0, 0.0};
+	static_constraint.positional_constraint.distance = gm_vec3_subtract(support_entity->world_position, cube1_entity->world_position);
 	array_push(static_constraints, static_constraint);
+
+	static_constraint.type = POSITIONAL_STATIC_CONSTRAINT;
+	static_constraint.positional_constraint.e1_id = support_id;
+	static_constraint.positional_constraint.e2_id = cube2;
+	static_constraint.positional_constraint.compliance = 0.0;
+	static_constraint.positional_constraint.r1_lc = (vec3){0.0, 0.0, 0.0};
+	static_constraint.positional_constraint.r2_lc = (vec3){0.0, 0.0, 0.0};
+	static_constraint.positional_constraint.distance = gm_vec3_subtract(support_entity->world_position, cube2_entity->world_position);
+	array_push(static_constraints, static_constraint);
+
+	//static_constraint.type = MUTUAL_ORIENTATION_STATIC_CONSTRAINT;
+	//static_constraint.mutual_orientation_constraint.e1_id = cube1;
+	//static_constraint.mutual_orientation_constraint.e2_id = cube2;
+	//static_constraint.mutual_orientation_constraint.compliance = 0.0001;
+	//array_push(static_constraints, static_constraint);
+
+	//static_constraint.type = HINGE_JOINT_STATIC_CONSTRAINT;
+	//static_constraint.hinge_joint_constraint.e1_id = cube1;
+	//static_constraint.hinge_joint_constraint.e2_id = cube2;
+	//static_constraint.hinge_joint_constraint.compliance = 0.0;
+	//static_constraint.hinge_joint_constraint.r1_lc = (vec3){1.0, 0.0, 0.0};
+	//static_constraint.hinge_joint_constraint.r2_lc = (vec3){1.0, 0.0, 0.0};
+	//static_constraint.hinge_joint_constraint.e1_a = (vec3){1.0, 0.0, 0.0};
+	//static_constraint.hinge_joint_constraint.e2_a = (vec3){1.0, 0.0, 0.0};
+	//array_push(static_constraints, static_constraint);
 
 	return 0;
 }
@@ -197,7 +236,7 @@ void ex_debug_update(r64 delta_time) {
 		Physics_Force pf;
 		pf.force = (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0};
 		pf.position = (vec3){0.0, 0.0, 0.0};
-		array_push(entities[i]->forces, pf);
+		//array_push(entities[i]->forces, pf);
 	}
 
 	pbd_simulate_with_static_constraints(delta_time, entities, static_constraints);
@@ -281,6 +320,48 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 
 		wireframe = !wireframe;
 		key_state[GLFW_KEY_L] = false;
+	}
+
+	Entity* e = entity_get_by_id(cube1);
+
+	if (key_state[GLFW_KEY_X])
+	{
+		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
+		{
+			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, rotation_speed * delta_time);
+			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
+		}
+		else
+		{
+			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, -rotation_speed * delta_time);
+			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
+		}
+	}
+	if (key_state[GLFW_KEY_Y])
+	{
+		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
+		{
+			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, rotation_speed * delta_time);
+			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
+		}
+		else
+		{
+			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, -rotation_speed * delta_time);
+			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
+		}
+	}
+	if (key_state[GLFW_KEY_Z])
+	{
+		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
+		{
+			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, rotation_speed * delta_time);
+			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
+		}
+		else
+		{
+			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, -rotation_speed * delta_time);
+			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
+		}
 	}
 
 	if (key_state[GLFW_KEY_1]) {
