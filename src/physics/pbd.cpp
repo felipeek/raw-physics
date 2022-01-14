@@ -9,7 +9,6 @@
 
 #define NUM_SUBSTEPS 20
 #define NUM_POS_ITERS 1
-#define USE_QUATERNIONS_LINEARIZED_FORMULAS
 //#define ENABLE_SIMULATION_ISLANDS
 #define LINEAR_SLEEPING_THRESHOLD 0.15
 #define ANGULAR_SLEEPING_THRESHOLD 0.15
@@ -417,9 +416,6 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Cons
 			} else {
 				e->angular_velocity = gm_vec3_scalar_product(-2.0 / h, (vec3){delta_q.x, delta_q.y, delta_q.z});
 			}
-
-			e->updated_linear_velocity = (vec3){0.0, 0.0, 0.0};
-			e->updated_angular_velocity = (vec3){0.0, 0.0, 0.0};
 		}
 
 		// The velocity solver - we run this additional solver for every collision that we found

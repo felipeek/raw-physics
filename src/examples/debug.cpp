@@ -76,6 +76,8 @@ static Light* create_lights() {
 }
 
 eid support_id, cube1, cube2;
+vec3 e1_a = (vec3){1.0, 0.0, 0.0};
+vec3 e2_a = (vec3){1.0, 0.0, 0.0};
 
 int ex_debug_init() {
 	entity_module_init();
@@ -139,16 +141,16 @@ int ex_debug_init() {
 
 	vec3 support_scale = (vec3){0.1, 0.1, 0.1};
 	Collider support_collider = create_convex_collider(cube_vertices, cube_indices, support_scale);
-	support_id = entity_create(cube_mesh, (vec3){0.0, 2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		support_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, support_collider);
+	support_id = entity_create_fixed(cube_mesh, (vec3){0.0, 2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+		support_scale, (vec4){1.0, 1.0, 0.0, 1.0}, support_collider);
 
 	vec3 cube_collider_scale = (vec3){1.0, 1.0, 1.0};
 	Collider cube_collider1 = create_convex_collider(cube_vertices, cube_indices, cube_collider_scale);
-	cube1 = entity_create(cube_mesh, (vec3){2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	cube1 = entity_create(cube_mesh, (vec3){2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
 		cube_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, cube_collider1);
 
 	Collider cube_collider2 = create_convex_collider(cube_vertices, cube_indices, cube_collider_scale);
-	cube2 = entity_create(cube_mesh, (vec3){-2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
+	cube2 = entity_create(cube_mesh, (vec3){-2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0000000001),
 		cube_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, cube_collider2);
 
 	array_free(cube_vertices);
@@ -189,11 +191,11 @@ int ex_debug_init() {
 	static_constraint.type = HINGE_JOINT_STATIC_CONSTRAINT;
 	static_constraint.hinge_joint_constraint.e1_id = cube1;
 	static_constraint.hinge_joint_constraint.e2_id = cube2;
-	static_constraint.hinge_joint_constraint.compliance = 0.01;
+	static_constraint.hinge_joint_constraint.compliance = 0.0;
 	static_constraint.hinge_joint_constraint.r1_lc = (vec3){1.0, 0.0, 0.0};
-	static_constraint.hinge_joint_constraint.r2_lc = (vec3){1.0, 0.0, 0.0};
-	static_constraint.hinge_joint_constraint.e1_a = (vec3){1.0, 0.0, 0.0};
-	static_constraint.hinge_joint_constraint.e2_a = (vec3){1.0, 0.0, 0.0};
+	static_constraint.hinge_joint_constraint.r2_lc = (vec3){-1.0, 0.0, 0.0};
+	static_constraint.hinge_joint_constraint.e1_a = e1_a;
+	static_constraint.hinge_joint_constraint.e2_a = e2_a;
 	array_push(static_constraints, static_constraint);
 
 	return 0;
@@ -225,6 +227,13 @@ void ex_debug_update(r64 delta_time) {
 		//printf("e%d: <%.50f, %.50f, %.50f>\n", i, e->world_position.x, e->world_position.y, e->world_position.z);
 		//printf("e%d: rot: <%.50f, %.50f, %.50f, %.50f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
 	}
+
+	Entity* e_cube1 = entity_get_by_id(cube1);
+	Entity* e_cube2 = entity_get_by_id(cube2);
+	//printf("cube1: rot: <%.5f, %.5f, %.5f, %.5f>\n", e_cube1->world_rotation.x, e_cube1->world_rotation.y,
+	//	e_cube1->world_rotation.z, e_cube1->world_rotation.w);
+	//printf("cube2: rot: <%.5f, %.5f, %.5f, %.5f>\n", e_cube2->world_rotation.x, e_cube2->world_rotation.y,
+	//	e_cube2->world_rotation.z, e_cube2->world_rotation.w);
 
 	if (paused) {
 		return;
@@ -283,6 +292,15 @@ void ex_debug_render() {
 		}
 	}
 	#endif
+
+	Entity* e_cube1 = entity_get_by_id(cube1);
+	Entity* e_cube2 = entity_get_by_id(cube2);
+	mat3 cube1_rot = quaternion_get_matrix3(&e_cube1->world_rotation);
+	mat3 cube2_rot = quaternion_get_matrix3(&e_cube2->world_rotation);
+	vec3 e1_a_wc = gm_mat3_multiply_vec3(&cube1_rot, e1_a);
+	vec3 e2_a_wc = gm_mat3_multiply_vec3(&cube2_rot, e1_a);
+	graphics_renderer_debug_vector(e_cube1->world_position, gm_vec3_add(e_cube1->world_position, e1_a_wc), (vec4){1.0, 0.0, 0.0, 1.0});
+	graphics_renderer_debug_vector(e_cube2->world_position, gm_vec3_add(e_cube2->world_position, e2_a_wc), (vec4){0.0, 0.0, 0.0, 1.0});
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, entities[i], lights);

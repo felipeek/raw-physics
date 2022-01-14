@@ -1,6 +1,8 @@
 #include "pbd_base_constraints.h"
 #include "physics_util.h"
 
+#define USE_QUATERNIONS_LINEARIZED_FORMULAS
+
 void calculate_positional_constraint_preprocessed_data(Entity* e1, Entity* e2, vec3 r1_lc, vec3 r2_lc, Position_Constraint_Preprocessed_Data* pcpd) {
 	pcpd->e1 = e1;
 	pcpd->e2 = e2;
