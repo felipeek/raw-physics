@@ -127,7 +127,7 @@ static void hinge_joint_constraint_solve(Static_Constraint* constraint, r64 h) {
 	mat3 e2_rot = quaternion_get_matrix3(&e2->world_rotation);
 	vec3 e1_a_wc = gm_mat3_multiply_vec3(&e1_rot, constraint->hinge_joint_constraint.e1_a);
 	vec3 e2_a_wc = gm_mat3_multiply_vec3(&e2_rot, constraint->hinge_joint_constraint.e2_a);
-	vec3 delta_q = gm_vec3_cross(e1_a_wc, e2_a_wc);
+	vec3 delta_q = gm_vec3_cross(e2_a_wc, e1_a_wc);
 
 	r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, constraint->hinge_joint_constraint.compliance,
 		constraint->hinge_joint_constraint.lambda, delta_q);

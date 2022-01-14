@@ -146,11 +146,11 @@ int ex_debug_init() {
 
 	vec3 cube_collider_scale = (vec3){1.0, 1.0, 1.0};
 	Collider cube_collider1 = create_convex_collider(cube_vertices, cube_indices, cube_collider_scale);
-	cube1 = entity_create(cube_mesh, (vec3){2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+	cube1 = entity_create(cube_mesh, (vec3){2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.0),
 		cube_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, cube_collider1);
 
 	Collider cube_collider2 = create_convex_collider(cube_vertices, cube_indices, cube_collider_scale);
-	cube2 = entity_create(cube_mesh, (vec3){-2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0000000001),
+	cube2 = entity_create(cube_mesh, (vec3){-2.0, 1.0, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.000000000),
 		cube_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, cube_collider2);
 
 	array_free(cube_vertices);
@@ -192,7 +192,7 @@ int ex_debug_init() {
 	static_constraint.hinge_joint_constraint.e1_id = cube1;
 	static_constraint.hinge_joint_constraint.e2_id = cube2;
 	static_constraint.hinge_joint_constraint.compliance = 0.0;
-	static_constraint.hinge_joint_constraint.r1_lc = (vec3){1.0, 0.0, 0.0};
+	static_constraint.hinge_joint_constraint.r1_lc = (vec3){-1.0, 0.0, 0.0};
 	static_constraint.hinge_joint_constraint.r2_lc = (vec3){-1.0, 0.0, 0.0};
 	static_constraint.hinge_joint_constraint.e1_a = e1_a;
 	static_constraint.hinge_joint_constraint.e2_a = e2_a;
@@ -298,7 +298,7 @@ void ex_debug_render() {
 	mat3 cube1_rot = quaternion_get_matrix3(&e_cube1->world_rotation);
 	mat3 cube2_rot = quaternion_get_matrix3(&e_cube2->world_rotation);
 	vec3 e1_a_wc = gm_mat3_multiply_vec3(&cube1_rot, e1_a);
-	vec3 e2_a_wc = gm_mat3_multiply_vec3(&cube2_rot, e1_a);
+	vec3 e2_a_wc = gm_mat3_multiply_vec3(&cube2_rot, e2_a);
 	graphics_renderer_debug_vector(e_cube1->world_position, gm_vec3_add(e_cube1->world_position, e1_a_wc), (vec4){1.0, 0.0, 0.0, 1.0});
 	graphics_renderer_debug_vector(e_cube2->world_position, gm_vec3_add(e_cube2->world_position, e2_a_wc), (vec4){0.0, 0.0, 0.0, 1.0});
 
