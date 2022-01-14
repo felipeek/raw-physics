@@ -48,7 +48,8 @@ typedef struct {
 	vec3 e2_b;
 	vec3 e2_c;
 	r64 compliance;
-	r64 lambda;
+	r64 lambda_rot;
+	r64 lambda_pos;
 } Static_Hinge_Joint_Constraint;
 
 typedef struct {

@@ -57,9 +57,9 @@ static void collision_constraint_solve(Static_Constraint* constraint, r64 h) {
 	vec3 p1 = gm_vec3_add(e1->world_position, pcpd.r1_wc);
 	vec3 p2 = gm_vec3_add(e2->world_position, pcpd.r2_wc);
 	r64 d = gm_vec3_dot(gm_vec3_subtract(p1, p2), constraint->collision_constraint.normal);
-	vec3 delta_x = gm_vec3_scalar_product(d, constraint->collision_constraint.normal);
 
 	if (d > 0.0) {
+		vec3 delta_x = gm_vec3_scalar_product(d, constraint->collision_constraint.normal);
 		r64 delta_lambda = positional_constraint_get_delta_lambda(&pcpd, h, 0.0, constraint->collision_constraint.lambda_n, delta_x);
 		positional_constraint_apply(&pcpd, delta_lambda, delta_x);
 		constraint->collision_constraint.lambda_n += delta_lambda;
@@ -120,6 +120,7 @@ static void hinge_joint_constraint_solve(Static_Constraint* constraint, r64 h) {
 	Entity* e1 = entity_get_by_id(constraint->hinge_joint_constraint.e1_id);
 	Entity* e2 = entity_get_by_id(constraint->hinge_joint_constraint.e2_id);
 
+	// Angular Constraint
 	Angular_Constraint_Preprocessed_Data acpd;
 	calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
 
@@ -130,9 +131,25 @@ static void hinge_joint_constraint_solve(Static_Constraint* constraint, r64 h) {
 	vec3 delta_q = gm_vec3_cross(e2_a_wc, e1_a_wc);
 
 	r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, constraint->hinge_joint_constraint.compliance,
-		constraint->hinge_joint_constraint.lambda, delta_q);
+		constraint->hinge_joint_constraint.lambda_rot, delta_q);
 	angular_constraint_apply(&acpd, delta_lambda, delta_q);
-	constraint->hinge_joint_constraint.lambda += delta_lambda;
+	constraint->hinge_joint_constraint.lambda_rot += delta_lambda;
+
+	// Positional constraint
+	// @TODO: optmize preprocessed datas
+	Position_Constraint_Preprocessed_Data pcpd;
+	calculate_positional_constraint_preprocessed_data(e1, e2, constraint->hinge_joint_constraint.r1_lc,
+		constraint->hinge_joint_constraint.r2_lc, &pcpd);
+
+	vec3 p1 = gm_vec3_add(e1->world_position, pcpd.r1_wc);
+	vec3 p2 = gm_vec3_add(e2->world_position, pcpd.r2_wc);
+	vec3 delta_r = gm_vec3_subtract(p1, p2);
+	vec3 delta_x = delta_r;
+	printf("delta_x: %f, %f, %f\n",delta_x.x,delta_x.y,delta_x.z);
+
+	delta_lambda = positional_constraint_get_delta_lambda(&pcpd, h, 0.0, constraint->hinge_joint_constraint.lambda_pos, delta_x);
+	positional_constraint_apply(&pcpd, delta_lambda, delta_x);
+	constraint->hinge_joint_constraint.lambda_pos += delta_lambda;
 }
 
 static void solve_constraint(Static_Constraint* constraint, r64 h) {
@@ -201,7 +218,8 @@ static Static_Constraint* copy_constraints(Static_Constraint* constraints) {
 				constraint.mutual_orientation_constraint.lambda = 0.0;
 			} break;
 			case HINGE_JOINT_STATIC_CONSTRAINT: {
-				constraint.hinge_joint_constraint.lambda = 0.0;
+				constraint.hinge_joint_constraint.lambda_rot = 0.0;
+				constraint.hinge_joint_constraint.lambda_pos = 0.0;
 			} break;
 		}
 
