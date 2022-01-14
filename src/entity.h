@@ -42,9 +42,6 @@ typedef struct {
 	Quaternion previous_world_rotation;
 	vec3 previous_linear_velocity;
 	vec3 previous_angular_velocity;
-
-	vec3 updated_linear_velocity;
-	vec3 updated_angular_velocity;
 } Entity;
 
 void entity_module_init();
