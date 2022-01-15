@@ -12,6 +12,7 @@
 #include "../physics/pbd.h"
 #include "../entity.h"
 #include "../util.h"
+#include "examples_util.h"
 
 static Perspective_Camera camera;
 static Light* lights;
@@ -19,37 +20,6 @@ static Static_Constraint* static_constraints;
 
 // Mouse binding to target positions
 static boolean is_mouse_bound_to_entity_movement;
-
-static Collider create_convex_collider(Vertex* vertices, u32* indices, vec3 scale) {
-	vec3* vertices_positions = array_new(vec3);
-	for (u32 i = 0; i < array_length(vertices); ++i) {
-		vec3 position = (vec3) {
-			(r64)vertices[i].position.x,
-			(r64)vertices[i].position.y,
-			(r64)vertices[i].position.z
-		};
-		position.x *= scale.x;
-		position.y *= scale.y;
-		position.z *= scale.z;
-		array_push(vertices_positions, position);
-	}
-	Collider collider = collider_convex_hull_create(vertices_positions, indices);
-	printf("Vertices positions: %ld\n", array_length(vertices_positions));
-	array_free(vertices_positions);
-
-	printf("Hull positions: %ld\n", array_length(collider.convex_hull.vertices));
-	for (u32 i = 0; i < array_length(collider.convex_hull.faces); ++i) {
-		Collider_Convex_Hull_Face face = collider.convex_hull.faces[i];
-		printf("Face num elements: %ld\n", array_length(face.elements));
-		printf("Face normal: <%.3f, %.3f, %.3f>\n", face.normal.x, face.normal.y, face.normal.z);
-		//for (u32 j = 0; j < array_length(face.elements); ++j) {
-		//	vec3 v = mesh.collider.convex_hull.vertices[face.elements[j]];
-		//	printf("\tV: <%.3f, %.3f, %.3f> (elem: %d)\n", v.x, v.y, v.z, face.elements[j]);
-		//}
-	}
-
-	return collider;
-}
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -92,7 +62,7 @@ int ex_debug_init() {
 	obj_parse("./res/floor.obj", &floor_vertices, &floor_indices);
 	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
 	vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
-	Collider floor_collider = create_convex_collider(floor_vertices, floor_indices, floor_scale);
+	Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(floor_vertices, floor_indices, floor_scale);
 	//entity_create_fixed(floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
 	//	floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
 	array_free(floor_vertices);
@@ -140,19 +110,19 @@ int ex_debug_init() {
 	//	wall_collider4_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider4);
 
 	vec3 reference_point_scale = (vec3){0.1, 0.1, 0.1};
-	Collider reference_point_collider = create_convex_collider(cube_vertices, cube_indices, reference_point_scale);
+	Collider* reference_point_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, reference_point_scale);
 	reference_point_id = entity_create_fixed(cube_mesh, (vec3){0.0, 10.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		reference_point_scale, (vec4){1.0, 1.0, 0.0, 1.0}, reference_point_collider);
+		reference_point_scale, (vec4){1.0, 1.0, 0.0, 1.0}, reference_point_colliders);
 
 	vec3 support_collider_scale = (vec3){0.25, 0.25, 0.25};
-	Collider support_collider = create_convex_collider(cube_vertices, cube_indices, support_collider_scale);
+	Collider* support_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, support_collider_scale);
 	support_id = entity_create(cube_mesh, (vec3){0.0, 1.0, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.0),
-		support_collider_scale, (vec4){0.0, 1.0, 0.0, 1.0}, 1.0, support_collider);
+		support_collider_scale, (vec4){0.0, 1.0, 0.0, 1.0}, 1.0, support_colliders);
 
 	vec3 lever_collider_scale = (vec3){0.2, 1.0, 0.2};
-	Collider lever_collider = create_convex_collider(cube_vertices, cube_indices, lever_collider_scale);
+	Collider* lever_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, lever_collider_scale);
 	lever_id = entity_create(cube_mesh, (vec3){0.0, 0.5, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.0),
-		lever_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, lever_collider);
+		lever_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, lever_colliders);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -211,7 +181,8 @@ void ex_debug_destroy() {
 	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];
-		collider_destroy(&e->collider);
+		colliders_destroy(e->colliders);
+		array_free(e->colliders);
 		mesh_destroy(&e->mesh);
 		entity_destroy(e);
 	}
@@ -227,7 +198,7 @@ void ex_debug_update(r64 delta_time) {
 	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];
-		collider_update(&e->collider, e->world_position, &e->world_rotation);
+		colliders_update(e->colliders, e->world_position, &e->world_rotation);
 		//printf("e%d: <%.50f, %.50f, %.50f>\n", i, e->world_position.x, e->world_position.y, e->world_position.z);
 		//printf("e%d: rot: <%.50f, %.50f, %.50f, %.50f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
 	}
@@ -387,38 +358,8 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		is_mouse_bound_to_entity_movement = false;
 	}
 
-	static Physics_Force forces[5];
-
 	if (key_state[GLFW_KEY_SPACE]) {
-		vec3 camera_z = camera_get_z_axis(&camera);
-		vec3 camera_pos = camera.position;
-		r64 distance = 5.0;
-		vec3 diff = gm_vec3_scalar_product(-distance, camera_z);
-		vec3 cube_position = gm_vec3_add(camera_pos, diff);
-
-		const char* mesh_name;
-		int r = rand();
-		if (r % 3 == 0) {
-			mesh_name = "./res/ico.obj";
-		} else if (r % 3 == 1) {
-			mesh_name = "./res/ico.obj";
-		} else {
-			mesh_name = "./res/ico.obj";
-		}
-		Vertex* vertices;
-		u32* indices;
-		obj_parse(mesh_name, &vertices, &indices);
-		Mesh m = graphics_mesh_create(vertices, indices);
-		vec3 scale = (vec3){1.0, 1.0, 1.0};
-		Collider collider = create_convex_collider(vertices, indices, scale);
-		eid id = entity_create(m, cube_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
-			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 1.0, collider);
-		array_free(vertices);
-		array_free(indices);
-
-		Entity* e = entity_get_by_id(id);
-		e->linear_velocity = gm_vec3_scalar_product(10.0, gm_vec3_scalar_product(-1.0, camera_z));
-
+		examples_util_throw_object(&camera);
 		key_state[GLFW_KEY_SPACE] = false;
 	}
 }

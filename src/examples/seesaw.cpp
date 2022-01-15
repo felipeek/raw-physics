@@ -11,27 +11,10 @@
 #include "../physics/clipping.h"
 #include "../physics/pbd.h"
 #include "../entity.h"
+#include "examples_util.h"
 
 static Perspective_Camera camera;
 static Light* lights;
-
-static Collider create_collider(Vertex* vertices, u32* indices, vec3 scale) {
-	vec3* vertices_positions = array_new(vec3);
-	for (u32 i = 0; i < array_length(vertices); ++i) {
-		vec3 position = (vec3) {
-			(r64)vertices[i].position.x,
-			(r64)vertices[i].position.y,
-			(r64)vertices[i].position.z
-		};
-		position.x *= scale.x;
-		position.y *= scale.y;
-		position.z *= scale.z;
-		array_push(vertices_positions, position);
-	}
-	Collider collider = collider_convex_hull_create(vertices_positions, indices);
-	array_free(vertices_positions);
-	return collider;
-}
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -78,24 +61,24 @@ int ex_seesaw_init() {
 	Mesh seesaw_support_mesh = graphics_mesh_create(seesaw_support_vertices, seesaw_support_indices);
 
 	vec3 floor_scale = (vec3){50.0, 1.0, 50.0};
-	Collider floor_collider = create_collider(cube_vertices, cube_indices, floor_scale);
+	Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, floor_scale);
 	entity_create_fixed(cube_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
+		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders);
 
 	vec3 support_scale = (vec3){2.0, 0.5, 0.25};
-	Collider support_collider = create_collider(seesaw_support_vertices, seesaw_support_indices, support_scale);
+	Collider* support_colliders = examples_util_create_single_convex_hull_collider_array(seesaw_support_vertices, seesaw_support_indices, support_scale);
 	entity_create(seesaw_support_mesh, (vec3){0.0, -0.2f, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 90.0),
-		support_scale, (vec4){1.0, 1.0, 1.0, 1.0}, 1.0, support_collider);
+		support_scale, (vec4){1.0, 1.0, 1.0, 1.0}, 1.0, support_colliders);
 
 	vec3 platform_scale = (vec3){5.0, 0.03, 1.0};
-	Collider platform_collider = create_collider(cube_vertices, cube_indices, platform_scale);
+	Collider* platform_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, platform_scale);
 	entity_create(cube_mesh, (vec3){0.0, 0.5f, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0),
-		platform_scale, (vec4){1.0, 1.0, 1.0, 1.0}, 1.0, platform_collider);
+		platform_scale, (vec4){1.0, 1.0, 1.0, 1.0}, 1.0, platform_colliders);
 
 	vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
-	Collider cube_collider = create_collider(cube_vertices, cube_indices, cube_scale);
+	Collider* cube_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, cube_scale);
 	entity_create(cube_mesh, (vec3){4.0, 2.0f, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0),
-		cube_scale, (vec4){1.0, 1.0, 1.0, 1.0}, 0.5, cube_collider);
+		cube_scale, (vec4){1.0, 1.0, 1.0, 1.0}, 0.5, cube_colliders);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -111,7 +94,8 @@ void ex_seesaw_destroy() {
 	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];
-		collider_destroy(&e->collider);
+		colliders_destroy(e->colliders);
+		array_free(e->colliders);
 		mesh_destroy(&e->mesh);
 		entity_destroy(e);
 	}
@@ -130,7 +114,7 @@ void ex_seesaw_update(r64 delta_time) {
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];
-		collider_update(&e->collider, e->world_position, &e->world_rotation);
+		colliders_update(e->colliders, e->world_position, &e->world_rotation);
 	}
 
 	const r64 GRAVITY = 10.0;
@@ -192,40 +176,13 @@ void ex_seesaw_input_process(boolean* key_state, r64 delta_time) {
 	}
 
 	if (key_state[GLFW_KEY_SPACE]) {
-		vec3 camera_z = camera_get_z_axis(&camera);
-		vec3 camera_pos = camera.position;
-		r64 distance = 5.0;
-		vec3 diff = gm_vec3_scalar_product(-distance, camera_z);
-		vec3 cube_position = gm_vec3_add(camera_pos, diff);
-
-		const char* mesh_name;
-		int r = rand();
-		if (r % 3 == 0) {
-			mesh_name = "./res/cube.obj";
-		} else if (r % 3 == 1) {
-			mesh_name = "./res/ico.obj";
-		} else {
-			mesh_name = "./res/ico.obj";
-		}
-		Vertex* vertices;
-		u32* indices;
-		obj_parse(mesh_name, &vertices, &indices);
-		Mesh m = graphics_mesh_create(vertices, indices);
-		vec3 scale = (vec3){1.0, 1.0, 1.0};
-		Collider collider = create_collider(vertices, indices, scale);
-		eid id = entity_create(m, cube_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
-			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 2.0, collider);
-		array_free(vertices);
-		array_free(indices);
-
-		Entity* e = entity_get_by_id(id);
-		e->linear_velocity = gm_vec3_scalar_product(10.0, gm_vec3_scalar_product(-1.0, camera_z));
-
+		examples_util_throw_object(&camera);
 		key_state[GLFW_KEY_SPACE] = false;
 	}
 }
 
 void ex_seesaw_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
+	static const r64 camera_mouse_speed = 0.1;
 	static r64 x_pos_old, y_pos_old;
 
 	r64 x_difference = x_pos - x_pos_old;
@@ -236,8 +193,6 @@ void ex_seesaw_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 
 	if (reset) return;
 
-	// NORMAL CAMERA MOVEMENT!
-	static const r64 camera_mouse_speed = 0.1;
 	camera_rotate_x(&camera, camera_mouse_speed * (r64)x_difference);
 	camera_rotate_y(&camera, camera_mouse_speed * (r64)y_difference);
 }

@@ -21,7 +21,7 @@ void entity_module_destroy() {
 	hash_map_destroy(&entities_map);
 }
 
-eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider) {
+eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider* colliders) {
 	Entity* entity = (Entity*)malloc(sizeof(Entity));
 	entity->id = eid_counter++;
 	entity->mesh = mesh;
@@ -33,14 +33,15 @@ eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec
 	entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
 	entity->previous_angular_velocity = (vec3){0.0, 0.0, 0.0};
 	entity->previous_linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->bounding_sphere_radius = colliders_get_bounding_sphere_radius(colliders);
 	entity->inverse_mass = 1.0 / mass;
-	entity->inertia_tensor = collider_get_default_inertia_tensor(&collider, mass);
+	entity->inertia_tensor = colliders_get_default_inertia_tensor(colliders, mass);
 	assert(gm_mat3_inverse(&entity->inertia_tensor, &entity->inverse_inertia_tensor));
 	entity->forces = array_new(Physics_Force);
 	entity->fixed = false;
 	entity->active = true;
 	entity->deactivation_time = 0.0;
-	entity->collider = collider;
+	entity->colliders = colliders;
 	entity->static_friction_coefficient = 0.2;
 	entity->dynamic_friction_coefficient = 1.0;
 	entity->restitution_coefficient = 0.0;
@@ -53,7 +54,7 @@ eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec
 	return entity->id;
 }
 
-eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider) {
+eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider* colliders) {
 	Entity* entity = (Entity*)malloc(sizeof(Entity));
 	entity->id = eid_counter++;
 	entity->mesh = mesh;
@@ -65,6 +66,7 @@ eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotatio
 	entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
 	entity->previous_angular_velocity = (vec3){0.0, 0.0, 0.0};
 	entity->previous_linear_velocity = (vec3){0.0, 0.0, 0.0};
+	entity->bounding_sphere_radius = colliders_get_bounding_sphere_radius(colliders);
 	entity->inverse_mass = 0.0;
 	entity->inertia_tensor = (mat3){0}; // this is not correct, but it shouldn't make a difference
 	entity->inverse_inertia_tensor = (mat3){0};
@@ -72,7 +74,7 @@ eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotatio
 	entity->fixed = true;
 	entity->active = true; // meaningless for fixed entities
 	entity->deactivation_time = 0.0;
-	entity->collider = collider;
+	entity->colliders = colliders;
 	entity->static_friction_coefficient = 0.5;
 	entity->dynamic_friction_coefficient = 0.5;
 	entity->restitution_coefficient = 1.0;

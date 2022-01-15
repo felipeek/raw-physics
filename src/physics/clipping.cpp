@@ -246,14 +246,13 @@ static vec3* get_vertices_of_faces(Collider_Convex_Hull* hull, Collider_Convex_H
 	return vertices;
 }
 
-Collider_Contact* convex_convex_contact_manifold(Collider* collider1, Collider* collider2, vec3 normal) {
+void convex_convex_contact_manifold(Collider* collider1, Collider* collider2, vec3 normal, Collider_Contact** contacts) {
 	assert(collider1->type == COLLIDER_TYPE_CONVEX_HULL);
 	assert(collider2->type == COLLIDER_TYPE_CONVEX_HULL);
 	Collider_Convex_Hull* convex_hull1 = &collider1->convex_hull;
 	Collider_Convex_Hull* convex_hull2 = &collider2->convex_hull;
 
 	const r64 EPSILON = 0.0001;
-	Collider_Contact* contacts = array_new(Collider_Contact);
 
 	vec3 inverted_normal = gm_vec3_invert(normal);
 
@@ -278,8 +277,8 @@ Collider_Contact* convex_convex_contact_manifold(Collider* collider1, Collider* 
 		vec3 p2 = convex_hull2->transformed_vertices[edges.z];
 		vec3 d2 = gm_vec3_subtract(convex_hull2->transformed_vertices[edges.w], p2);
 		assert(collision_distance_between_skew_lines(p1, d1, p2, d2, &l1, &l2, 0, 0));
-		Collider_Contact contact = (Collider_Contact){l1, l2};
-		array_push(contacts, contact);
+		Collider_Contact contact = (Collider_Contact){l1, l2, normal};
+		array_push(*contacts, contact);
 	} else {
 		//printf("FACE\n");
 		boolean is_face1_the_reference_face = chosen_normal1_dot > chosen_normal2_dot;
@@ -322,8 +321,10 @@ Collider_Contact* convex_convex_contact_manifold(Collider* collider1, Collider* 
 				contact.collision_point2 = gm_vec3_add(point, gm_vec3_scalar_product(contact_penetration, normal));
 			}
 
+			contact.normal = normal;
+
 			if (contact_penetration < 0.0) {
-				array_push(contacts, contact);
+				array_push(*contacts, contact);
 			}
 		}
 
@@ -337,39 +338,34 @@ Collider_Contact* convex_convex_contact_manifold(Collider* collider1, Collider* 
 	if (array_length(contacts) == 0) {
 		//printf("Warning: no intersection was found\n");
 	}
-
-	return contacts;
 }
 
-Collider_Contact* clipping_get_contact_manifold(Collider* collider1, Collider* collider2, vec3 normal, r64 penetration) {
+void clipping_get_contact_manifold(Collider* collider1, Collider* collider2, vec3 normal, r64 penetration,
+	Collider_Contact** contacts) {
 	// TODO: For now, we only consider CONVEX and SPHERE colliders.
 	// If new colliders are added, we can think about making this more generic.
 
 	if (collider1->type == COLLIDER_TYPE_SPHERE) {
-		Collider_Contact* contacts = array_new(Collider_Contact);
 		vec3 sphere_collision_point = support_point(collider1, normal);
 
 		Collider_Contact contact;
 		contact.collision_point1 = sphere_collision_point;
 		contact.collision_point2 = gm_vec3_subtract(sphere_collision_point, gm_vec3_scalar_product(penetration, normal));
-		array_push(contacts, contact);
-
-		return contacts;
+		contact.normal = normal;
+		array_push(*contacts, contact);
 	} else if (collider2->type == COLLIDER_TYPE_SPHERE) {
-		Collider_Contact* contacts = array_new(Collider_Contact);
 		vec3 inverse_normal = gm_vec3_invert(normal);
 		vec3 sphere_collision_point = support_point(collider2, inverse_normal);
 
 		Collider_Contact contact;
 		contact.collision_point1 = gm_vec3_add(sphere_collision_point, gm_vec3_scalar_product(penetration, normal));
 		contact.collision_point2 = sphere_collision_point;
-		array_push(contacts, contact);
-
-		return contacts;
+		contact.normal = normal;
+		array_push(*contacts, contact);
 	} else {
 		// For now, this case must be convex-convex
 		assert(collider1->type == COLLIDER_TYPE_CONVEX_HULL);
 		assert(collider2->type == COLLIDER_TYPE_CONVEX_HULL);
-		return convex_convex_contact_manifold(collider1, collider2, normal);
+		convex_convex_contact_manifold(collider1, collider2, normal, contacts);
 	}
 }

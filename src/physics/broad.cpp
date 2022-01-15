@@ -16,7 +16,7 @@ Broad_Collision_Pair* broad_get_collision_pairs(Entity** entities) {
 
 			// Increase the distance a little to account for moving objects.
 			// @TODO: We should derivate this value from delta_time, forces, velocities, etc
-			r64 max_distance_for_collision = e1->collider.bounding_sphere_radius + e2->collider.bounding_sphere_radius + 0.1;
+			r64 max_distance_for_collision = e1->bounding_sphere_radius + e2->bounding_sphere_radius + 0.1;
 			if (entities_distance <= max_distance_for_collision) {
 				pair.e1_id = e1->id;
 				pair.e2_id = e2->id;

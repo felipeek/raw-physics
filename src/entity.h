@@ -23,7 +23,8 @@ typedef struct {
 	vec4 color;
 
 	// Physics Related
-	Collider collider;
+	Collider* colliders;
+	r64 bounding_sphere_radius;
 	Physics_Force* forces;
 	r64 inverse_mass;
 	mat3 inertia_tensor;
@@ -47,8 +48,8 @@ typedef struct {
 void entity_module_init();
 void entity_module_destroy();
 
-eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider collider);
-eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider collider);
+eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider* colliders);
+eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider* colliders);
 Entity* entity_get_by_id(eid id);
 Entity** entity_get_all();
 void entity_destroy(Entity* entity);

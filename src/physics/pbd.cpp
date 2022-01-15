@@ -145,7 +145,6 @@ static void hinge_joint_constraint_solve(Static_Constraint* constraint, r64 h) {
 	vec3 p2 = gm_vec3_add(e2->world_position, pcpd.r2_wc);
 	vec3 delta_r = gm_vec3_subtract(p1, p2);
 	vec3 delta_x = delta_r;
-	printf("delta_x: %f, %f, %f\n",delta_x.x,delta_x.y,delta_x.z);
 
 	delta_lambda = positional_constraint_get_delta_lambda(&pcpd, h, 0.0, constraint->hinge_joint_constraint.lambda_pos, delta_x);
 	positional_constraint_apply(&pcpd, delta_lambda, delta_x);
@@ -175,11 +174,11 @@ static void solve_constraint(Static_Constraint* constraint, r64 h) {
 	assert(0);
 }
 
-void clipping_contact_to_collision_constraint(Entity* e1, Entity* e2, vec3 normal, Collider_Contact* contact, Static_Constraint* constraint) {
+void clipping_contact_to_collision_constraint(Entity* e1, Entity* e2, Collider_Contact* contact, Static_Constraint* constraint) {
 	constraint->type = COLLISION_STATIC_CONSTRAINT;
 	constraint->collision_constraint.e1_id = e1->id;
 	constraint->collision_constraint.e2_id = e2->id;
-	constraint->collision_constraint.normal = normal;
+	constraint->collision_constraint.normal = contact->normal;
 	constraint->collision_constraint.lambda_n = 0.0;
 	constraint->collision_constraint.lambda_t = 0.0;
 
@@ -360,16 +359,15 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Static_Cons
 				continue;
 			}
 
-			collider_update(&e1->collider, e1->world_position, &e1->world_rotation);
-			collider_update(&e2->collider, e2->world_position, &e2->world_rotation);
+			colliders_update(e1->colliders, e1->world_position, &e1->world_rotation);
+			colliders_update(e2->colliders, e2->world_position, &e2->world_rotation);
 
-			vec3 normal;
-			Collider_Contact* contacts = collider_get_contacts(&e1->collider, &e2->collider, &normal);
+			Collider_Contact* contacts = colliders_get_contacts(e1->colliders, e2->colliders);
 			if (contacts) {
 				for (u32 l = 0; l < array_length(contacts); ++l) {
 					Collider_Contact* contact = &contacts[l];
 					Static_Constraint constraint;
-					clipping_contact_to_collision_constraint(e1, e2, normal, contact, &constraint);
+					clipping_contact_to_collision_constraint(e1, e2, contact, &constraint);
 					array_push(constraints, constraint);
 				}
 				array_free(contacts);

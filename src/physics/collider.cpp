@@ -7,14 +7,21 @@
 #include "clipping.h"
 #include "epa.h"
 #include "../util.h"
+#include <float.h>
 
 Collider collider_sphere_create(const r32 radius) {
 	Collider collider;
-	collider.bounding_sphere_radius = radius;
 	collider.type = COLLIDER_TYPE_SPHERE;
 	collider.sphere.radius = radius;
 	collider.sphere.center = (vec3){0.0, 0.0, 0.0};
 	return collider;
+}
+
+void collider_sphere_destroy(Collider* collider) {
+}
+
+static r64 get_sphere_collider_bounding_sphere_radius(const Collider* collider) {
+	return collider->sphere.radius;
 }
 
 static boolean do_triangles_share_same_vertex(dvec3 t1, dvec3 t2) {
@@ -166,10 +173,10 @@ static boolean is_neighbor_already_in_vertex_to_neighbors_map(u32* vertex_to_nei
 	return false;
 }
 
-static r64 get_convex_hull_bounding_sphere_radius(const vec3* hull) {
+static r64 get_convex_hull_collider_bounding_sphere_radius(const Collider* collider) {
 	r64 max_distance = 0.0;
-	for (u32 i = 0; i < array_length(hull); ++i) {
-		vec3 v = hull[i];
+	for (u32 i = 0; i < array_length(collider->convex_hull.vertices); ++i) {
+		vec3 v = collider->convex_hull.vertices[i];
 		r64 distance = gm_vec3_length(v);
 		if (distance > max_distance) {
 			max_distance = distance;
@@ -350,7 +357,6 @@ Collider collider_convex_hull_create(const vec3* vertices, const u32* indices) {
 
 	Collider collider;
 	collider.type = COLLIDER_TYPE_CONVEX_HULL;
-	collider.bounding_sphere_radius = get_convex_hull_bounding_sphere_radius(hull);
 	collider.convex_hull = convex_hull;
 	return collider;
 }
@@ -380,15 +386,25 @@ static void collider_convex_hull_destroy(Collider* collider) {
 	array_free(collider->convex_hull.transformed_faces);
 }
 
-void collider_destroy(Collider* collider) {
+static void collider_destroy(Collider* collider) {
 	switch (collider->type) {
 		case COLLIDER_TYPE_CONVEX_HULL: {
 			collider_convex_hull_destroy(collider);
 		} break;
+		case COLLIDER_TYPE_SPHERE: {
+			collider_sphere_destroy(collider);
+		} break;
 	}
 }
 
-void collider_update(Collider* collider, vec3 translation, const Quaternion* rotation) {
+void colliders_destroy(Collider* colliders) {
+	for (u32 i = 0; i < array_length(colliders); ++i) {
+		Collider* collider = &colliders[i];
+		collider_destroy(collider);
+	}
+}
+
+static void collider_update(Collider* collider, vec3 translation, const Quaternion* rotation) {
 	switch (collider->type) {
 		case COLLIDER_TYPE_CONVEX_HULL: {
 			mat4 model_matrix_no_scale = util_get_model_matrix_no_scale(rotation, translation);
@@ -419,42 +435,93 @@ void collider_update(Collider* collider, vec3 translation, const Quaternion* rot
 	}
 }
 
-mat3 collider_get_default_inertia_tensor(Collider* collider, r64 mass) {
-	switch (collider->type) {
-		case COLLIDER_TYPE_SPHERE: {
+void colliders_update(Collider* colliders, vec3 translation, const Quaternion* rotation) {
+	for (u32 i = 0; i < array_length(colliders); ++i) {
+		Collider* collider = &colliders[i];
+		collider_update(collider, translation, rotation);
+	}
+}
+
+// @TODO: We need to rewrite this function
+mat3 colliders_get_default_inertia_tensor(Collider* colliders, r64 mass) {
+	// For now, the center of mass is always assumed to be at 0,0,0
+	if (array_length(colliders) == 1) {
+		Collider* collider = &colliders[0];
+
+		if (collider->type == COLLIDER_TYPE_SPHERE) {
+			// for now we assume the sphere is centered at its center of mass (because then the inertia tensor is simple)
+			assert(gm_vec3_is_zero(collider->sphere.center));
+
 			r64 I = (2.0 / 5.0) * mass * collider->sphere.radius * collider->sphere.radius;
 			mat3 result = {0};
 			result.data[0][0] = I;
 			result.data[1][1] = I;
 			result.data[2][2] = I;
 			return result;
-		} break;
+		}
+	}
+
+	u32 total_num_vertices = 0;
+	for (u32 i = 0; i < array_length(colliders); ++i) {
+		Collider* collider = &colliders[i];
+		total_num_vertices += array_length(collider->convex_hull.vertices);
+	}
+
+	r64 mass_per_vertex = mass / total_num_vertices;
+
+	mat3 result = {0};
+	for (u32 i = 0; i < array_length(colliders); ++i) {
+		Collider* collider = &colliders[i];
+		assert(collider->type == COLLIDER_TYPE_CONVEX_HULL);
+
+		for (u32 j = 0; j < array_length(collider->convex_hull.vertices); ++j) {
+			vec3 v = collider->convex_hull.vertices[j];
+			result.data[0][0] += mass_per_vertex * (v.y * v.y + v.z * v.z);
+			result.data[0][1] += mass_per_vertex * v.x * v.y;
+			result.data[0][2] += mass_per_vertex * v.x * v.z;
+			result.data[1][0] += mass_per_vertex * v.x * v.y;
+			result.data[1][1] += mass_per_vertex * (v.x * v.x + v.z * v.z);
+			result.data[1][2] += mass_per_vertex * v.y * v.z;
+			result.data[2][0] += mass_per_vertex * v.x * v.z;
+			result.data[2][1] += mass_per_vertex * v.y * v.z;
+			result.data[2][2] += mass_per_vertex * (v.x * v.x + v.y * v.y);
+		}
+	}
+
+	return result;
+}
+
+static r64 collider_get_bounding_sphere_radius(const Collider* collider) {
+	switch (collider->type) {
 		case COLLIDER_TYPE_CONVEX_HULL: {
-			r64 mass_per_vertex = mass / array_length(collider->convex_hull.vertices);
-			mat3 result = {0};
-			for (u32 i = 0; i < array_length(collider->convex_hull.vertices); ++i) {
-				vec3 v = collider->convex_hull.vertices[i];
-				result.data[0][0] += mass_per_vertex * (v.y * v.y + v.z * v.z);
-				result.data[0][1] += mass_per_vertex * v.x * v.y;
-				result.data[0][2] += mass_per_vertex * v.x * v.z;
-				result.data[1][0] += mass_per_vertex * v.x * v.y;
-				result.data[1][1] += mass_per_vertex * (v.x * v.x + v.z * v.z);
-				result.data[1][2] += mass_per_vertex * v.y * v.z;
-				result.data[2][0] += mass_per_vertex * v.x * v.z;
-				result.data[2][1] += mass_per_vertex * v.y * v.z;
-				result.data[2][2] += mass_per_vertex * (v.x * v.x + v.y * v.y);
-			}
-			return result;
+			return get_convex_hull_collider_bounding_sphere_radius(collider);
+		} break;
+		case COLLIDER_TYPE_SPHERE: {
+			return get_sphere_collider_bounding_sphere_radius(collider);
 		} break;
 	}
 
 	assert(0);
-	return (mat3){0};
+	return 0.0;
 }
 
-Collider_Contact* collider_get_contacts(Collider* collider1, Collider* collider2, vec3* normal) {
+r64 colliders_get_bounding_sphere_radius(const Collider* colliders) {
+	r64 max_bounding_sphere_radius = -DBL_MAX;
+	for (u32 i = 0; i < array_length(colliders); ++i) {
+		const Collider* collider = &colliders[i];
+		r64 bounding_sphere_radius = collider_get_bounding_sphere_radius(collider);
+		if (bounding_sphere_radius > max_bounding_sphere_radius) {
+			max_bounding_sphere_radius = bounding_sphere_radius;
+		}
+	}
+
+	return max_bounding_sphere_radius;
+}
+
+static void collider_get_contacts(Collider* collider1, Collider* collider2, Collider_Contact** contacts) {
 	GJK_Simplex simplex;
 	r64 penetration;
+	vec3 normal;
 
 	// If both colliders are spheres, calling EPA is not only extremely slow, but also provide bad results.
 	// GJK is also not necessary. In this case, just calculate everything analytically.
@@ -464,12 +531,12 @@ Collider_Contact* collider_get_contacts(Collider* collider1, Collider* collider2
 		r32 min_distance = collider1->sphere.radius + collider2->sphere.radius;
 		if (distance_sqd < (min_distance * min_distance)) {
 			// Spheres are colliding
-			*normal = gm_vec3_normalize(gm_vec3_subtract(collider2->sphere.center, collider1->sphere.center));
+			normal = gm_vec3_normalize(gm_vec3_subtract(collider2->sphere.center, collider1->sphere.center));
 			penetration = min_distance - sqrt(distance_sqd);
-			return clipping_get_contact_manifold(collider1, collider2, *normal, penetration);
+			clipping_get_contact_manifold(collider1, collider2, normal, penetration, contacts);
 		}
 
-		return NULL;
+		return;
 	}
 
 	// Call GJK to check if there is a collision
@@ -477,13 +544,27 @@ Collider_Contact* collider_get_contacts(Collider* collider1, Collider* collider2
 		// There is a collision.
 
 		// Get the collision normal using EPA
-		if (!epa(collider1, collider2, &simplex, normal, &penetration)) {
-			return NULL;
+		if (!epa(collider1, collider2, &simplex, &normal, &penetration)) {
+			return;
 		}
 
 		// Finally, clip the results to get the result manifold
-		return clipping_get_contact_manifold(collider1, collider2, *normal, penetration);
+		clipping_get_contact_manifold(collider1, collider2, normal, penetration, contacts);
 	}
 
-	return NULL;
+	return;
+}
+
+Collider_Contact* colliders_get_contacts(Collider* colliders1, Collider* colliders2) {
+	Collider_Contact* contacts = array_new(Collider_Contact);
+
+	for (u32 i = 0; i < array_length(colliders1); ++i) {
+		Collider* collider1 = &colliders1[i];
+		for (u32 j = 0; j < array_length(colliders2); ++j) {
+			Collider* collider2 = &colliders2[j];
+			collider_get_contacts(collider1, collider2, &contacts);
+		}
+	}
+
+	return contacts;
 }
