@@ -17,7 +17,7 @@
 extern boolean paused;
 
 static void positional_constraint_solve(Constraint* constraint, r64 h) {
-	assert(constraint->type == POSITIONAL_STATIC_CONSTRAINT);
+	assert(constraint->type == POSITIONAL_CONSTRAINT);
 
 	Entity* e1 = entity_get_by_id(constraint->positional_constraint.e1_id);
 	Entity* e2 = entity_get_by_id(constraint->positional_constraint.e2_id);
@@ -45,7 +45,7 @@ static vec3 calculate_p(Entity* e, vec3 r_lc) {
 }
 
 static void collision_constraint_solve(Constraint* constraint, r64 h) {
-	assert(constraint->type == COLLISION_STATIC_CONSTRAINT);
+	assert(constraint->type == COLLISION_CONSTRAINT);
 
 	Entity* e1 = entity_get_by_id(constraint->collision_constraint.e1_id);
 	Entity* e2 = entity_get_by_id(constraint->collision_constraint.e2_id);
@@ -96,7 +96,7 @@ static void collision_constraint_solve(Constraint* constraint, r64 h) {
 }
 
 static void mutual_orientation_constraint_solve(Constraint* constraint, r64 h) {
-	assert(constraint->type == MUTUAL_ORIENTATION_STATIC_CONSTRAINT);
+	assert(constraint->type == MUTUAL_ORIENTATION_CONSTRAINT);
 
 	Entity* e1 = entity_get_by_id(constraint->mutual_orientation_constraint.e1_id);
 	Entity* e2 = entity_get_by_id(constraint->mutual_orientation_constraint.e2_id);
@@ -115,7 +115,7 @@ static void mutual_orientation_constraint_solve(Constraint* constraint, r64 h) {
 }
 
 static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
-	assert(constraint->type == HINGE_JOINT_STATIC_CONSTRAINT);
+	assert(constraint->type == HINGE_JOINT_CONSTRAINT);
 
 	Entity* e1 = entity_get_by_id(constraint->hinge_joint_constraint.e1_id);
 	Entity* e2 = entity_get_by_id(constraint->hinge_joint_constraint.e2_id);
@@ -153,19 +153,19 @@ static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
 
 static void solve_constraint(Constraint* constraint, r64 h) {
 	switch (constraint->type) {
-		case POSITIONAL_STATIC_CONSTRAINT: {
+		case POSITIONAL_CONSTRAINT: {
 			positional_constraint_solve(constraint, h);
 			return;
 		} break;
-		case COLLISION_STATIC_CONSTRAINT: {
+		case COLLISION_CONSTRAINT: {
 			collision_constraint_solve(constraint, h);
 			return;
 		} break;
-		case MUTUAL_ORIENTATION_STATIC_CONSTRAINT: {
+		case MUTUAL_ORIENTATION_CONSTRAINT: {
 			mutual_orientation_constraint_solve(constraint, h);
 			return;
 		} break;
-		case HINGE_JOINT_STATIC_CONSTRAINT: {
+		case HINGE_JOINT_CONSTRAINT: {
 			hinge_joint_constraint_solve(constraint, h);
 			return;
 		} break;
@@ -175,7 +175,7 @@ static void solve_constraint(Constraint* constraint, r64 h) {
 }
 
 void clipping_contact_to_collision_constraint(Entity* e1, Entity* e2, Collider_Contact* contact, Constraint* constraint) {
-	constraint->type = COLLISION_STATIC_CONSTRAINT;
+	constraint->type = COLLISION_CONSTRAINT;
 	constraint->collision_constraint.e1_id = e1->id;
 	constraint->collision_constraint.e2_id = e2->id;
 	constraint->collision_constraint.normal = contact->normal;
@@ -206,17 +206,17 @@ static Constraint* copy_constraints(Constraint* constraints) {
 
 		// Reset lambda
 		switch (constraint.type) {
-			case POSITIONAL_STATIC_CONSTRAINT: {
+			case POSITIONAL_CONSTRAINT: {
 				constraint.positional_constraint.lambda = 0.0;
 			} break;
-			case COLLISION_STATIC_CONSTRAINT: {
+			case COLLISION_CONSTRAINT: {
 				constraint.collision_constraint.lambda_t = 0.0;
 				constraint.collision_constraint.lambda_n = 0.0;
 			} break;
-			case MUTUAL_ORIENTATION_STATIC_CONSTRAINT: {
+			case MUTUAL_ORIENTATION_CONSTRAINT: {
 				constraint.mutual_orientation_constraint.lambda = 0.0;
 			} break;
-			case HINGE_JOINT_STATIC_CONSTRAINT: {
+			case HINGE_JOINT_CONSTRAINT: {
 				constraint.hinge_joint_constraint.lambda_rot = 0.0;
 				constraint.hinge_joint_constraint.lambda_pos = 0.0;
 			} break;
@@ -229,10 +229,10 @@ static Constraint* copy_constraints(Constraint* constraints) {
 }
 
 void pbd_simulate(r64 dt, Entity** entities) {
-	pbd_simulate_with_static_constraints(dt, entities, NULL);
+	pbd_simulate_with_constraints(dt, entities, NULL);
 }
 
-void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Constraint* static_constraints) {
+void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* external_constraints) {
 	if (dt <= 0.0) return;
 	r64 h = dt / NUM_SUBSTEPS;
 
@@ -342,7 +342,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Constraint*
 		}
 
 		// Create the constraints array
-		Constraint* constraints = copy_constraints(static_constraints);
+		Constraint* constraints = copy_constraints(external_constraints);
 
 		// As explained in sec 3.5, in each substep we need to check for collisions
 		for (u32 j = 0; j < array_length(broad_collision_pairs); ++j) {
@@ -437,7 +437,7 @@ void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Constraint*
 		// The velocity solver - we run this additional solver for every collision that we found
 		for (u32 j = 0; j < array_length(constraints); ++j) {
 			Constraint* constraint = &constraints[j];
-			if (constraint->type != COLLISION_STATIC_CONSTRAINT) {
+			if (constraint->type != COLLISION_CONSTRAINT) {
 				continue;
 			}
 

@@ -16,7 +16,7 @@
 
 static Perspective_Camera camera;
 static Light* lights;
-static Constraint* static_constraints;
+static Constraint* constraints;
 
 // Mouse binding to target positions
 static boolean is_mouse_bound_to_entity_movement;
@@ -96,8 +96,8 @@ int ex_debug_init() {
 	Entity* support_entity = entity_get_by_id(support_id);
 	Entity* lever_entity = entity_get_by_id(lever_id);
 
-	static_constraints = array_new(Constraint);
-	Constraint static_constraint;
+	constraints = array_new(Constraint);
+	Constraint constraint;
 
 	// Make sure that support and lever starts with the correct distance, otherwise simulation will explode in the 1st frame
 	vec3 r1_lc = (vec3){0.0, 0.0, 0.0};
@@ -110,15 +110,15 @@ int ex_debug_init() {
 	vec3 delta_x = delta_r;
 	entity_set_position(lever_entity, gm_vec3_add(lever_entity->world_position, delta_x));
 
-	static_constraint.type = HINGE_JOINT_STATIC_CONSTRAINT;
-	static_constraint.hinge_joint_constraint.e1_id = support_id;
-	static_constraint.hinge_joint_constraint.e2_id = lever_id;
-	static_constraint.hinge_joint_constraint.compliance = 0.0;
-	static_constraint.hinge_joint_constraint.r1_lc = r1_lc;
-	static_constraint.hinge_joint_constraint.r2_lc = r2_lc;
-	static_constraint.hinge_joint_constraint.e1_a = e1_a;
-	static_constraint.hinge_joint_constraint.e2_a = e2_a;
-	array_push(static_constraints, static_constraint);
+	constraint.type = HINGE_JOINT_CONSTRAINT;
+	constraint.hinge_joint_constraint.e1_id = support_id;
+	constraint.hinge_joint_constraint.e2_id = lever_id;
+	constraint.hinge_joint_constraint.compliance = 0.0;
+	constraint.hinge_joint_constraint.r1_lc = r1_lc;
+	constraint.hinge_joint_constraint.r2_lc = r2_lc;
+	constraint.hinge_joint_constraint.e1_a = e1_a;
+	constraint.hinge_joint_constraint.e2_a = e2_a;
+	array_push(constraints, constraint);
 
 	return 0;
 }
@@ -164,7 +164,7 @@ void ex_debug_update(r64 delta_time) {
 		//array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate_with_static_constraints(delta_time, entities, static_constraints);
+	pbd_simulate_with_constraints(delta_time, entities, constraints);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);

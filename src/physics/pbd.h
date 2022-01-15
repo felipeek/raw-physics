@@ -3,10 +3,10 @@
 #include "../entity.h"
 
 typedef enum {
-	POSITIONAL_STATIC_CONSTRAINT,
-	COLLISION_STATIC_CONSTRAINT,
-	MUTUAL_ORIENTATION_STATIC_CONSTRAINT,
-	HINGE_JOINT_STATIC_CONSTRAINT
+	POSITIONAL_CONSTRAINT,
+	COLLISION_CONSTRAINT,
+	MUTUAL_ORIENTATION_CONSTRAINT,
+	HINGE_JOINT_CONSTRAINT
 } Constraint_Type;
 
 typedef struct {
@@ -64,6 +64,6 @@ typedef struct {
 } Constraint;
 
 void pbd_simulate(r64 dt, Entity** entities);
-void pbd_simulate_with_static_constraints(r64 dt, Entity** entities, Constraint* constraints);
+void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* external_constraints);
 
 #endif

@@ -15,7 +15,7 @@
 
 static Perspective_Camera camera;
 static Light* lights;
-static Constraint* static_constraints;
+static Constraint* constraints;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -72,16 +72,16 @@ int ex_spring_init() {
 	array_free(cube_vertices);
 	array_free(cube_indices);
 
-	static_constraints = array_new(Constraint);
+	constraints = array_new(Constraint);
 	Constraint constraint;
-	constraint.type = POSITIONAL_STATIC_CONSTRAINT;
+	constraint.type = POSITIONAL_CONSTRAINT;
 	constraint.positional_constraint.compliance = 0.001;
 	constraint.positional_constraint.distance = (vec3){0.0, -3.0, 0.0};
 	constraint.positional_constraint.e1_id = cube_eid;
 	constraint.positional_constraint.e2_id = attachment_eid;
 	constraint.positional_constraint.r1_lc = (vec3){0.0, 0.0, 0.0};
 	constraint.positional_constraint.r2_lc = (vec3){0.0, 0.0, 0.0};
-	array_push(static_constraints, constraint);
+	array_push(constraints, constraint);
 
 	return 0;
 }
@@ -98,7 +98,7 @@ void ex_spring_destroy() {
 		entity_destroy(e);
 	}
 	array_free(entities);
-	array_free(static_constraints);
+	array_free(constraints);
 
 	entity_module_destroy();
 }
@@ -120,7 +120,7 @@ void ex_spring_update(r64 delta_time) {
 		array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate_with_static_constraints(delta_time, entities, static_constraints);
+	pbd_simulate_with_constraints(delta_time, entities, constraints);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);
@@ -206,9 +206,9 @@ void ex_spring_window_resize_process(s32 width, s32 height) {
 void ex_spring_menu_update() {
 	ImGui::Text("Spring");
 
-	r32 compliance = (r32)static_constraints[0].positional_constraint.compliance;
+	r32 compliance = (r32)constraints[0].positional_constraint.compliance;
 	ImGui::SliderFloat("Compliance", &compliance, 0.0f, 1.0f, "%.4f");
-	static_constraints[0].positional_constraint.compliance = (r64)compliance;
+	constraints[0].positional_constraint.compliance = (r64)compliance;
 	ImGui::Separator();
 	ImGui::TextWrapped("Press SPACE to throw objects!");
 }
