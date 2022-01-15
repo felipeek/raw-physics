@@ -1,4 +1,4 @@
-#include "chain.h"
+#include "spring.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -15,7 +15,7 @@
 
 static Perspective_Camera camera;
 static Light* lights;
-static Static_Constraint* static_constraints;
+static Constraint* static_constraints;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -41,7 +41,7 @@ static Light* create_lights() {
 	return lights;
 }
 
-int ex_chain_init() {
+int ex_spring_init() {
 	entity_module_init();
 
 	// Create camera
@@ -72,8 +72,8 @@ int ex_chain_init() {
 	array_free(cube_vertices);
 	array_free(cube_indices);
 
-	static_constraints = array_new(Static_Constraint);
-	Static_Constraint constraint;
+	static_constraints = array_new(Constraint);
+	Constraint constraint;
 	constraint.type = POSITIONAL_STATIC_CONSTRAINT;
 	constraint.positional_constraint.compliance = 0.001;
 	constraint.positional_constraint.distance = (vec3){0.0, -3.0, 0.0};
@@ -86,7 +86,7 @@ int ex_chain_init() {
 	return 0;
 }
 
-void ex_chain_destroy() {
+void ex_spring_destroy() {
 	array_free(lights);
 
 	Entity** entities = entity_get_all();
@@ -103,7 +103,7 @@ void ex_chain_destroy() {
 	entity_module_destroy();
 }
 
-void ex_chain_update(r64 delta_time) {
+void ex_spring_update(r64 delta_time) {
 	Entity** entities = entity_get_all();
 	delta_time = 0.016666667; // ~60fps
 
@@ -129,7 +129,7 @@ void ex_chain_update(r64 delta_time) {
 	array_free(entities);
 }
 
-void ex_chain_render() {
+void ex_spring_render() {
 	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, entities[i], lights);
@@ -139,7 +139,7 @@ void ex_chain_render() {
 	array_free(entities);
 }
 
-void ex_chain_input_process(boolean* key_state, r64 delta_time) {
+void ex_spring_input_process(boolean* key_state, r64 delta_time) {
 	r64 movement_speed = 3.0;
 	r64 rotation_speed = 300.0;
 
@@ -175,7 +175,7 @@ void ex_chain_input_process(boolean* key_state, r64 delta_time) {
 	}
 }
 
-void ex_chain_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
+void ex_spring_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 	static const r64 camera_mouse_speed = 0.1;
 	static r64 x_pos_old, y_pos_old;
 
@@ -191,20 +191,20 @@ void ex_chain_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 	camera_rotate_y(&camera, camera_mouse_speed * (r64)y_difference);
 }
 
-void ex_chain_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
+void ex_spring_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
 
 }
 
-void ex_chain_scroll_change_process(r64 x_offset, r64 y_offset) {
+void ex_spring_scroll_change_process(r64 x_offset, r64 y_offset) {
 
 }
 
-void ex_chain_window_resize_process(s32 width, s32 height) {
+void ex_spring_window_resize_process(s32 width, s32 height) {
 	camera_force_matrix_recalculation(&camera);
 }
 
-void ex_chain_menu_update() {
-	ImGui::Text("Chain");
+void ex_spring_menu_update() {
+	ImGui::Text("Spring");
 
 	r32 compliance = (r32)static_constraints[0].positional_constraint.compliance;
 	ImGui::SliderFloat("Compliance", &compliance, 0.0f, 1.0f, "%.4f");
@@ -213,16 +213,16 @@ void ex_chain_menu_update() {
 	ImGui::TextWrapped("Press SPACE to throw objects!");
 }
 
-Example_Scene chain_example_scene = (Example_Scene) {
-	.name = "Chain",
-	.init = ex_chain_init,
-	.destroy = ex_chain_destroy,
-	.input_process = ex_chain_input_process,
-	.menu_properties_update = ex_chain_menu_update,
-	.mouse_change_process = ex_chain_mouse_change_process,
-	.mouse_click_process = ex_chain_mouse_click_process,
-	.render = ex_chain_render,
-	.scroll_change_process = ex_chain_scroll_change_process,
-	.update = ex_chain_update,
-	.window_resize_process = ex_chain_window_resize_process
+Example_Scene spring_example_scene = (Example_Scene) {
+	.name = "Spring",
+	.init = ex_spring_init,
+	.destroy = ex_spring_destroy,
+	.input_process = ex_spring_input_process,
+	.menu_properties_update = ex_spring_menu_update,
+	.mouse_change_process = ex_spring_mouse_change_process,
+	.mouse_click_process = ex_spring_mouse_click_process,
+	.render = ex_spring_render,
+	.scroll_change_process = ex_spring_scroll_change_process,
+	.update = ex_spring_update,
+	.window_resize_process = ex_spring_window_resize_process
 };

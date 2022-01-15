@@ -16,7 +16,7 @@
 
 static Perspective_Camera camera;
 static Light* lights;
-static Static_Constraint* static_constraints;
+static Constraint* static_constraints;
 
 // Mouse binding to target positions
 static boolean is_mouse_bound_to_entity_movement;
@@ -45,9 +45,9 @@ static Light* create_lights() {
 	return lights;
 }
 
-eid reference_point_id, support_id, lever_id;
-vec3 e1_a = (vec3){0.0, 1.0, 0.0};
-vec3 e2_a = (vec3){0.0, 1.0, 0.0};
+eid support_id, lever_id;
+vec3 e1_a = (vec3){1.0, 0.0, 0.0};
+vec3 e2_a = (vec3){1.0, 0.0, 0.0};
 
 int ex_debug_init() {
 	entity_module_init();
@@ -70,54 +70,20 @@ int ex_debug_init() {
 
 	Vertex* cube_vertices;
 	u32* cube_indices;
-	Vertex* sphere_vertices;
-	u32* sphere_indices;
 
 	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
 	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
 	vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
 
-	obj_parse("./res/sphere.obj", &sphere_vertices, &sphere_indices);
-	Mesh sphere_mesh = graphics_mesh_create(sphere_vertices, sphere_indices);
-	vec3 sphere_scale = (vec3){1.0, 1.0, 1.0};
-
-	//r64 y = -2.0f;
-	//for (u32 i = 0; i < 2; ++i) {
-	//	y += 2.1f;
-	//	Collider sphere_collider = collider_sphere_create(1.0);
-	//	entity_create(sphere_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-	//		sphere_scale, util_pallete(i), 1.0, sphere_collider);
-	//}
-
-	//vec3 wall_collider1_scale = (vec3){0.1, 0.5, 4.0};
-	//Collider wall_collider1 = create_convex_collider(cube_vertices, cube_indices, wall_collider1_scale);
-	//entity_create_fixed(cube_mesh, (vec3){-4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-	//	wall_collider1_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider1);
-
-	//vec3 wall_collider2_scale = (vec3){0.1, 0.5, 4.0};
-	//Collider wall_collider2 = create_convex_collider(cube_vertices, cube_indices, wall_collider2_scale);
-	//entity_create_fixed(cube_mesh, (vec3){4.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-	//	wall_collider2_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider2);
-
-	//vec3 wall_collider3_scale = (vec3){4.0, 0.5, 0.1};
-	//Collider wall_collider3 = create_convex_collider(cube_vertices, cube_indices, wall_collider3_scale);
-	//entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, -4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-	//	wall_collider3_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider3);
-
-	//vec3 wall_collider4_scale = (vec3){4.0, 0.5, 0.1};
-	//Collider wall_collider4 = create_convex_collider(cube_vertices, cube_indices, wall_collider4_scale);
-	//entity_create_fixed(cube_mesh, (vec3){0.0, 0.0, 4.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-	//	wall_collider4_scale, (vec4){1.0, 1.0, 1.0, 1.0}, wall_collider4);
-
-	vec3 reference_point_scale = (vec3){0.1, 0.1, 0.1};
-	Collider* reference_point_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, reference_point_scale);
-	reference_point_id = entity_create_fixed(cube_mesh, (vec3){0.0, 10.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.5}, 0.0),
-		reference_point_scale, (vec4){1.0, 1.0, 0.0, 1.0}, reference_point_colliders);
-
 	vec3 support_collider_scale = (vec3){0.25, 0.25, 0.25};
 	Collider* support_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, support_collider_scale);
+	#if 0
 	support_id = entity_create(cube_mesh, (vec3){0.0, 1.0, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.0),
 		support_collider_scale, (vec4){0.0, 1.0, 0.0, 1.0}, 1.0, support_colliders);
+	#else
+	support_id = entity_create_fixed(cube_mesh, (vec3){0.0, 5.0, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.0),
+		support_collider_scale, (vec4){0.0, 1.0, 0.0, 1.0}, support_colliders);
+	#endif
 
 	vec3 lever_collider_scale = (vec3){0.2, 1.0, 0.2};
 	Collider* lever_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, lever_collider_scale);
@@ -126,35 +92,17 @@ int ex_debug_init() {
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
-	array_free(sphere_vertices);
-	array_free(sphere_indices);
 
-	Entity* reference_point_entity = entity_get_by_id(reference_point_id);
 	Entity* support_entity = entity_get_by_id(support_id);
 	Entity* lever_entity = entity_get_by_id(lever_id);
 
-	static_constraints = array_new(Static_Constraint);
-	Static_Constraint static_constraint;
-
-	static_constraint.type = POSITIONAL_STATIC_CONSTRAINT;
-	static_constraint.positional_constraint.e1_id = reference_point_id;
-	static_constraint.positional_constraint.e2_id = support_id;
-	static_constraint.positional_constraint.compliance = 0.0;
-	static_constraint.positional_constraint.r1_lc = (vec3){0.0, 0.0, 0.0};
-	static_constraint.positional_constraint.r2_lc = (vec3){0.0, 0.0, 0.0};
-	static_constraint.positional_constraint.distance = gm_vec3_subtract(reference_point_entity->world_position, support_entity->world_position);
-	array_push(static_constraints, static_constraint);
-
-	//static_constraint.type = MUTUAL_ORIENTATION_STATIC_CONSTRAINT;
-	//static_constraint.mutual_orientation_constraint.e1_id = cube1;
-	//static_constraint.mutual_orientation_constraint.e2_id = cube2;
-	//static_constraint.mutual_orientation_constraint.compliance = 0.0;
-	//array_push(static_constraints, static_constraint);
+	static_constraints = array_new(Constraint);
+	Constraint static_constraint;
 
 	// Make sure that support and lever starts with the correct distance, otherwise simulation will explode in the 1st frame
 	vec3 r1_lc = (vec3){0.0, 0.0, 0.0};
 	vec3 r1_wc = r1_lc; // considering no rotation yet
-	vec3 r2_lc = (vec3){0.0, 1.25, 0.0};
+	vec3 r2_lc = (vec3){0.0, 1.5, 0.0};
 	vec3 r2_wc = r2_lc; // considering no rotation yet
 	vec3 p1 = gm_vec3_add(support_entity->world_position, r1_wc);
 	vec3 p2 = gm_vec3_add(lever_entity->world_position, r2_wc);
