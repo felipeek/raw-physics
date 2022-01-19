@@ -35,6 +35,8 @@ r64 positional_constraint_get_delta_lambda(Position_Constraint_Preprocessed_Data
 	r64 w1 = e1->inverse_mass + gm_vec3_dot(gm_vec3_cross(r1_wc, n), gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1_wc, n)));
 	r64 w2 = e2->inverse_mass + gm_vec3_dot(gm_vec3_cross(r2_wc, n), gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2_wc, n)));
 
+	assert(w1 + w2 != 0.0);
+
 	// calculate the delta_lambda (XPBD) and updates the constraint
 	r64 til_compliance = compliance / (h * h);
 	r64 delta_lambda = (- c - til_compliance * lambda) / (w1 + w2 + til_compliance);
@@ -137,6 +139,8 @@ r64 angular_constraint_get_delta_lambda(Angular_Constraint_Preprocessed_Data* ac
 	// calculate the inverse masses of both entities
 	r64 w1 = gm_vec3_dot(n, gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, n));
 	r64 w2 = gm_vec3_dot(n, gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, n));
+
+	assert(w1 + w2 != 0.0);
 
 	// calculate the delta_lambda (XPBD) and updates the constraint
 	r64 til_compliance = compliance / (h * h);

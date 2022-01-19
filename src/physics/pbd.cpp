@@ -126,9 +126,9 @@ static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
 
 	mat3 e1_rot = quaternion_get_matrix3(&e1->world_rotation);
 	mat3 e2_rot = quaternion_get_matrix3(&e2->world_rotation);
-	vec3 e1_a_wc = gm_mat3_multiply_vec3(&e1_rot, constraint->hinge_joint_constraint.e1_a);
-	vec3 e2_a_wc = gm_mat3_multiply_vec3(&e2_rot, constraint->hinge_joint_constraint.e2_a);
-	vec3 delta_q = gm_vec3_cross(e2_a_wc, e1_a_wc);
+	vec3 e1_a_wc = gm_mat3_multiply_vec3(&e1_rot, constraint->hinge_joint_constraint.e1_aligned_axis);
+	vec3 e2_a_wc = gm_mat3_multiply_vec3(&e2_rot, constraint->hinge_joint_constraint.e2_aligned_axis);
+	vec3 delta_q = gm_vec3_cross(e1_a_wc, e2_a_wc);
 
 	r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, constraint->hinge_joint_constraint.compliance,
 		constraint->hinge_joint_constraint.lambda_rot, delta_q);
@@ -149,6 +149,72 @@ static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
 	delta_lambda = positional_constraint_get_delta_lambda(&pcpd, h, 0.0, constraint->hinge_joint_constraint.lambda_pos, delta_x);
 	positional_constraint_apply(&pcpd, delta_lambda, delta_x);
 	constraint->hinge_joint_constraint.lambda_pos += delta_lambda;
+
+	// Deal with joint limits
+	e1_rot = quaternion_get_matrix3(&e1->world_rotation);
+	e2_rot = quaternion_get_matrix3(&e2->world_rotation);
+	vec3 n1 = gm_mat3_multiply_vec3(&e1_rot, constraint->hinge_joint_constraint.e1_limit_axis);
+	vec3 n2 = gm_mat3_multiply_vec3(&e2_rot, constraint->hinge_joint_constraint.e2_limit_axis);
+	vec3 n = gm_mat3_multiply_vec3(&e1_rot, constraint->hinge_joint_constraint.e1_aligned_axis);
+	r64 alpha = constraint->hinge_joint_constraint.lower_limit;
+	r64 beta = constraint->hinge_joint_constraint.upper_limit;
+
+	// Calculate phi, which is the angle between n1 and n2 with respect to the rotation vector n
+	r64 phi = asin(gm_vec3_dot(gm_vec3_cross(n1, n2), n));
+	// asin returns the angle in the interval [-pi/2,+pi/2], which is already correct if the angle between n1 and n2 is acute.
+	// however, if n1 and n2 forms an obtuse angle, we need to manually differentiate. In this case, n1 dot n2 is less than 0.
+	// For example, if the angle between n1 and n2 is 30 degrees, then sin(30)=0.5, but if the angle is 150, sin(150)=0.5 as well,
+	// thus in both cases asin will return 30 degrees (pi/6)
+	if (gm_vec3_dot(n1, n2) < 0.0) {
+		phi = PI_F - phi; // this will do the trick and fix the angle
+	}
+	// now our angle is between [-pi/2, 3pi/2].
+
+	// maps the inner range [pi, 3pi/2] to [-pi, -pi/2]
+	if (phi > PI_F) {
+		phi = phi - 2.0 * PI_F;
+	}
+	// now our angle is between [-pi, pi]
+
+
+	// this is useless?
+	if (phi < -PI_F) {
+		phi = phi + 2.0 * PI_F;
+	}
+
+	if (phi < alpha || phi > beta) {
+		// at this point, phi represents the angle between n1 and n2
+		
+		// clamp phi to get the limit angle, i.e., the angle that we wanna 'be at'
+		phi = CLAMP(phi, alpha, beta);
+
+		// create a quaternion that represents this rotation
+		Quaternion rot = quaternion_new_radians(n, phi);
+		mat3 rot_matrix = quaternion_get_matrix3(&rot);
+
+		// rotate n1 by the limit angle, so n1 will get very close to n2, except for the extra rotation that we wanna get rid of
+		n1 = gm_mat3_multiply_vec3(&rot_matrix, n1);
+
+		// calculate delta_q based on this extra rotation
+
+		// @TODO: Why n2,n1 instead of n1,n2?
+		// @TODO: Why the simulation explodes when the using the maximum limit (or mininum?)
+		vec3 delta_q = gm_vec3_cross(n2, n1);
+
+		// Angular Constraint
+		Angular_Constraint_Preprocessed_Data acpd;
+		calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
+
+		//vec3 axis = gm_vec3_normalize(delta_q);
+		//r64 mag = gm_vec3_length(delta_q);
+		//Quaternion qqq = quaternion_new_radians(axis, mag);
+		//Quaternion e1_corrected = quaternion_product(&e1->world_rotation, &qqq);
+		//Quaternion e2_corrected = quaternion_product(&e2->world_rotation, &qqq);
+
+		r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->hinge_joint_constraint.lambda_limit, delta_q);
+		angular_constraint_apply(&acpd, delta_lambda, delta_q);
+		constraint->hinge_joint_constraint.lambda_limit += delta_lambda;
+	}
 }
 
 static void solve_constraint(Constraint* constraint, r64 h) {
@@ -219,6 +285,7 @@ static Constraint* copy_constraints(Constraint* constraints) {
 			case HINGE_JOINT_CONSTRAINT: {
 				constraint.hinge_joint_constraint.lambda_rot = 0.0;
 				constraint.hinge_joint_constraint.lambda_pos = 0.0;
+				constraint.hinge_joint_constraint.lambda_limit = 0.0;
 			} break;
 		}
 

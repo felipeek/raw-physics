@@ -46,7 +46,7 @@ static Light* create_lights() {
 }
 
 eid support_id, lever_id;
-vec3 e1_a = (vec3){1.0, 0.0, 0.0};
+vec3 e1_a = (vec3){-1.0, 0.0, 0.0};
 vec3 e2_a = (vec3){1.0, 0.0, 0.0};
 
 int ex_debug_init() {
@@ -88,7 +88,7 @@ int ex_debug_init() {
 	vec3 lever_collider_scale = (vec3){0.2, 1.0, 0.2};
 	Collider* lever_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, lever_collider_scale);
 	lever_id = entity_create(cube_mesh, (vec3){0.0, 0.5, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.0),
-		lever_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 1.0, lever_colliders);
+		lever_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 10.0, lever_colliders);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -116,8 +116,13 @@ int ex_debug_init() {
 	constraint.hinge_joint_constraint.compliance = 0.0;
 	constraint.hinge_joint_constraint.r1_lc = r1_lc;
 	constraint.hinge_joint_constraint.r2_lc = r2_lc;
-	constraint.hinge_joint_constraint.e1_a = e1_a;
-	constraint.hinge_joint_constraint.e2_a = e2_a;
+	constraint.hinge_joint_constraint.e1_aligned_axis = e1_a;
+	constraint.hinge_joint_constraint.e2_aligned_axis = e2_a;
+
+	constraint.hinge_joint_constraint.e1_limit_axis = (vec3){0.0, 1.0, 0.0};
+	constraint.hinge_joint_constraint.e2_limit_axis = (vec3){0.0, 1.0, 0.0};
+	constraint.hinge_joint_constraint.lower_limit = -9.0 * PI_F / 10.0;
+	constraint.hinge_joint_constraint.upper_limit = 9.0 * PI_F / 10.0;
 	array_push(constraints, constraint);
 
 	return 0;
@@ -229,7 +234,7 @@ void ex_debug_render() {
 }
 
 void ex_debug_input_process(boolean* key_state, r64 delta_time) {
-	r64 movement_speed = 3.0;
+	r64 movement_speed = 30.0;
 	r64 rotation_speed = 300.0;
 
 	if (key_state[GLFW_KEY_LEFT_SHIFT])
