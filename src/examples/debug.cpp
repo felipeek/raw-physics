@@ -45,9 +45,71 @@ static Light* create_lights() {
 	return lights;
 }
 
-eid support_id, lever_id;
-vec3 e1_a = (vec3){-1.0, 0.0, 0.0};
-vec3 e2_a = (vec3){1.0, 0.0, 0.0};
+static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r64 angle_limit) {
+	Vertex* support_vertices;
+	u32* support_indices;
+	Vertex* lever_vertices;
+	u32* lever_indices;
+
+	obj_parse("./res/lever_support.obj", &support_vertices, &support_indices);
+	Mesh support_mesh = graphics_mesh_create(support_vertices, support_indices);
+
+	obj_parse("./res/lever.obj", &lever_vertices, &lever_indices);
+	Mesh lever_mesh = graphics_mesh_create(lever_vertices, lever_indices);
+
+	vec3 support_collider_scale = (vec3){1.0, 1.0, 1.0};
+	Collider* support_colliders = examples_util_create_single_convex_hull_collider_array(support_vertices, support_indices, support_collider_scale);
+	eid support_id = entity_create_fixed(support_mesh, lever_position, lever_rotation, support_collider_scale,
+		(vec4){0.0, 1.0, 0.0, 1.0}, support_colliders);
+
+	vec3 lever_collider_scale = (vec3){1.0, 1.0, 1.0};
+	Collider* lever_colliders = examples_util_create_single_convex_hull_collider_array(lever_vertices, lever_indices, lever_collider_scale);
+	eid lever_id = entity_create(lever_mesh, lever_position, lever_rotation, lever_collider_scale,
+		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, lever_colliders);
+
+	array_free(support_vertices);
+	array_free(support_indices);
+	array_free(lever_vertices);
+	array_free(lever_indices);
+
+	mat3 lever_rotation_matrix = quaternion_get_matrix3(&lever_rotation);
+
+	Entity* support_entity = entity_get_by_id(support_id);
+	Entity* lever_entity = entity_get_by_id(lever_id);
+
+	// Make sure that support and lever starts with the correct distance, otherwise simulation will explode in the 1st frame
+	vec3 r1_lc = (vec3){0.0, 0.0, 0.0};
+	vec3 r2_lc = (vec3){0.0, 0.0, 0.0};
+	vec3 r1_wc = gm_mat3_multiply_vec3(&lever_rotation_matrix, r1_lc); // considering the support has no rotation
+	vec3 r2_wc = gm_mat3_multiply_vec3(&lever_rotation_matrix, r2_lc);
+	vec3 p1 = gm_vec3_add(support_entity->world_position, r1_wc);
+	vec3 p2 = gm_vec3_add(lever_entity->world_position, r2_wc);
+	vec3 delta_r = gm_vec3_subtract(p1, p2);
+	vec3 delta_x = delta_r;
+	entity_set_position(lever_entity, gm_vec3_add(lever_entity->world_position, delta_x));
+
+	vec3 support_aligned_axis_local = (vec3){1.0, 0.0, 0.0};
+	vec3 lever_aligned_axis_local = (vec3){-1.0, 0.0, 0.0};
+	vec3 support_limit_axis_local = (vec3){0.0, 1.0, 0.0};
+	vec3 lever_limit_axis_local = (vec3){0.0, 1.0, 0.0};
+
+	Constraint constraint;
+	constraint.type = HINGE_JOINT_CONSTRAINT;
+	constraint.hinge_joint_constraint.e1_id = support_id;
+	constraint.hinge_joint_constraint.e2_id = lever_id;
+	constraint.hinge_joint_constraint.compliance = 0.0;
+	constraint.hinge_joint_constraint.r1_lc = r1_lc;
+	constraint.hinge_joint_constraint.r2_lc = r2_lc;
+	constraint.hinge_joint_constraint.e1_aligned_axis = support_aligned_axis_local;
+	constraint.hinge_joint_constraint.e2_aligned_axis = lever_aligned_axis_local;
+
+	constraint.hinge_joint_constraint.e1_limit_axis = support_limit_axis_local;
+	constraint.hinge_joint_constraint.e2_limit_axis = lever_limit_axis_local;
+	constraint.hinge_joint_constraint.lower_limit = -PI_F * angle_limit;
+	constraint.hinge_joint_constraint.upper_limit = PI_F * angle_limit;
+
+	return constraint;
+}
 
 int ex_debug_init() {
 	entity_module_init();
@@ -68,62 +130,17 @@ int ex_debug_init() {
 	array_free(floor_vertices);
 	array_free(floor_indices);
 
-	Vertex* cube_vertices;
-	u32* cube_indices;
-
-	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
-	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
-	vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
-
-	vec3 support_collider_scale = (vec3){0.25, 0.25, 0.25};
-	Collider* support_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, support_collider_scale);
-	#if 0
-	support_id = entity_create(cube_mesh, (vec3){0.0, 1.0, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.0),
-		support_collider_scale, (vec4){0.0, 1.0, 0.0, 1.0}, 1.0, support_colliders);
-	#else
-	support_id = entity_create_fixed(cube_mesh, (vec3){0.0, 5.0, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.0),
-		support_collider_scale, (vec4){0.0, 1.0, 0.0, 1.0}, support_colliders);
-	#endif
-
-	vec3 lever_collider_scale = (vec3){0.2, 1.0, 0.2};
-	Collider* lever_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, lever_collider_scale);
-	lever_id = entity_create(cube_mesh, (vec3){0.0, 0.5, 0.0}, quaternion_new((vec3){0.0, -1.0, 0.0}, 0.0),
-		lever_collider_scale, (vec4){1.0, 1.0, 0.0, 1.0}, 10.0, lever_colliders);
-
-	array_free(cube_vertices);
-	array_free(cube_indices);
-
-	Entity* support_entity = entity_get_by_id(support_id);
-	Entity* lever_entity = entity_get_by_id(lever_id);
-
 	constraints = array_new(Constraint);
-	Constraint constraint;
+	Constraint c;
+	
+	//c = create_lever((vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), 0.75);
+	//array_push(constraints, c);
 
-	// Make sure that support and lever starts with the correct distance, otherwise simulation will explode in the 1st frame
-	vec3 r1_lc = (vec3){0.0, 0.0, 0.0};
-	vec3 r1_wc = r1_lc; // considering no rotation yet
-	vec3 r2_lc = (vec3){0.0, 1.5, 0.0};
-	vec3 r2_wc = r2_lc; // considering no rotation yet
-	vec3 p1 = gm_vec3_add(support_entity->world_position, r1_wc);
-	vec3 p2 = gm_vec3_add(lever_entity->world_position, r2_wc);
-	vec3 delta_r = gm_vec3_subtract(p1, p2);
-	vec3 delta_x = delta_r;
-	entity_set_position(lever_entity, gm_vec3_add(lever_entity->world_position, delta_x));
+	c = create_lever((vec3){5.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 1.0}, 45.0), 0.5);
+	array_push(constraints, c);
 
-	constraint.type = HINGE_JOINT_CONSTRAINT;
-	constraint.hinge_joint_constraint.e1_id = support_id;
-	constraint.hinge_joint_constraint.e2_id = lever_id;
-	constraint.hinge_joint_constraint.compliance = 0.0;
-	constraint.hinge_joint_constraint.r1_lc = r1_lc;
-	constraint.hinge_joint_constraint.r2_lc = r2_lc;
-	constraint.hinge_joint_constraint.e1_aligned_axis = e1_a;
-	constraint.hinge_joint_constraint.e2_aligned_axis = e2_a;
-
-	constraint.hinge_joint_constraint.e1_limit_axis = (vec3){0.0, 1.0, 0.0};
-	constraint.hinge_joint_constraint.e2_limit_axis = (vec3){0.0, 1.0, 0.0};
-	constraint.hinge_joint_constraint.lower_limit = -9.0 * PI_F / 10.0;
-	constraint.hinge_joint_constraint.upper_limit = 9.0 * PI_F / 10.0;
-	array_push(constraints, constraint);
+	c = create_lever((vec3){-5.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, -1.0}, 90.0), 0.5);
+	array_push(constraints, c);
 
 	return 0;
 }
@@ -214,16 +231,21 @@ void ex_debug_render() {
 	}
 	#endif
 
-	Entity* support_entity = entity_get_by_id(support_id);
-	Entity* lever_entity = entity_get_by_id(lever_id);
-	mat3 support_rot = quaternion_get_matrix3(&support_entity->world_rotation);
-	mat3 lever_rot = quaternion_get_matrix3(&lever_entity->world_rotation);
-	vec3 e1_a_wc = gm_mat3_multiply_vec3(&support_rot, e1_a);
-	vec3 e2_a_wc = gm_mat3_multiply_vec3(&lever_rot, e2_a);
-	graphics_renderer_debug_vector(support_entity->world_position, gm_vec3_add(support_entity->world_position, e1_a_wc),
-		(vec4){1.0, 0.0, 0.0, 1.0});
-	graphics_renderer_debug_vector(lever_entity->world_position, gm_vec3_add(lever_entity->world_position, e2_a_wc),
-		(vec4){0.0, 0.0, 0.0, 1.0});
+	for (u32 i = 0; i < array_length(constraints); ++i) {
+		Constraint* c = &constraints[i];
+		if (c->type == HINGE_JOINT_CONSTRAINT) {
+			Entity* support_entity = entity_get_by_id(c->hinge_joint_constraint.e1_id);
+			Entity* lever_entity = entity_get_by_id(c->hinge_joint_constraint.e2_id);
+			mat3 support_rot = quaternion_get_matrix3(&support_entity->world_rotation);
+			mat3 lever_rot = quaternion_get_matrix3(&lever_entity->world_rotation);
+			vec3 e1_a_wc = gm_mat3_multiply_vec3(&support_rot, c->hinge_joint_constraint.e1_aligned_axis);
+			vec3 e2_a_wc = gm_mat3_multiply_vec3(&lever_rot, c->hinge_joint_constraint.e2_aligned_axis);
+			graphics_renderer_debug_vector(support_entity->world_position, gm_vec3_add(support_entity->world_position, e1_a_wc),
+				(vec4){1.0, 0.0, 0.0, 1.0});
+			graphics_renderer_debug_vector(lever_entity->world_position, gm_vec3_add(lever_entity->world_position, e2_a_wc),
+				(vec4){0.0, 0.0, 0.0, 1.0});
+		}
+	}
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, entities[i], lights);
@@ -263,7 +285,14 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		key_state[GLFW_KEY_L] = false;
 	}
 
-	Entity* e = entity_get_by_id(lever_id);
+	Entity* e;
+	for (u32 i = 0; i < array_length(constraints); ++i) {
+		Constraint* c = &constraints[i];
+		if (c->type == HINGE_JOINT_CONSTRAINT) {
+			e = entity_get_by_id(c->hinge_joint_constraint.e2_id);
+			break;
+		}
+	}
 
 	if (key_state[GLFW_KEY_X])
 	{
