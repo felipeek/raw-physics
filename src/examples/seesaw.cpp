@@ -166,10 +166,11 @@ void ex_seesaw_input_process(boolean* key_state, r64 delta_time) {
 	{
 		static boolean wireframe = false;
 
-		if (wireframe)
+		if (wireframe) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		else
+		} else {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
 
 		wireframe = !wireframe;
 		key_state[GLFW_KEY_L] = false;

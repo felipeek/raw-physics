@@ -9,6 +9,7 @@
 #include "examples/spring.h"
 #include "examples/brick_wall.h"
 #include "examples/mirror_cube.h"
+#include "examples/hinge_joints.h"
 #include "render/menu.h"
 #include "vendor/imgui.h"
 
@@ -33,6 +34,7 @@ int core_init() {
 	example_scenes[SPRING_EXAMPLE_SCENE] = spring_example_scene;
 	example_scenes[BRICK_WALL_EXAMPLE_SCENE] = brick_wall_example_scene;
 	example_scenes[MIRROR_CUBE_EXAMPLE_SCENE] = mirror_cube_example_scene;
+	example_scenes[HINGE_JOINTS_EXAMPLE_SCENE] = hinge_joints_example_scene;
 
 	selected_scene = EXAMPLE_SCENE_INITIAL;
 	return load_selected_scene();

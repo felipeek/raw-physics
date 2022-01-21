@@ -16,8 +16,6 @@
 #define ANGULAR_SLEEPING_THRESHOLD 0.15
 #define DEACTIVATION_TIME_TO_BE_INACTIVE 1.0
 
-extern boolean paused;
-
 static void positional_constraint_solve(Constraint* constraint, r64 h) {
 	assert(constraint->type == POSITIONAL_CONSTRAINT);
 
@@ -178,7 +176,6 @@ static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
 	}
 	// now our angle is between [-pi, pi]
 
-
 	// this is useless?
 	if (phi < -PI_F) {
 		phi = phi + 2.0 * PI_F;
@@ -200,18 +197,11 @@ static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
 		// calculate delta_q based on this extra rotation
 
 		// @TODO: Why n2,n1 instead of n1,n2?
-		// @TODO: Why the simulation explodes when the using the maximum limit (or mininum?)
 		vec3 delta_q = gm_vec3_cross(n2, n1);
 
 		// Angular Constraint
 		Angular_Constraint_Preprocessed_Data acpd;
 		calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
-
-		//vec3 axis = gm_vec3_normalize(delta_q);
-		//r64 mag = gm_vec3_length(delta_q);
-		//Quaternion qqq = quaternion_new_radians(axis, mag);
-		//Quaternion e1_corrected = quaternion_product(&e1->world_rotation, &qqq);
-		//Quaternion e2_corrected = quaternion_product(&e2->world_rotation, &qqq);
 
 		r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->hinge_joint_constraint.lambda_limit, delta_q);
 		angular_constraint_apply(&acpd, delta_lambda, delta_q);
@@ -476,9 +466,6 @@ void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* extern
 			for (u32 k = 0; k < array_length(constraints); ++k) {
 				Constraint* constraint = &constraints[k];
 				solve_constraint(constraint, h);
-				if (paused) {
-					return;
-				}
 			}	
 		}
 
