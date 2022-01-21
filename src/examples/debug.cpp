@@ -79,7 +79,7 @@ static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r
 
 	// Make sure that support and lever starts with the correct distance, otherwise simulation will explode in the 1st frame
 	vec3 r1_lc = (vec3){0.0, 0.0, 0.0};
-	vec3 r2_lc = (vec3){0.0, 0.0, 0.0};
+	vec3 r2_lc = (vec3){0.0, 3.0, 0.0};
 	vec3 r1_wc = gm_mat3_multiply_vec3(&lever_rotation_matrix, r1_lc); // considering the support has no rotation
 	vec3 r2_wc = gm_mat3_multiply_vec3(&lever_rotation_matrix, r2_lc);
 	vec3 p1 = gm_vec3_add(support_entity->world_position, r1_wc);
@@ -183,7 +183,7 @@ void ex_debug_update(r64 delta_time) {
 		Physics_Force pf;
 		pf.force = (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0};
 		pf.position = (vec3){0.0, 0.0, 0.0};
-		//array_push(entities[i]->forces, pf);
+		array_push(entities[i]->forces, pf);
 	}
 
 	pbd_simulate_with_constraints(delta_time, entities, constraints);
