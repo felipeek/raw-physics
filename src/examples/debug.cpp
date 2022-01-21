@@ -133,8 +133,8 @@ int ex_debug_init() {
 	constraints = array_new(Constraint);
 	Constraint c;
 	
-	//c = create_lever((vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), 0.75);
-	//array_push(constraints, c);
+	c = create_lever((vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), 0.9);
+	array_push(constraints, c);
 
 	c = create_lever((vec3){5.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 1.0}, 45.0), 0.5);
 	array_push(constraints, c);

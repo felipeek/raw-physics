@@ -7,9 +7,11 @@
 #include "../util.h"
 #include "physics_util.h"
 
+//#include <fenv.h> 
+
 #define NUM_SUBSTEPS 20
 #define NUM_POS_ITERS 1
-#define ENABLE_SIMULATION_ISLANDS
+//#define ENABLE_SIMULATION_ISLANDS
 #define LINEAR_SLEEPING_THRESHOLD 0.15
 #define ANGULAR_SLEEPING_THRESHOLD 0.15
 #define DEACTIVATION_TIME_TO_BE_INACTIVE 1.0
@@ -300,6 +302,8 @@ void pbd_simulate(r64 dt, Entity** entities) {
 }
 
 void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* external_constraints) {
+	//feenableexcept(FE_INVALID | FE_OVERFLOW);
+
 	if (dt <= 0.0) return;
 	r64 h = dt / NUM_SUBSTEPS;
 
@@ -577,4 +581,5 @@ void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* extern
 	}
 
 	array_free(broad_collision_pairs);
+	//fedisableexcept(FE_INVALID | FE_OVERFLOW);
 }

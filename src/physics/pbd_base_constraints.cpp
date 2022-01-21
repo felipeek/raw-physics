@@ -17,7 +17,12 @@ void calculate_positional_constraint_preprocessed_data(Entity* e1, Entity* e2, v
 }
 
 r64 positional_constraint_get_delta_lambda(Position_Constraint_Preprocessed_Data* pcpd, r64 h, r64 compliance, r64 lambda, vec3 delta_x) {
-	if (gm_vec3_is_zero(delta_x)) {
+	r64 c = gm_vec3_length(delta_x);
+
+	// We need to avoid calculations when delta_x is zero or very very close to zero, otherwise we will might run into
+	// big problems because of floating-point precision
+	const r64 EPSILON = 1e-50;
+	if (c <= EPSILON && c >= -EPSILON) {
 		return 0.0;
 	}
 
@@ -27,9 +32,8 @@ r64 positional_constraint_get_delta_lambda(Position_Constraint_Preprocessed_Data
 	vec3 r2_wc = pcpd->r2_wc;
 	mat3 e1_inverse_inertia_tensor = pcpd->e1_inverse_inertia_tensor;
 	mat3 e2_inverse_inertia_tensor = pcpd->e2_inverse_inertia_tensor;
-	// split delta_x into n and c.
-	vec3 n = gm_vec3_normalize(delta_x);
-	r64 c = gm_vec3_length(delta_x);
+
+	vec3 n = (vec3) {delta_x.x / c, delta_x.y / c, delta_x.z / c};
 
 	// calculate the inverse masses of both entities
 	r64 w1 = e1->inverse_mass + gm_vec3_dot(gm_vec3_cross(r1_wc, n), gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1_wc, n)));
@@ -46,7 +50,12 @@ r64 positional_constraint_get_delta_lambda(Position_Constraint_Preprocessed_Data
 
 // Apply the positional constraint, updating the position and orientation of the entities accordingly
 void positional_constraint_apply(Position_Constraint_Preprocessed_Data* pcpd, r64 delta_lambda, vec3 delta_x) {
-	if (gm_vec3_is_zero(delta_x)) {
+	r64 c = gm_vec3_length(delta_x);
+
+	// We need to avoid calculations when delta_x is zero or very very close to zero, otherwise we will might run into
+	// big problems because of floating-point precision
+	const r64 EPSILON = 1e-50;
+	if (c <= EPSILON && c >= -EPSILON) {
 		return;
 	}
 
@@ -56,7 +65,8 @@ void positional_constraint_apply(Position_Constraint_Preprocessed_Data* pcpd, r6
 	vec3 r2_wc = pcpd->r2_wc;
 	mat3 e1_inverse_inertia_tensor = pcpd->e1_inverse_inertia_tensor;
 	mat3 e2_inverse_inertia_tensor = pcpd->e2_inverse_inertia_tensor;
-	vec3 n = gm_vec3_normalize(delta_x);
+
+	vec3 n = (vec3) {delta_x.x / c, delta_x.y / c, delta_x.z / c};
 
 	// calculates the positional impulse
 	vec3 positional_impulse = gm_vec3_scalar_product(delta_lambda, n);
@@ -123,7 +133,12 @@ void calculate_angular_constraint_preprocessed_data(Entity* e1, Entity* e2, Angu
 }
 
 r64 angular_constraint_get_delta_lambda(Angular_Constraint_Preprocessed_Data* acpd, r64 h, r64 compliance, r64 lambda, vec3 delta_q) {
-	if (gm_vec3_is_zero(delta_q)) {
+	r64 theta = gm_vec3_length(delta_q);
+
+	// We need to avoid calculations when delta_q is zero or very very close to zero, otherwise we will might run into
+	// big problems because of floating-point precision
+	const r64 EPSILON = 1e-50;
+	if (theta <= EPSILON && theta >= -EPSILON) {
 		return 0.0;
 	}
 
@@ -132,9 +147,7 @@ r64 angular_constraint_get_delta_lambda(Angular_Constraint_Preprocessed_Data* ac
 	mat3 e1_inverse_inertia_tensor = acpd->e1_inverse_inertia_tensor;
 	mat3 e2_inverse_inertia_tensor = acpd->e2_inverse_inertia_tensor;
 
-	// split delta_q into n and c.
-	vec3 n = gm_vec3_normalize(delta_q);
-	r64 theta = gm_vec3_length(delta_q);
+	vec3 n = (vec3) {delta_q.x / theta, delta_q.y / theta, delta_q.z / theta};
 
 	// calculate the inverse masses of both entities
 	r64 w1 = gm_vec3_dot(n, gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, n));
@@ -151,7 +164,12 @@ r64 angular_constraint_get_delta_lambda(Angular_Constraint_Preprocessed_Data* ac
 
 // Apply the angular constraint, updating the orientation of the entities accordingly
 void angular_constraint_apply(Angular_Constraint_Preprocessed_Data* acpd, r64 delta_lambda, vec3 delta_q) {
-	if (gm_vec3_is_zero(delta_q)) {
+	r64 theta = gm_vec3_length(delta_q);
+
+	// We need to avoid calculations when delta_q is zero or very very close to zero, otherwise we will might run into
+	// big problems because of floating-point precision
+	const r64 EPSILON = 1e-50;
+	if (theta <= EPSILON && theta >= -EPSILON) {
 		return;
 	}
 
@@ -160,7 +178,7 @@ void angular_constraint_apply(Angular_Constraint_Preprocessed_Data* acpd, r64 de
 	mat3 e1_inverse_inertia_tensor = acpd->e1_inverse_inertia_tensor;
 	mat3 e2_inverse_inertia_tensor = acpd->e2_inverse_inertia_tensor;
 
-	vec3 n = gm_vec3_normalize(delta_q);
+	vec3 n = (vec3) {delta_q.x / theta, delta_q.y / theta, delta_q.z / theta};
 
 	// calculates the positional impulse
 	vec3 positional_impulse = gm_vec3_scalar_product(delta_lambda, n);
