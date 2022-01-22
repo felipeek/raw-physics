@@ -22,7 +22,7 @@ r64 positional_constraint_get_delta_lambda(Position_Constraint_Preprocessed_Data
 	// We need to avoid calculations when delta_x is zero or very very close to zero, otherwise we will might run into
 	// big problems because of floating-point precision
 	const r64 EPSILON = 1e-50;
-	if (c <= EPSILON && c >= -EPSILON) {
+	if (c <= EPSILON) {
 		return 0.0;
 	}
 
@@ -55,7 +55,7 @@ void positional_constraint_apply(Position_Constraint_Preprocessed_Data* pcpd, r6
 	// We need to avoid calculations when delta_x is zero or very very close to zero, otherwise we will might run into
 	// big problems because of floating-point precision
 	const r64 EPSILON = 1e-50;
-	if (c <= EPSILON && c >= -EPSILON) {
+	if (c <= EPSILON) {
 		return;
 	}
 
@@ -138,7 +138,7 @@ r64 angular_constraint_get_delta_lambda(Angular_Constraint_Preprocessed_Data* ac
 	// We need to avoid calculations when delta_q is zero or very very close to zero, otherwise we will might run into
 	// big problems because of floating-point precision
 	const r64 EPSILON = 1e-50;
-	if (theta <= EPSILON && theta >= -EPSILON) {
+	if (theta <= EPSILON) {
 		return 0.0;
 	}
 
@@ -169,7 +169,7 @@ void angular_constraint_apply(Angular_Constraint_Preprocessed_Data* acpd, r64 de
 	// We need to avoid calculations when delta_q is zero or very very close to zero, otherwise we will might run into
 	// big problems because of floating-point precision
 	const r64 EPSILON = 1e-50;
-	if (theta <= EPSILON && theta >= -EPSILON) {
+	if (theta <= EPSILON) {
 		return;
 	}
 

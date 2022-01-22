@@ -290,8 +290,8 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 	Entity* e;
 	for (u32 i = 0; i < array_length(constraints); ++i) {
 		Constraint* c = &constraints[i];
-		if (c->type == HINGE_JOINT_CONSTRAINT) {
-			e = entity_get_by_id(c->hinge_joint_constraint.e2_id);
+		if (c->type == SPHERICAL_JOINT_CONSTRAINT) {
+			e = entity_get_by_id(c->spherical_joint_constraint.e2_id);
 			break;
 		}
 	}

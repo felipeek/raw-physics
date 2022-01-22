@@ -219,6 +219,8 @@ static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
 static void spherical_joint_constraint_solve(Constraint* constraint, r64 h) {
 	assert(constraint->type == SPHERICAL_JOINT_CONSTRAINT);
 
+	const r64 EPSILON = 1e-50;
+
 	Entity* e1 = entity_get_by_id(constraint->spherical_joint_constraint.e1_id);
 	Entity* e2 = entity_get_by_id(constraint->spherical_joint_constraint.e2_id);
 
@@ -242,18 +244,23 @@ static void spherical_joint_constraint_solve(Constraint* constraint, r64 h) {
 	vec3 n1 = gm_mat3_multiply_vec3(&e1_rot, constraint->spherical_joint_constraint.e1_swing_axis);
 	vec3 n2 = gm_mat3_multiply_vec3(&e2_rot, constraint->spherical_joint_constraint.e2_swing_axis);
 	vec3 n = gm_vec3_cross(n1, n2);
-	r64 alpha = constraint->spherical_joint_constraint.swing_lower_limit;
-	r64 beta = constraint->spherical_joint_constraint.swing_upper_limit;
-	vec3 delta_q;
+	r64 n_len = gm_vec3_length(n);
+	if (n_len > EPSILON) {
+		n = (vec3) {n.x / n_len, n.y / n_len, n.z / n_len};
 
-	if (limit_angle(n, n1, n2, alpha, beta, &delta_q)) {
-		// Angular Constraint
-		Angular_Constraint_Preprocessed_Data acpd;
-		calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
+		r64 alpha = constraint->spherical_joint_constraint.swing_lower_limit;
+		r64 beta = constraint->spherical_joint_constraint.swing_upper_limit;
+		vec3 delta_q;
 
-		r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->spherical_joint_constraint.lambda_swing, delta_q);
-		angular_constraint_apply(&acpd, delta_lambda, delta_q);
-		constraint->spherical_joint_constraint.lambda_swing += delta_lambda;
+		if (limit_angle(n, n1, n2, alpha, beta, &delta_q)) {
+			// Angular Constraint
+			Angular_Constraint_Preprocessed_Data acpd;
+			calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
+
+			r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->spherical_joint_constraint.lambda_swing, delta_q);
+			angular_constraint_apply(&acpd, delta_lambda, delta_q);
+			constraint->spherical_joint_constraint.lambda_swing += delta_lambda;
+		}
 	}
 
 	// Angular constraint to ensure the twist angle limit is respected
@@ -263,20 +270,33 @@ static void spherical_joint_constraint_solve(Constraint* constraint, r64 h) {
 	vec3 a2 = gm_mat3_multiply_vec3(&e2_rot, constraint->spherical_joint_constraint.e2_swing_axis);
 	vec3 b1 = gm_mat3_multiply_vec3(&e1_rot, constraint->spherical_joint_constraint.e1_twist_axis);
 	vec3 b2 = gm_mat3_multiply_vec3(&e2_rot, constraint->spherical_joint_constraint.e2_twist_axis);
-	n = gm_vec3_normalize(gm_vec3_add(a1, a2));
-	n1 = gm_vec3_normalize(gm_vec3_subtract(b1, gm_vec3_scalar_product(gm_vec3_dot(n, b1), n)));
-	n2 = gm_vec3_normalize(gm_vec3_subtract(b2, gm_vec3_scalar_product(gm_vec3_dot(n, b2), n)));
-	alpha = constraint->spherical_joint_constraint.twist_lower_limit;
-	beta = constraint->spherical_joint_constraint.twist_upper_limit;
+	n = gm_vec3_add(a1, a2);
+	n_len = gm_vec3_length(n);
+	if (n_len > EPSILON) {
+		n = (vec3) {n.x / n_len, n.y / n_len, n.z / n_len};
 
-	if (limit_angle(n, n1, n2, alpha, beta, &delta_q)) {
-		// Angular Constraint
-		Angular_Constraint_Preprocessed_Data acpd;
-		calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
+		n1 = gm_vec3_subtract(b1, gm_vec3_scalar_product(gm_vec3_dot(n, b1), n));
+		n2 = gm_vec3_subtract(b2, gm_vec3_scalar_product(gm_vec3_dot(n, b2), n));
+		r64 n1_len = gm_vec3_length(n1);
+		r64 n2_len = gm_vec3_length(n2);
+		if (n1_len > EPSILON && n2_len > EPSILON) {
+			n1 = (vec3) {n1.x / n1_len, n1.y / n1_len, n1.z / n1_len};
+			n2 = (vec3) {n2.x / n2_len, n2.y / n2_len, n2.z / n2_len};
 
-		r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->spherical_joint_constraint.lambda_twist, delta_q);
-		//angular_constraint_apply(&acpd, delta_lambda, delta_q);
-		constraint->spherical_joint_constraint.lambda_twist += delta_lambda;
+			r64 alpha = constraint->spherical_joint_constraint.twist_lower_limit;
+			r64 beta = constraint->spherical_joint_constraint.twist_upper_limit;
+			vec3 delta_q;
+
+			if (limit_angle(n, n1, n2, alpha, beta, &delta_q)) {
+				// Angular Constraint
+				Angular_Constraint_Preprocessed_Data acpd;
+				calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
+
+				r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->spherical_joint_constraint.lambda_twist, delta_q);
+				angular_constraint_apply(&acpd, delta_lambda, delta_q);
+				constraint->spherical_joint_constraint.lambda_twist += delta_lambda;
+			}
+		}
 	}
 }
 
