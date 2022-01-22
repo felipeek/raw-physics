@@ -77,7 +77,7 @@ static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r
 	// Make sure that support and lever starts with the correct distance, otherwise simulation will explode in the 1st frame
 	vec3 r1_lc = (vec3){0.0, 0.0, 0.0};
 	vec3 r2_lc = (vec3){0.0, 3.0, 0.0};
-	vec3 r1_wc = gm_mat3_multiply_vec3(&lever_rotation_matrix, r1_lc); // considering the support has no rotation
+	vec3 r1_wc = gm_mat3_multiply_vec3(&lever_rotation_matrix, r1_lc);
 	vec3 r2_wc = gm_mat3_multiply_vec3(&lever_rotation_matrix, r2_lc);
 	vec3 p1 = gm_vec3_add(support_entity->world_position, r1_wc);
 	vec3 p2 = gm_vec3_add(lever_entity->world_position, r2_wc);
