@@ -42,17 +42,13 @@ typedef struct {
 	eid e2_id;
 	vec3 r1_lc;
 	vec3 r2_lc;
-	vec3 e1_aligned_axis;
-	vec3 e2_aligned_axis;
 	r64 compliance;
-	r64 lambda_rot;
 	r64 lambda_pos;
 
-	vec3 e1_limit_axis;
-	vec3 e2_limit_axis;
 	r64 upper_limit;
 	r64 lower_limit;
-	r64 lambda_limit;
+	r64 lambda_aligned_axes;
+	r64 lambda_limit_axes;
 } Hinge_Joint_Constraint;
 
 typedef struct {
@@ -63,14 +59,10 @@ typedef struct {
 	r64 compliance;
 	r64 lambda_pos;
 
-	vec3 e1_swing_axis;
-	vec3 e2_swing_axis;
 	r64 lambda_swing;
 	r64 swing_upper_limit;
 	r64 swing_lower_limit;
 
-	vec3 e1_twist_axis;
-	vec3 e2_twist_axis;
 	r64 lambda_twist;
 	r64 twist_upper_limit;
 	r64 twist_lower_limit;

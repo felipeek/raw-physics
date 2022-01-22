@@ -100,12 +100,8 @@ static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r
 	constraint.spherical_joint_constraint.compliance = 0.0;
 	constraint.spherical_joint_constraint.r1_lc = r1_lc;
 	constraint.spherical_joint_constraint.r2_lc = r2_lc;
-	constraint.spherical_joint_constraint.e1_swing_axis = support_aligned_axis_local;
-	constraint.spherical_joint_constraint.e2_swing_axis = lever_aligned_axis_local;
 	constraint.spherical_joint_constraint.swing_lower_limit = -PI_F * angle_limit;
 	constraint.spherical_joint_constraint.swing_upper_limit = PI_F * angle_limit;
-	constraint.spherical_joint_constraint.e1_twist_axis = support_limit_axis_local;
-	constraint.spherical_joint_constraint.e2_twist_axis = lever_limit_axis_local;
 	constraint.spherical_joint_constraint.twist_lower_limit = -PI_F * angle_limit;
 	constraint.spherical_joint_constraint.twist_upper_limit = PI_F * angle_limit;
 
@@ -231,22 +227,6 @@ void ex_debug_render() {
 		}
 	}
 	#endif
-
-	for (u32 i = 0; i < array_length(constraints); ++i) {
-		Constraint* c = &constraints[i];
-		if (c->type == HINGE_JOINT_CONSTRAINT) {
-			Entity* support_entity = entity_get_by_id(c->hinge_joint_constraint.e1_id);
-			Entity* lever_entity = entity_get_by_id(c->hinge_joint_constraint.e2_id);
-			mat3 support_rot = quaternion_get_matrix3(&support_entity->world_rotation);
-			mat3 lever_rot = quaternion_get_matrix3(&lever_entity->world_rotation);
-			vec3 e1_a_wc = gm_mat3_multiply_vec3(&support_rot, c->hinge_joint_constraint.e1_aligned_axis);
-			vec3 e2_a_wc = gm_mat3_multiply_vec3(&lever_rot, c->hinge_joint_constraint.e2_aligned_axis);
-			graphics_renderer_debug_vector(support_entity->world_position, gm_vec3_add(support_entity->world_position, e1_a_wc),
-				(vec4){1.0, 0.0, 0.0, 1.0});
-			graphics_renderer_debug_vector(lever_entity->world_position, gm_vec3_add(lever_entity->world_position, e2_a_wc),
-				(vec4){0.0, 0.0, 0.0, 1.0});
-		}
-	}
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, entities[i], lights);

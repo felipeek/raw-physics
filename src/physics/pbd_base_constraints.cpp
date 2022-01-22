@@ -181,7 +181,7 @@ void angular_constraint_apply(Angular_Constraint_Preprocessed_Data* acpd, r64 de
 	vec3 n = (vec3) {delta_q.x / theta, delta_q.y / theta, delta_q.z / theta};
 
 	// calculates the positional impulse
-	vec3 positional_impulse = gm_vec3_scalar_product(delta_lambda, n);
+	vec3 positional_impulse = gm_vec3_scalar_product(-delta_lambda, n);
 
 	// updates the rotation of the entities based on eq (8) and (9)
 	vec3 aux1 = gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, positional_impulse);
