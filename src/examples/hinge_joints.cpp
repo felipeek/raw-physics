@@ -85,11 +85,6 @@ static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r
 	vec3 delta_x = delta_r;
 	entity_set_position(lever_entity, gm_vec3_add(lever_entity->world_position, delta_x));
 
-	vec3 support_aligned_axis_local = (vec3){1.0, 0.0, 0.0};
-	vec3 lever_aligned_axis_local = (vec3){1.0, 0.0, 0.0};
-	vec3 support_limit_axis_local = (vec3){0.0, 1.0, 0.0};
-	vec3 lever_limit_axis_local = (vec3){0.0, 1.0, 0.0};
-
 	Constraint constraint;
 	constraint.type = HINGE_JOINT_CONSTRAINT;
 	constraint.hinge_joint_constraint.e1_id = support_id;
