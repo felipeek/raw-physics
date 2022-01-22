@@ -114,51 +114,7 @@ static void mutual_orientation_constraint_solve(Constraint* constraint, r64 h) {
 	constraint->mutual_orientation_constraint.lambda += delta_lambda;
 }
 
-static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
-	assert(constraint->type == HINGE_JOINT_CONSTRAINT);
-
-	Entity* e1 = entity_get_by_id(constraint->hinge_joint_constraint.e1_id);
-	Entity* e2 = entity_get_by_id(constraint->hinge_joint_constraint.e2_id);
-
-	// Angular Constraint
-	Angular_Constraint_Preprocessed_Data acpd;
-	calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
-
-	mat3 e1_rot = quaternion_get_matrix3(&e1->world_rotation);
-	mat3 e2_rot = quaternion_get_matrix3(&e2->world_rotation);
-	vec3 e1_a_wc = gm_mat3_multiply_vec3(&e1_rot, constraint->hinge_joint_constraint.e1_aligned_axis);
-	vec3 e2_a_wc = gm_mat3_multiply_vec3(&e2_rot, constraint->hinge_joint_constraint.e2_aligned_axis);
-	vec3 delta_q = gm_vec3_cross(e1_a_wc, e2_a_wc);
-
-	r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, constraint->hinge_joint_constraint.compliance,
-		constraint->hinge_joint_constraint.lambda_rot, delta_q);
-	angular_constraint_apply(&acpd, delta_lambda, delta_q);
-	constraint->hinge_joint_constraint.lambda_rot += delta_lambda;
-
-	// Positional constraint
-	// @TODO: optmize preprocessed datas
-	Position_Constraint_Preprocessed_Data pcpd;
-	calculate_positional_constraint_preprocessed_data(e1, e2, constraint->hinge_joint_constraint.r1_lc,
-		constraint->hinge_joint_constraint.r2_lc, &pcpd);
-
-	vec3 p1 = gm_vec3_add(e1->world_position, pcpd.r1_wc);
-	vec3 p2 = gm_vec3_add(e2->world_position, pcpd.r2_wc);
-	vec3 delta_r = gm_vec3_subtract(p1, p2);
-	vec3 delta_x = delta_r;
-
-	delta_lambda = positional_constraint_get_delta_lambda(&pcpd, h, 0.0, constraint->hinge_joint_constraint.lambda_pos, delta_x);
-	positional_constraint_apply(&pcpd, delta_lambda, delta_x);
-	constraint->hinge_joint_constraint.lambda_pos += delta_lambda;
-
-	// Deal with joint limits
-	e1_rot = quaternion_get_matrix3(&e1->world_rotation);
-	e2_rot = quaternion_get_matrix3(&e2->world_rotation);
-	vec3 n1 = gm_mat3_multiply_vec3(&e1_rot, constraint->hinge_joint_constraint.e1_limit_axis);
-	vec3 n2 = gm_mat3_multiply_vec3(&e2_rot, constraint->hinge_joint_constraint.e2_limit_axis);
-	vec3 n = gm_mat3_multiply_vec3(&e1_rot, constraint->hinge_joint_constraint.e1_aligned_axis);
-	r64 alpha = constraint->hinge_joint_constraint.lower_limit;
-	r64 beta = constraint->hinge_joint_constraint.upper_limit;
-
+static boolean limit_angle(vec3 n, vec3 n1, vec3 n2, r64 alpha, r64 beta, vec3* delta_q) {
 	// Calculate phi, which is the angle between n1 and n2 with respect to the rotation vector n
 	r64 phi = asin(gm_vec3_dot(gm_vec3_cross(n1, n2), n));
 	// asin returns the angle in the interval [-pi/2,+pi/2], which is already correct if the angle between n1 and n2 is acute.
@@ -196,16 +152,170 @@ static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
 
 		// calculate delta_q based on this extra rotation
 
-		// @TODO: Why n2,n1 instead of n1,n2?
-		vec3 delta_q = gm_vec3_cross(n2, n1);
+		*delta_q = gm_vec3_cross(n1, n2);
+		return true;
+	}
 
+	return false;
+}
+
+static vec3 get_aligned_axis_for_hinge_joint(const Quaternion* entity_rotation) {
+	// @TODO(fek): We can allow the user to choose this axis as an input parameter.
+	// We should probably limit to -X, +X, -Y, +Y, -Z, Z instead of receiving an arbitrary vec3
+	// since this is simpler and the model will usually be already aligned.
+	return quaternion_get_right(entity_rotation);
+}
+
+static vec3 get_limit_axis_for_hinge_joint(const Quaternion* entity_rotation) {
+	// @TODO(fek): We can allow the user to choose this axis as an input parameter.
+	// We should probably limit to -X, +X, -Y, +Y, -Z, Z instead of receiving an arbitrary vec3
+	// since this is simpler and the model will usually be already aligned.
+	return quaternion_get_up(entity_rotation);
+}
+
+static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
+	assert(constraint->type == HINGE_JOINT_CONSTRAINT);
+
+	Entity* e1 = entity_get_by_id(constraint->hinge_joint_constraint.e1_id);
+	Entity* e2 = entity_get_by_id(constraint->hinge_joint_constraint.e2_id);
+
+	// Angular Constraint to make sure the aligned axis are kept aligned
+	Angular_Constraint_Preprocessed_Data acpd;
+	calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
+
+	vec3 e1_a_wc = get_aligned_axis_for_hinge_joint(&e1->world_rotation);
+	vec3 e2_a_wc = get_aligned_axis_for_hinge_joint(&e2->world_rotation);
+	vec3 delta_q = gm_vec3_cross(e1_a_wc, e2_a_wc);
+
+	r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, constraint->hinge_joint_constraint.compliance,
+		constraint->hinge_joint_constraint.lambda_aligned_axes, delta_q);
+	angular_constraint_apply(&acpd, delta_lambda, delta_q);
+	constraint->hinge_joint_constraint.lambda_aligned_axes += delta_lambda;
+
+	// Positional constraint to ensure that the distance between both entities are correct
+	// @TODO: optmize preprocessed datas
+	Position_Constraint_Preprocessed_Data pcpd;
+	calculate_positional_constraint_preprocessed_data(e1, e2, constraint->hinge_joint_constraint.r1_lc,
+		constraint->hinge_joint_constraint.r2_lc, &pcpd);
+
+	vec3 p1 = gm_vec3_add(e1->world_position, pcpd.r1_wc);
+	vec3 p2 = gm_vec3_add(e2->world_position, pcpd.r2_wc);
+	vec3 delta_r = gm_vec3_subtract(p1, p2);
+	vec3 delta_x = delta_r;
+
+	delta_lambda = positional_constraint_get_delta_lambda(&pcpd, h, 0.0, constraint->hinge_joint_constraint.lambda_pos, delta_x);
+	positional_constraint_apply(&pcpd, delta_lambda, delta_x);
+	constraint->hinge_joint_constraint.lambda_pos += delta_lambda;
+
+	// Finally, angular constraint to ensure the joint angle limit is respected
+	vec3 n1 = get_limit_axis_for_hinge_joint(&e1->world_rotation);
+	vec3 n2 = get_limit_axis_for_hinge_joint(&e2->world_rotation);
+	vec3 n = get_aligned_axis_for_hinge_joint(&e1->world_rotation);
+	r64 alpha = constraint->hinge_joint_constraint.lower_limit;
+	r64 beta = constraint->hinge_joint_constraint.upper_limit;
+
+	if (limit_angle(n, n1, n2, alpha, beta, &delta_q)) {
 		// Angular Constraint
 		Angular_Constraint_Preprocessed_Data acpd;
 		calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
 
-		r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->hinge_joint_constraint.lambda_limit, delta_q);
+		r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->hinge_joint_constraint.lambda_limit_axes, delta_q);
 		angular_constraint_apply(&acpd, delta_lambda, delta_q);
-		constraint->hinge_joint_constraint.lambda_limit += delta_lambda;
+		constraint->hinge_joint_constraint.lambda_limit_axes += delta_lambda;
+	}
+}
+
+static vec3 get_swing_axis_for_spherical_joint(const Quaternion* entity_rotation) {
+	// @TODO(fek): We can allow the user to choose this axis as an input parameter.
+	// We should probably limit to -X, +X, -Y, +Y, -Z, Z instead of receiving an arbitrary vec3
+	// since this is simpler and the model will usually be already aligned.
+	return quaternion_get_right(entity_rotation);
+}
+
+static vec3 get_twist_axis_for_spherical_joint(const Quaternion* entity_rotation) {
+	// @TODO(fek): We can allow the user to choose this axis as an input parameter.
+	// We should probably limit to -X, +X, -Y, +Y, -Z, Z instead of receiving an arbitrary vec3
+	// since this is simpler and the model will usually be already aligned.
+	return quaternion_get_up(entity_rotation);
+}
+
+static void spherical_joint_constraint_solve(Constraint* constraint, r64 h) {
+	assert(constraint->type == SPHERICAL_JOINT_CONSTRAINT);
+
+	const r64 EPSILON = 1e-50;
+
+	Entity* e1 = entity_get_by_id(constraint->spherical_joint_constraint.e1_id);
+	Entity* e2 = entity_get_by_id(constraint->spherical_joint_constraint.e2_id);
+
+	// Positional constraint to ensure that the distance between both entities are correct
+	Position_Constraint_Preprocessed_Data pcpd;
+	calculate_positional_constraint_preprocessed_data(e1, e2, constraint->spherical_joint_constraint.r1_lc,
+		constraint->spherical_joint_constraint.r2_lc, &pcpd);
+
+	vec3 p1 = gm_vec3_add(e1->world_position, pcpd.r1_wc);
+	vec3 p2 = gm_vec3_add(e2->world_position, pcpd.r2_wc);
+	vec3 delta_r = gm_vec3_subtract(p1, p2);
+	vec3 delta_x = delta_r;
+
+	r64 delta_lambda = positional_constraint_get_delta_lambda(&pcpd, h, 0.0, constraint->spherical_joint_constraint.lambda_pos, delta_x);
+	positional_constraint_apply(&pcpd, delta_lambda, delta_x);
+	constraint->spherical_joint_constraint.lambda_pos += delta_lambda;
+
+	// Angular constraint to ensure the swing angle limit is respected
+	vec3 n1 = get_swing_axis_for_spherical_joint(&e1->world_rotation);
+	vec3 n2 = get_swing_axis_for_spherical_joint(&e2->world_rotation);
+	vec3 n = gm_vec3_cross(n1, n2);
+	r64 n_len = gm_vec3_length(n);
+	if (n_len > EPSILON) {
+		n = (vec3) {n.x / n_len, n.y / n_len, n.z / n_len};
+
+		r64 alpha = constraint->spherical_joint_constraint.swing_lower_limit;
+		r64 beta = constraint->spherical_joint_constraint.swing_upper_limit;
+		vec3 delta_q;
+
+		if (limit_angle(n, n1, n2, alpha, beta, &delta_q)) {
+			// Angular Constraint
+			Angular_Constraint_Preprocessed_Data acpd;
+			calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
+
+			r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->spherical_joint_constraint.lambda_swing, delta_q);
+			angular_constraint_apply(&acpd, delta_lambda, delta_q);
+			constraint->spherical_joint_constraint.lambda_swing += delta_lambda;
+		}
+	}
+
+	// Angular constraint to ensure the twist angle limit is respected
+	vec3 a1 = get_swing_axis_for_spherical_joint(&e1->world_rotation);
+	vec3 a2 = get_swing_axis_for_spherical_joint(&e2->world_rotation);
+	vec3 b1 = get_twist_axis_for_spherical_joint(&e1->world_rotation);
+	vec3 b2 = get_twist_axis_for_spherical_joint(&e2->world_rotation);
+	n = gm_vec3_add(a1, a2);
+	n_len = gm_vec3_length(n);
+	if (n_len > EPSILON) {
+		n = (vec3) {n.x / n_len, n.y / n_len, n.z / n_len};
+
+		n1 = gm_vec3_subtract(b1, gm_vec3_scalar_product(gm_vec3_dot(n, b1), n));
+		n2 = gm_vec3_subtract(b2, gm_vec3_scalar_product(gm_vec3_dot(n, b2), n));
+		r64 n1_len = gm_vec3_length(n1);
+		r64 n2_len = gm_vec3_length(n2);
+		if (n1_len > EPSILON && n2_len > EPSILON) {
+			n1 = (vec3) {n1.x / n1_len, n1.y / n1_len, n1.z / n1_len};
+			n2 = (vec3) {n2.x / n2_len, n2.y / n2_len, n2.z / n2_len};
+
+			r64 alpha = constraint->spherical_joint_constraint.twist_lower_limit;
+			r64 beta = constraint->spherical_joint_constraint.twist_upper_limit;
+			vec3 delta_q;
+
+			if (limit_angle(n, n1, n2, alpha, beta, &delta_q)) {
+				// Angular Constraint
+				Angular_Constraint_Preprocessed_Data acpd;
+				calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
+
+				r64 delta_lambda = angular_constraint_get_delta_lambda(&acpd, h, 0.0, constraint->spherical_joint_constraint.lambda_twist, delta_q);
+				angular_constraint_apply(&acpd, delta_lambda, delta_q);
+				constraint->spherical_joint_constraint.lambda_twist += delta_lambda;
+			}
+		}
 	}
 }
 
@@ -225,6 +335,10 @@ static void solve_constraint(Constraint* constraint, r64 h) {
 		} break;
 		case HINGE_JOINT_CONSTRAINT: {
 			hinge_joint_constraint_solve(constraint, h);
+			return;
+		} break;
+		case SPHERICAL_JOINT_CONSTRAINT: {
+			spherical_joint_constraint_solve(constraint, h);
 			return;
 		} break;
 	}
@@ -275,9 +389,14 @@ static Constraint* copy_constraints(Constraint* constraints) {
 				constraint.mutual_orientation_constraint.lambda = 0.0;
 			} break;
 			case HINGE_JOINT_CONSTRAINT: {
-				constraint.hinge_joint_constraint.lambda_rot = 0.0;
 				constraint.hinge_joint_constraint.lambda_pos = 0.0;
-				constraint.hinge_joint_constraint.lambda_limit = 0.0;
+				constraint.hinge_joint_constraint.lambda_aligned_axes = 0.0;
+				constraint.hinge_joint_constraint.lambda_limit_axes = 0.0;
+			} break;
+			case SPHERICAL_JOINT_CONSTRAINT: {
+				constraint.spherical_joint_constraint.lambda_pos = 0.0;
+				constraint.spherical_joint_constraint.lambda_swing = 0.0;
+				constraint.spherical_joint_constraint.lambda_twist = 0.0;
 			} break;
 		}
 

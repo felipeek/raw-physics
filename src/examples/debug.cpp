@@ -79,7 +79,7 @@ static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r
 
 	// Make sure that support and lever starts with the correct distance, otherwise simulation will explode in the 1st frame
 	vec3 r1_lc = (vec3){0.0, 0.0, 0.0};
-	vec3 r2_lc = (vec3){0.0, 3.0, 0.0};
+	vec3 r2_lc = (vec3){0.0, 5.0, 0.0};
 	vec3 r1_wc = gm_mat3_multiply_vec3(&lever_rotation_matrix, r1_lc); // considering the support has no rotation
 	vec3 r2_wc = gm_mat3_multiply_vec3(&lever_rotation_matrix, r2_lc);
 	vec3 p1 = gm_vec3_add(support_entity->world_position, r1_wc);
@@ -88,25 +88,17 @@ static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r
 	vec3 delta_x = delta_r;
 	entity_set_position(lever_entity, gm_vec3_add(lever_entity->world_position, delta_x));
 
-	vec3 support_aligned_axis_local = (vec3){1.0, 0.0, 0.0};
-	vec3 lever_aligned_axis_local = (vec3){-1.0, 0.0, 0.0};
-	vec3 support_limit_axis_local = (vec3){0.0, 1.0, 0.0};
-	vec3 lever_limit_axis_local = (vec3){0.0, 1.0, 0.0};
-
 	Constraint constraint;
-	constraint.type = HINGE_JOINT_CONSTRAINT;
-	constraint.hinge_joint_constraint.e1_id = support_id;
-	constraint.hinge_joint_constraint.e2_id = lever_id;
-	constraint.hinge_joint_constraint.compliance = 0.0;
-	constraint.hinge_joint_constraint.r1_lc = r1_lc;
-	constraint.hinge_joint_constraint.r2_lc = r2_lc;
-	constraint.hinge_joint_constraint.e1_aligned_axis = support_aligned_axis_local;
-	constraint.hinge_joint_constraint.e2_aligned_axis = lever_aligned_axis_local;
-
-	constraint.hinge_joint_constraint.e1_limit_axis = support_limit_axis_local;
-	constraint.hinge_joint_constraint.e2_limit_axis = lever_limit_axis_local;
-	constraint.hinge_joint_constraint.lower_limit = -PI_F * angle_limit;
-	constraint.hinge_joint_constraint.upper_limit = PI_F * angle_limit;
+	constraint.type = SPHERICAL_JOINT_CONSTRAINT;
+	constraint.spherical_joint_constraint.e1_id = support_id;
+	constraint.spherical_joint_constraint.e2_id = lever_id;
+	constraint.spherical_joint_constraint.compliance = 0.0;
+	constraint.spherical_joint_constraint.r1_lc = r1_lc;
+	constraint.spherical_joint_constraint.r2_lc = r2_lc;
+	constraint.spherical_joint_constraint.swing_lower_limit = -PI_F * angle_limit;
+	constraint.spherical_joint_constraint.swing_upper_limit = PI_F * angle_limit;
+	constraint.spherical_joint_constraint.twist_lower_limit = -PI_F * angle_limit;
+	constraint.spherical_joint_constraint.twist_upper_limit = PI_F * angle_limit;
 
 	return constraint;
 }
@@ -133,14 +125,14 @@ int ex_debug_init() {
 	constraints = array_new(Constraint);
 	Constraint c;
 	
-	c = create_lever((vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), 0.9);
+	c = create_lever((vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), 0.1);
 	array_push(constraints, c);
 
-	c = create_lever((vec3){5.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 1.0}, 45.0), 0.5);
-	array_push(constraints, c);
+	//c = create_lever((vec3){5.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 1.0}, 45.0), 0.5);
+	//array_push(constraints, c);
 
-	c = create_lever((vec3){-5.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, -1.0}, 90.0), 0.5);
-	array_push(constraints, c);
+	//c = create_lever((vec3){-5.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, -1.0}, 90.0), 0.5);
+	//array_push(constraints, c);
 
 	return 0;
 }
@@ -183,7 +175,7 @@ void ex_debug_update(r64 delta_time) {
 		Physics_Force pf;
 		pf.force = (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0};
 		pf.position = (vec3){0.0, 0.0, 0.0};
-		array_push(entities[i]->forces, pf);
+		//array_push(entities[i]->forces, pf);
 	}
 
 	pbd_simulate_with_constraints(delta_time, entities, constraints);
@@ -231,22 +223,6 @@ void ex_debug_render() {
 	}
 	#endif
 
-	for (u32 i = 0; i < array_length(constraints); ++i) {
-		Constraint* c = &constraints[i];
-		if (c->type == HINGE_JOINT_CONSTRAINT) {
-			Entity* support_entity = entity_get_by_id(c->hinge_joint_constraint.e1_id);
-			Entity* lever_entity = entity_get_by_id(c->hinge_joint_constraint.e2_id);
-			mat3 support_rot = quaternion_get_matrix3(&support_entity->world_rotation);
-			mat3 lever_rot = quaternion_get_matrix3(&lever_entity->world_rotation);
-			vec3 e1_a_wc = gm_mat3_multiply_vec3(&support_rot, c->hinge_joint_constraint.e1_aligned_axis);
-			vec3 e2_a_wc = gm_mat3_multiply_vec3(&lever_rot, c->hinge_joint_constraint.e2_aligned_axis);
-			graphics_renderer_debug_vector(support_entity->world_position, gm_vec3_add(support_entity->world_position, e1_a_wc),
-				(vec4){1.0, 0.0, 0.0, 1.0});
-			graphics_renderer_debug_vector(lever_entity->world_position, gm_vec3_add(lever_entity->world_position, e2_a_wc),
-				(vec4){0.0, 0.0, 0.0, 1.0});
-		}
-	}
-
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, entities[i], lights);
 	}
@@ -289,8 +265,8 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 	Entity* e;
 	for (u32 i = 0; i < array_length(constraints); ++i) {
 		Constraint* c = &constraints[i];
-		if (c->type == HINGE_JOINT_CONSTRAINT) {
-			e = entity_get_by_id(c->hinge_joint_constraint.e2_id);
+		if (c->type == SPHERICAL_JOINT_CONSTRAINT) {
+			e = entity_get_by_id(c->spherical_joint_constraint.e2_id);
 			break;
 		}
 	}

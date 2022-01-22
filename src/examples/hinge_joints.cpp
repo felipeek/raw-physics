@@ -85,11 +85,6 @@ static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r
 	vec3 delta_x = delta_r;
 	entity_set_position(lever_entity, gm_vec3_add(lever_entity->world_position, delta_x));
 
-	vec3 support_aligned_axis_local = (vec3){1.0, 0.0, 0.0};
-	vec3 lever_aligned_axis_local = (vec3){-1.0, 0.0, 0.0};
-	vec3 support_limit_axis_local = (vec3){0.0, 1.0, 0.0};
-	vec3 lever_limit_axis_local = (vec3){0.0, 1.0, 0.0};
-
 	Constraint constraint;
 	constraint.type = HINGE_JOINT_CONSTRAINT;
 	constraint.hinge_joint_constraint.e1_id = support_id;
@@ -97,11 +92,6 @@ static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r
 	constraint.hinge_joint_constraint.compliance = 0.0;
 	constraint.hinge_joint_constraint.r1_lc = r1_lc;
 	constraint.hinge_joint_constraint.r2_lc = r2_lc;
-	constraint.hinge_joint_constraint.e1_aligned_axis = support_aligned_axis_local;
-	constraint.hinge_joint_constraint.e2_aligned_axis = lever_aligned_axis_local;
-
-	constraint.hinge_joint_constraint.e1_limit_axis = support_limit_axis_local;
-	constraint.hinge_joint_constraint.e2_limit_axis = lever_limit_axis_local;
 	constraint.hinge_joint_constraint.lower_limit = -PI_F * angle_limit;
 	constraint.hinge_joint_constraint.upper_limit = PI_F * angle_limit;
 
@@ -196,10 +186,8 @@ void ex_hinge_joints_render() {
 		if (c->type == HINGE_JOINT_CONSTRAINT) {
 			Entity* support_entity = entity_get_by_id(c->hinge_joint_constraint.e1_id);
 			Entity* lever_entity = entity_get_by_id(c->hinge_joint_constraint.e2_id);
-			mat3 support_rot = quaternion_get_matrix3(&support_entity->world_rotation);
-			mat3 lever_rot = quaternion_get_matrix3(&lever_entity->world_rotation);
-			vec3 e1_a_wc = gm_mat3_multiply_vec3(&support_rot, c->hinge_joint_constraint.e1_aligned_axis);
-			vec3 e2_a_wc = gm_mat3_multiply_vec3(&lever_rot, c->hinge_joint_constraint.e2_aligned_axis);
+			vec3 e1_a_wc = quaternion_get_right(&support_entity->world_rotation);
+			vec3 e2_a_wc = quaternion_get_right(&lever_entity->world_rotation);
 			graphics_renderer_debug_vector(support_entity->world_position, gm_vec3_add(support_entity->world_position, e1_a_wc),
 				(vec4){1.0, 0.0, 0.0, 1.0});
 			graphics_renderer_debug_vector(lever_entity->world_position, gm_vec3_add(lever_entity->world_position, e2_a_wc),
