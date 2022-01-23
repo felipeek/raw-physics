@@ -57,6 +57,8 @@ static void reset_joint_distance(Entity* e1, Entity* e2, vec3 r1_lc, vec3 r2_lc)
 	entity_set_position(e2, gm_vec3_add(e2->world_position, delta_x));
 }
 
+eid base_id, static_piece_id, free_piece_id, third_id;
+
 static Constraint*  create_arm() {
 	Vertex* cube_vertices;
 	u32* cube_indices;
@@ -72,28 +74,26 @@ static Constraint*  create_arm() {
 
 	vec3 base_collider_scale = (vec3){1.0, 0.1, 0.1};
 	Collider* base_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, base_collider_scale);
-	eid base_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), base_collider_scale,
+	base_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), base_collider_scale,
 		(vec4){0x77 / 255.0, 0xc3 / 255.0, 0xec / 255.0}, 1.0, base_colliders);
-
-	//vec3 static_piece_collider_scale = (vec3){0.1, 1.0, 0.1};
-	//Collider* static_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, static_piece_collider_scale);
-	//eid static_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), static_piece_collider_scale,
-	//	(vec4){0x77 / 255.0, 0xc3 / 255.0, 0xec / 255.0}, 1.0, static_piece_colliders);
 
 	vec3 free_piece_collider_scale = (vec3){0.1, 1.0, 0.1};
 	Collider* free_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, free_piece_collider_scale);
-	eid free_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), free_piece_collider_scale,
+	free_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), free_piece_collider_scale,
 		(vec4){1.0, 0.0, 0.0, 1.0}, 1.0, free_piece_colliders);
 
-	//vec3 static_piece_collider_scale = (vec3){0.15, 1.0, 0.1};
-	//Collider* static_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, static_piece_collider_scale);
-	//eid static_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), static_piece_collider_scale,
-	//	(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, static_piece_colliders);
-	//
-	//vec3 free_piece_collider_scale = (vec3){0.3, 0.3, 0.1};
-	//Collider* free_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, free_piece_collider_scale);
-	//eid free_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), free_piece_collider_scale,
-	//	(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, free_piece_colliders);
+#define TEST1
+#ifdef TEST1
+	vec3 static_piece_collider_scale = (vec3){0.1, 1.0, 0.1};
+	Collider* static_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, static_piece_collider_scale);
+	static_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), static_piece_collider_scale,
+		(vec4){0x77 / 255.0, 0xc3 / 255.0, 0xec / 255.0}, 1.0, static_piece_colliders);
+#else
+	vec3 third_collider_scale = (vec3){0.1, 1.0, 0.1};
+	Collider* third_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, third_collider_scale);
+	third_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), third_collider_scale,
+		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, third_colliders);
+#endif
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -103,32 +103,45 @@ static Constraint*  create_arm() {
 
 	Entity* support_entity = entity_get_by_id(support_id);
 	Entity* base_entity = entity_get_by_id(base_id);
-	//Entity* static_piece_entity = entity_get_by_id(static_piece_id);
 	Entity* free_piece_entity = entity_get_by_id(free_piece_id);
+#ifdef TEST1
+	Entity* static_piece_entity = entity_get_by_id(static_piece_id);
+#else
+	Entity* third_entity = entity_get_by_id(third_id);
+#endif
 
 	vec3 r1_lc, r2_lc;
 
 	// Support - Base Joint
 	r1_lc = (vec3){0.0, 0.0, 2.0};
-	r2_lc = (vec3){0.0, 0.0, 0.0};
+	r2_lc = (vec3){-1.0, 0.0, 0.0};
 	reset_joint_distance(support_entity, base_entity, r1_lc, r2_lc);
 	pbd_hinge_joint_constraint_unlimited_init(&constraint, support_id, base_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS);
 	array_push(constraints, constraint);
 
-	// Base - Static Piece Joint
-	//r1_lc = (vec3){ -0.9, 0.0, 0.0 };
-	//r2_lc = (vec3){ 0.0, 0.9, 0.3 };
-	//reset_joint_distance(base_entity, static_piece_entity, r1_lc, r2_lc);
-	//pbd_hinge_joint_constraint_limited_init(&constraint, base_id, static_piece_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
-	//	0.0, 0.0);
-	//array_push(constraints, constraint);
-
-	// Static Piece - Free Piece Joint
+	// Base - Free Piece Joint
 	r1_lc = (vec3){ 0.9, 0.0, 0.0 };
-	r2_lc = (vec3){ 0.0, 0.9, -0.3 };
+	r2_lc = (vec3){ 0.0, 0.9, -0.45 };
 	reset_joint_distance(base_entity, free_piece_entity, r1_lc, r2_lc);
 	pbd_hinge_joint_constraint_unlimited_init(&constraint, base_id, free_piece_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS);
 	array_push(constraints, constraint);
+
+#ifdef TEST1
+	// Base - Static Piece Joint
+	r1_lc = (vec3){ -0.9, 0.0, 0.0 };
+	r2_lc = (vec3){ 0.0, 0.9, 0.45 };
+	reset_joint_distance(base_entity, static_piece_entity, r1_lc, r2_lc);
+	pbd_hinge_joint_constraint_limited_init(&constraint, base_id, static_piece_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
+		0.0, 0.0);
+	array_push(constraints, constraint);
+#else
+	// Free Piece - Third Joint
+	r1_lc = (vec3){ 0.0, -1.0, 0.0 };
+	r2_lc = (vec3){ 0.0, 1.0, -0.45 };
+	reset_joint_distance(free_piece_entity, third_entity, r1_lc, r2_lc);
+	pbd_hinge_joint_constraint_unlimited_init(&constraint, free_piece_id, third_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS);
+	array_push(constraints, constraint);
+#endif
 
 	return constraints;
 }
@@ -195,10 +208,10 @@ void ex_debug_update(r64 delta_time) {
 		Physics_Force pf;
 		pf.force = (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0};
 		pf.position = (vec3){0.0, 0.0, 0.0};
-		//array_push(entities[i]->forces, pf);
+		array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate_with_constraints(delta_time, entities, constraints);
+	pbd_simulate_with_constraints(delta_time, entities, constraints, 100, 50);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);
@@ -340,6 +353,28 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 	if (key_state[GLFW_KEY_SPACE]) {
 		examples_util_throw_object(&camera);
 		key_state[GLFW_KEY_SPACE] = false;
+	}
+
+	if (key_state[GLFW_KEY_M]) {
+		Entity* base_entity = entity_get_by_id(base_id);
+		Physics_Force f;
+		f.force = (vec3){0.0, -200.0, 0.0};
+		f.position = (vec3){0.9, 0.0, 0.0};
+		array_push(base_entity->forces, f);
+		entity_activate(base_entity);
+	}
+
+	if (key_state[GLFW_KEY_N]) {
+		Entity* base_entity = entity_get_by_id(base_id);
+		Entity* static_piece_entity = entity_get_by_id(static_piece_id);
+		Entity* free_piece_entity = entity_get_by_id(free_piece_id);
+		base_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+		base_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+		static_piece_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+		static_piece_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+		free_piece_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+		free_piece_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+		key_state[GLFW_KEY_N] = false;
 	}
 }
 
