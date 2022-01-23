@@ -367,40 +367,38 @@ void clipping_contact_to_collision_constraint(Entity* e1, Entity* e2, Collider_C
 }
 
 static Constraint* copy_constraints(Constraint* constraints) {
-	Constraint* copied_constraints = array_new(Constraint);
-
 	if (constraints == NULL) {
-		return copied_constraints;
+		return array_new(Constraint);
 	}
 
-	for (u32 i = 0; i < array_length(constraints); ++i) {
-		Constraint constraint = constraints[i];
+	Constraint* copied_constraints = (Constraint*)array_copy(constraints);
+
+	for (u32 i = 0; i < array_length(copied_constraints); ++i) {
+		Constraint* constraint = &copied_constraints[i];
 
 		// Reset lambda
-		switch (constraint.type) {
+		switch (constraint->type) {
 			case POSITIONAL_CONSTRAINT: {
-				constraint.positional_constraint.lambda = 0.0;
+				constraint->positional_constraint.lambda = 0.0;
 			} break;
 			case COLLISION_CONSTRAINT: {
-				constraint.collision_constraint.lambda_t = 0.0;
-				constraint.collision_constraint.lambda_n = 0.0;
+				constraint->collision_constraint.lambda_t = 0.0;
+				constraint->collision_constraint.lambda_n = 0.0;
 			} break;
 			case MUTUAL_ORIENTATION_CONSTRAINT: {
-				constraint.mutual_orientation_constraint.lambda = 0.0;
+				constraint->mutual_orientation_constraint.lambda = 0.0;
 			} break;
 			case HINGE_JOINT_CONSTRAINT: {
-				constraint.hinge_joint_constraint.lambda_pos = 0.0;
-				constraint.hinge_joint_constraint.lambda_aligned_axes = 0.0;
-				constraint.hinge_joint_constraint.lambda_limit_axes = 0.0;
+				constraint->hinge_joint_constraint.lambda_pos = 0.0;
+				constraint->hinge_joint_constraint.lambda_aligned_axes = 0.0;
+				constraint->hinge_joint_constraint.lambda_limit_axes = 0.0;
 			} break;
 			case SPHERICAL_JOINT_CONSTRAINT: {
-				constraint.spherical_joint_constraint.lambda_pos = 0.0;
-				constraint.spherical_joint_constraint.lambda_swing = 0.0;
-				constraint.spherical_joint_constraint.lambda_twist = 0.0;
+				constraint->spherical_joint_constraint.lambda_pos = 0.0;
+				constraint->spherical_joint_constraint.lambda_swing = 0.0;
+				constraint->spherical_joint_constraint.lambda_twist = 0.0;
 			} break;
 		}
-
-		array_push(copied_constraints, constraint);
 	}
 
 	return copied_constraints;

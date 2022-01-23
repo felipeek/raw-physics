@@ -5,7 +5,7 @@
 
 Broad_Collision_Pair* broad_get_collision_pairs(Entity** entities) {
 	Broad_Collision_Pair pair;
-	Broad_Collision_Pair* collision_pairs = array_new(Broad_Collision_Pair);
+	Broad_Collision_Pair* collision_pairs = array_new_len(Broad_Collision_Pair, 32);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e1 = entities[i];
@@ -68,7 +68,7 @@ static Hash_Map uf_collect_all(Entity** entities, Broad_Collision_Pair* collisio
 }
 
 eid** broad_collect_simulation_islands(Entity** entities, Broad_Collision_Pair* collision_pairs) {
-	eid** simulation_islands = array_new(eid*);
+	eid** simulation_islands = array_new_len(eid*, 32);
 	Hash_Map entity_to_parent_map = uf_collect_all(entities, collision_pairs);
 
 	Hash_Map simulation_islands_map;
@@ -83,7 +83,7 @@ eid** broad_collect_simulation_islands(Entity** entities, Broad_Collision_Pair* 
 		u32 simulation_island_idx;
 		if (hash_map_get(&simulation_islands_map, &parent, &simulation_island_idx)) {
 			// Simulation Island not created yet.
-			eid* new_simulation_island = array_new(eid);
+			eid* new_simulation_island = array_new_len(eid, 32);
 			simulation_island_idx = array_length(simulation_islands);
 			array_push(simulation_islands, new_simulation_island);
 			assert(!hash_map_put(&simulation_islands_map, &parent, &simulation_island_idx));

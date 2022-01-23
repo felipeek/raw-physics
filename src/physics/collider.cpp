@@ -556,7 +556,7 @@ static void collider_get_contacts(Collider* collider1, Collider* collider2, Coll
 }
 
 Collider_Contact* colliders_get_contacts(Collider* colliders1, Collider* colliders2) {
-	Collider_Contact* contacts = array_new(Collider_Contact);
+	Collider_Contact* contacts = array_new_len(Collider_Contact, 16);
 
 	for (u32 i = 0; i < array_length(colliders1); ++i) {
 		Collider* collider1 = &colliders1[i];
