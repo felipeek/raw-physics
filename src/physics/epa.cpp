@@ -7,8 +7,8 @@ static const r64 EPSILON = 0.0001;
 
 void polytope_from_gjk_simplex(const GJK_Simplex* s, vec3** _polytope, dvec3** _faces) {
 	assert(s->num == 4);
-	vec3* polytope = array_new(vec3);
-	dvec3* faces = array_new(dvec3);
+	vec3* polytope = array_new_len(vec3, 4);
+	dvec3* faces = array_new_len(dvec3, 4);
 
 	array_push(polytope, s->a);
 	array_push(polytope, s->b);
@@ -122,8 +122,8 @@ boolean epa(Collider* collider1, Collider* collider2, GJK_Simplex* simplex, vec3
 	// build initial polytope from GJK simplex
 	polytope_from_gjk_simplex(simplex, &polytope, &faces);
 
-	vec3* normals = array_new(vec3);
-	r64* faces_distance_to_origin = array_new(r64);
+	vec3* normals = array_new_len(vec3, 128);
+	r64* faces_distance_to_origin = array_new_len(r64, 128);
 
 	vec3 min_normal;
 	r64 min_distance = DBL_MAX;
@@ -144,6 +144,7 @@ boolean epa(Collider* collider1, Collider* collider2, GJK_Simplex* simplex, vec3
 		}
 	}
 
+	dvec2* edges = array_new_len(dvec2, 1024);
 	boolean converged = false;
 	for (u32 it = 0; it < 100; ++it) {
 		vec3 support_point = support_point_of_minkowski_difference(collider1, collider2, min_normal);
@@ -163,7 +164,6 @@ boolean epa(Collider* collider1, Collider* collider2, GJK_Simplex* simplex, vec3
 		array_push(polytope, support_point);
 
 		// Expand Polytope
-		dvec2* edges = array_new(dvec2);
 		for (u32 i = 0; i < array_length(normals); ++i) {
 			vec3 normal = normals[i];
 			dvec3 face = faces[i];
@@ -221,13 +221,14 @@ boolean epa(Collider* collider1, Collider* collider2, GJK_Simplex* simplex, vec3
 			}
 		}
 
-		array_free(edges);
+		array_clear(edges);
 	}
 
 	array_free(faces);
 	array_free(polytope);
 	array_free(normals);
 	array_free(faces_distance_to_origin);
+	array_free(edges);
 
 	if (!converged) {
 		printf("EPA did not converge.\n");

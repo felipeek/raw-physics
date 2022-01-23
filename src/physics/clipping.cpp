@@ -57,7 +57,7 @@ static void sutherland_hodgman(vec3* input_polygon, int num_clip_planes, const P
 	// Create temporary list of vertices
 	// We will keep ping-pong'ing between the two lists updating them as we go.
 	vec3* input = (vec3*)array_copy(input_polygon);
-	vec3* output = array_new(vec3);
+	vec3* output = array_new_len(vec3, 4 * array_length(input_polygon));
 
 	for (int i = 0; i < num_clip_planes; ++i) {
 		// If every single point has already been removed previously, just exit
@@ -119,7 +119,7 @@ static vec3 get_closest_point_polygon(vec3 position, Plane* reference_plane) {
 }
 
 static Plane* build_boundary_planes(Collider_Convex_Hull* convex_hull, u32 target_face_idx) {
-	Plane* result = array_new(Plane);
+	Plane* result = array_new_len(Plane, 16);
 	u32* face_neighbors = convex_hull->face_to_neighbors[target_face_idx];
 
 	for (u32 i = 0; i < array_length(face_neighbors); ++i) {
@@ -239,7 +239,7 @@ static boolean collision_distance_between_skew_lines(vec3 p1, vec3 d1, vec3 p2, 
 }
 
 static vec3* get_vertices_of_faces(Collider_Convex_Hull* hull, Collider_Convex_Hull_Face face) {
-	vec3* vertices = array_new(vec3);
+	vec3* vertices = array_new_len(vec3, 16);
 	for (u32 i = 0; i < array_length(face.elements); ++i) {
 		array_push(vertices, hull->transformed_vertices[face.elements[i]]);
 	}
