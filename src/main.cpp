@@ -117,7 +117,7 @@ s32 main(s32 argc, s8** argv) {
 	main_window = init_glfw();
 	init_glew();
 
-	//glfwSwapInterval(1);
+	glfwSwapInterval(1);
 
 	if (core_init()) {
 		return -1;
