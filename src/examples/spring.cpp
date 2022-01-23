@@ -74,13 +74,7 @@ int ex_spring_init() {
 
 	constraints = array_new(Constraint);
 	Constraint constraint;
-	constraint.type = POSITIONAL_CONSTRAINT;
-	constraint.positional_constraint.compliance = 0.001;
-	constraint.positional_constraint.distance = (vec3){0.0, -3.0, 0.0};
-	constraint.positional_constraint.e1_id = cube_eid;
-	constraint.positional_constraint.e2_id = attachment_eid;
-	constraint.positional_constraint.r1_lc = (vec3){0.0, 0.0, 0.0};
-	constraint.positional_constraint.r2_lc = (vec3){0.0, 0.0, 0.0};
+	pbd_positional_constraint_init(&constraint, cube_eid, attachment_eid, (vec3) { 0.0, 0.0, 0.0 }, (vec3) { 0.0, 0.0, 0.0 }, 0.001, (vec3) { 0.0, -3.0, 0.0 });
 	array_push(constraints, constraint);
 
 	return 0;

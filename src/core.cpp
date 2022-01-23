@@ -11,6 +11,7 @@
 #include "examples/mirror_cube.h"
 #include "examples/hinge_joints.h"
 #include "examples/arm.h"
+#include "examples/stack.h"
 #include "render/menu.h"
 #include "vendor/imgui.h"
 
@@ -37,6 +38,7 @@ int core_init() {
 	example_scenes[MIRROR_CUBE_EXAMPLE_SCENE] = mirror_cube_example_scene;
 	example_scenes[HINGE_JOINTS_EXAMPLE_SCENE] = hinge_joints_example_scene;
 	example_scenes[ARM_EXAMPLE_SCENE] = arm_example_scene;
+	example_scenes[STACK_EXAMPLE_SCENE] = stack_example_scene;
 
 	selected_scene = EXAMPLE_SCENE_INITIAL;
 	return load_selected_scene();
@@ -55,7 +57,13 @@ void core_render() {
 }
 
 void core_input_process(boolean* key_state, r64 delta_time) {
-	example_scenes[selected_scene].input_process(key_state, delta_time);
+	if (key_state[GLFW_KEY_2]) {
+		core_switch_scene(SINGLE_CUBE_EXAMPLE_SCENE);
+		key_state[GLFW_KEY_2] = 0;
+	}
+	else {
+		example_scenes[selected_scene].input_process(key_state, delta_time);
+	}
 }
 
 void core_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
@@ -106,4 +114,10 @@ void core_switch_scene(Example_Scene_Type scene) {
 	core_destroy_selected_scene();
 	selected_scene = scene;
 	load_selected_scene();
+
+	// Force scene's camera to reset
+	extern GLFWwindow* main_window;
+	double xpos, ypos;
+	glfwGetCursorPos(main_window, &xpos, &ypos);
+	core_mouse_change_process(true, xpos, ypos);
 }

@@ -64,26 +64,36 @@ static Constraint*  create_arm() {
 	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
 	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
 
-	vec3 support_position = (vec3){0.0, 15.0, 0.0};
-	vec3 support_collider_scale = (vec3){0.2, 0.1, 0.1};
+	vec3 support_position = (vec3){0.0, 0.0, -2.0};
+	vec3 support_collider_scale = (vec3){0.1, 0.1, 0.1};
 	Collider* support_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, support_collider_scale);
-	eid support_id = entity_create_fixed(cube_mesh, support_position, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), support_collider_scale,
+	eid support_id = entity_create_fixed(cube_mesh, support_position, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), support_collider_scale,
 		(vec4){0.0, 1.0, 0.0, 1.0}, support_colliders);
 
-	vec3 upper_arm_collider_scale = (vec3){0.2, 1.0, 0.1};
-	Collider* upper_arm_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, upper_arm_collider_scale);
-	eid upper_arm_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), upper_arm_collider_scale,
-		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, upper_arm_colliders);
+	vec3 base_collider_scale = (vec3){1.0, 0.1, 0.1};
+	Collider* base_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, base_collider_scale);
+	eid base_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), base_collider_scale,
+		(vec4){0x77 / 255.0, 0xc3 / 255.0, 0xec / 255.0}, 1.0, base_colliders);
 
-	vec3 lower_arm_collider_scale = (vec3){0.15, 1.0, 0.1};
-	Collider* lower_arm_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, lower_arm_collider_scale);
-	eid lower_arm_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), lower_arm_collider_scale,
-		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, lower_arm_colliders);
+	//vec3 static_piece_collider_scale = (vec3){0.1, 1.0, 0.1};
+	//Collider* static_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, static_piece_collider_scale);
+	//eid static_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), static_piece_collider_scale,
+	//	(vec4){0x77 / 255.0, 0xc3 / 255.0, 0xec / 255.0}, 1.0, static_piece_colliders);
 
-	vec3 hand_collider_scale = (vec3){0.3, 0.3, 0.1};
-	Collider* hand_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, hand_collider_scale);
-	eid hand_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), hand_collider_scale,
-		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, hand_colliders);
+	vec3 free_piece_collider_scale = (vec3){0.1, 1.0, 0.1};
+	Collider* free_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, free_piece_collider_scale);
+	eid free_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), free_piece_collider_scale,
+		(vec4){1.0, 0.0, 0.0, 1.0}, 1.0, free_piece_colliders);
+
+	//vec3 static_piece_collider_scale = (vec3){0.15, 1.0, 0.1};
+	//Collider* static_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, static_piece_collider_scale);
+	//eid static_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), static_piece_collider_scale,
+	//	(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, static_piece_colliders);
+	//
+	//vec3 free_piece_collider_scale = (vec3){0.3, 0.3, 0.1};
+	//Collider* free_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, free_piece_collider_scale);
+	//eid free_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), free_piece_collider_scale,
+	//	(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, free_piece_colliders);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -92,56 +102,32 @@ static Constraint*  create_arm() {
 	Constraint constraint;
 
 	Entity* support_entity = entity_get_by_id(support_id);
-	Entity* upper_arm_entity = entity_get_by_id(upper_arm_id);
-	Entity* lower_arm_entity = entity_get_by_id(lower_arm_id);
-	Entity* hand_entity = entity_get_by_id(hand_id);
+	Entity* base_entity = entity_get_by_id(base_id);
+	//Entity* static_piece_entity = entity_get_by_id(static_piece_id);
+	Entity* free_piece_entity = entity_get_by_id(free_piece_id);
 
 	vec3 r1_lc, r2_lc;
 
-	// Support - Upper Arm Joint (Shoulder)
-	r1_lc = (vec3){0.0, -10.0, 0.0};
-	r2_lc = (vec3){0.0, 1.0, 0.0};
-	reset_joint_distance(support_entity, upper_arm_entity, r1_lc, r2_lc);
-	constraint.type = SPHERICAL_JOINT_CONSTRAINT;
-	constraint.spherical_joint_constraint.e1_id = support_id;
-	constraint.spherical_joint_constraint.e2_id = upper_arm_id;
-	constraint.spherical_joint_constraint.compliance = 0.0;
-	constraint.spherical_joint_constraint.r1_lc = r1_lc;
-	constraint.spherical_joint_constraint.r2_lc = r2_lc;
-	constraint.spherical_joint_constraint.swing_lower_limit = -PI_F;
-	constraint.spherical_joint_constraint.swing_upper_limit = PI_F;
-	constraint.spherical_joint_constraint.twist_lower_limit = -PI_F;
-	constraint.spherical_joint_constraint.twist_upper_limit = PI_F;
+	// Support - Base Joint
+	r1_lc = (vec3){0.0, 0.0, 2.0};
+	r2_lc = (vec3){0.0, 0.0, 0.0};
+	reset_joint_distance(support_entity, base_entity, r1_lc, r2_lc);
+	pbd_hinge_joint_constraint_unlimited_init(&constraint, support_id, base_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS);
 	array_push(constraints, constraint);
 
-	// Upper Arm - Lower Arm Joint (Elbow)
-	r1_lc = (vec3){0.0, -1.2, 0.0};
-	r2_lc = (vec3){0.0, 1.2, 0.0};
-	reset_joint_distance(upper_arm_entity, lower_arm_entity, r1_lc, r2_lc);
-	constraint.type = HINGE_JOINT_CONSTRAINT;
-	constraint.hinge_joint_constraint.e1_id = upper_arm_id;
-	constraint.hinge_joint_constraint.e2_id = lower_arm_id;
-	constraint.hinge_joint_constraint.compliance = 0.0;
-	constraint.hinge_joint_constraint.r1_lc = r1_lc;
-	constraint.hinge_joint_constraint.r2_lc = r2_lc;
-	constraint.hinge_joint_constraint.lower_limit = 0.0;
-	constraint.hinge_joint_constraint.upper_limit = 0.9 * PI_F;
-	array_push(constraints, constraint);
+	// Base - Static Piece Joint
+	//r1_lc = (vec3){ -0.9, 0.0, 0.0 };
+	//r2_lc = (vec3){ 0.0, 0.9, 0.3 };
+	//reset_joint_distance(base_entity, static_piece_entity, r1_lc, r2_lc);
+	//pbd_hinge_joint_constraint_limited_init(&constraint, base_id, static_piece_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
+	//	0.0, 0.0);
+	//array_push(constraints, constraint);
 
-	// Lower Arm - Hand Arm Joint (Wrist)
-	r1_lc = (vec3){0.0, -1.2, 0.0};
-	r2_lc = (vec3){0.0, 0.5, 0.0};
-	reset_joint_distance(lower_arm_entity, hand_entity, r1_lc, r2_lc);
-	constraint.type = SPHERICAL_JOINT_CONSTRAINT;
-	constraint.spherical_joint_constraint.e1_id = lower_arm_id;
-	constraint.spherical_joint_constraint.e2_id = hand_id;
-	constraint.spherical_joint_constraint.compliance = 1.0;
-	constraint.spherical_joint_constraint.r1_lc = r1_lc;
-	constraint.spherical_joint_constraint.r2_lc = r2_lc;
-	constraint.spherical_joint_constraint.swing_lower_limit = -0.0 * PI_F;
-	constraint.spherical_joint_constraint.swing_upper_limit = 0.0 * PI_F;
-	constraint.spherical_joint_constraint.twist_lower_limit = -0.3 * PI_F;
-	constraint.spherical_joint_constraint.twist_upper_limit = 0.05 * PI_F;
+	// Static Piece - Free Piece Joint
+	r1_lc = (vec3){ 0.9, 0.0, 0.0 };
+	r2_lc = (vec3){ 0.0, 0.9, -0.3 };
+	reset_joint_distance(base_entity, free_piece_entity, r1_lc, r2_lc);
+	pbd_hinge_joint_constraint_unlimited_init(&constraint, base_id, free_piece_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS);
 	array_push(constraints, constraint);
 
 	return constraints;
@@ -296,7 +282,7 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		key_state[GLFW_KEY_L] = false;
 	}
 
-	Entity* e;
+	Entity* e = NULL;
 	for (u32 i = 0; i < array_length(constraints); ++i) {
 		Constraint* c = &constraints[i];
 		if (c->type == HINGE_JOINT_CONSTRAINT) {

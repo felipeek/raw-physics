@@ -86,14 +86,8 @@ static Constraint create_lever(vec3 lever_position, Quaternion lever_rotation, r
 	entity_set_position(lever_entity, gm_vec3_add(lever_entity->world_position, delta_x));
 
 	Constraint constraint;
-	constraint.type = HINGE_JOINT_CONSTRAINT;
-	constraint.hinge_joint_constraint.e1_id = support_id;
-	constraint.hinge_joint_constraint.e2_id = lever_id;
-	constraint.hinge_joint_constraint.compliance = 0.0;
-	constraint.hinge_joint_constraint.r1_lc = r1_lc;
-	constraint.hinge_joint_constraint.r2_lc = r2_lc;
-	constraint.hinge_joint_constraint.lower_limit = -PI_F * angle_limit;
-	constraint.hinge_joint_constraint.upper_limit = PI_F * angle_limit;
+	pbd_hinge_joint_constraint_limited_init(&constraint, support_id, lever_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
+		-PI_F * angle_limit, PI_F * angle_limit);
 
 	return constraint;
 }
@@ -234,7 +228,7 @@ void ex_hinge_joints_input_process(boolean* key_state, r64 delta_time) {
 		key_state[GLFW_KEY_L] = false;
 	}
 
-	Entity* e;
+	Entity* e = NULL;
 	for (u32 i = 0; i < array_length(constraints); ++i) {
 		Constraint* c = &constraints[i];
 		if (c->type == HINGE_JOINT_CONSTRAINT) {

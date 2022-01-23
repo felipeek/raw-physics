@@ -1,4 +1,4 @@
-#include "brick_wall.h"
+#include "stack.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -24,9 +24,9 @@ static Perspective_Camera create_camera() {
 	r64 camera_far_plane = -1000.0;
 	r64 camera_fov = 45.0;
 	camera_init(&camera, camera_position, camera_near_plane, camera_far_plane, camera_fov);
-	camera.rotation = (Quaternion){0.134854, 0.000000, 0.000000, 0.990883};
-	camera.yrotation = (Quaternion){0.000000, 0.262195, 0.000000, 0.965035};
-	camera.position = (vec3){-6.386153, 7.327643, 20.298402};
+	camera.rotation = (Quaternion){0.089766, 0.000000, 0.000000, 0.995981};
+	camera.yrotation = (Quaternion){0.000000, 0.298214, 0.000000, 0.954520};
+	camera.position = (vec3){-16.194581, 15.336559, 25.110162};
 	camera_force_matrix_recalculation(&camera);
 	return camera;
 }
@@ -45,7 +45,7 @@ static Light* create_lights() {
 	return lights;
 }
 
-int ex_brick_wall_init() {
+int ex_stack_init() {
 	entity_module_init();
 
 	// Create camera
@@ -63,28 +63,16 @@ int ex_brick_wall_init() {
 	entity_create_fixed(cube_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
 		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders);
 
-	const r64 brick_height = 0.35;
-	const r64 brick_width = 0.8;
-	r64 y = -1.0;
-	r64 x;
-	for (u32 i = 0; i < 6; ++i) {
-		y += 2 * brick_height + 0.01;
-		if (i % 2 == 0) {
-			x = -2.0;
-		} else {
-			x = -2.0 + brick_width / 2;
-		}
-		for (u32 j = 0; j < 4; ++j) {
-			vec3 cube_scale = (vec3){brick_width, brick_height, brick_height};
-			Collider* cube_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, cube_scale);
-			vec4 color = ((i + j) % 2 == 0) ?
-				(vec4) { 188.0 / 255.0, 74.0 / 255.0, 60.0 / 255.0, 1.0 } :
-				(vec4) { 168.0 / 255.0, 64.0 / 255.0, 50.0 / 255.0, 1.0 };
-			entity_create(cube_mesh, (vec3){x, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-				cube_scale, color, 1.0, cube_colliders);
-			x += 2 * brick_width + 0.01;
-		}
-		x = -2.0;
+	const u32 N = 8;
+	r64 y = 0.0;
+	r64 gap = 2.5;
+	for (u32 i = 0; i < N; ++i) {
+		vec3 cube_scale = (vec3){1.5, 1.0, 1.0};
+		Collider* cube_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, cube_scale);
+		entity_create(cube_mesh, (vec3){0.0, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+			cube_scale, util_pallete(i), 1.0, cube_colliders);
+
+		y += gap;
 	}
 
 	array_free(cube_vertices);
@@ -93,7 +81,7 @@ int ex_brick_wall_init() {
 	return 0;
 }
 
-void ex_brick_wall_destroy() {
+void ex_stack_destroy() {
 	array_free(lights);
 
 	Entity** entities = entity_get_all();
@@ -108,17 +96,17 @@ void ex_brick_wall_destroy() {
 	entity_module_destroy();
 }
 
-void ex_brick_wall_update(r64 delta_time) {
-	//printf("(Quaternion){%f, %f, %f, %f}\n", camera.rotation.x, camera.rotation.y, camera.rotation.z, camera.rotation.w);
-	//printf("(Quaternion){%f, %f, %f, %f}\n", camera.yrotation.x, camera.yrotation.y, camera.yrotation.z, camera.yrotation.w);
-	//printf("(vec3){%f, %f, %f}\n", camera.position.x, camera.position.y, camera.position.z);
+void ex_stack_update(r64 delta_time) {
+	printf("(Quaternion){%f, %f, %f, %f}\n", camera.rotation.x, camera.rotation.y, camera.rotation.z, camera.rotation.w);
+	printf("(Quaternion){%f, %f, %f, %f}\n", camera.yrotation.x, camera.yrotation.y, camera.yrotation.z, camera.yrotation.w);
+	printf("(vec3){%f, %f, %f}\n", camera.position.x, camera.position.y, camera.position.z);
 	delta_time = 0.016666667; // ~60fps
 
 	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];
 		colliders_update(e->colliders, e->world_position, &e->world_rotation);
-	}
+		}
 
 	const r64 GRAVITY = 10.0;
 	for (u32 i = 0; i < array_length(entities); ++i) {
@@ -137,7 +125,7 @@ void ex_brick_wall_update(r64 delta_time) {
 	array_free(entities);
 }
 
-void ex_brick_wall_render() {
+void ex_stack_render() {
 	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, entities[i], lights);
@@ -147,7 +135,7 @@ void ex_brick_wall_render() {
 	array_free(entities);
 }
 
-void ex_brick_wall_input_process(boolean* key_state, r64 delta_time) {
+void ex_stack_input_process(boolean* key_state, r64 delta_time) {
 	r64 movement_speed = 3.0;
 	r64 rotation_speed = 300.0;
 
@@ -164,7 +152,8 @@ void ex_brick_wall_input_process(boolean* key_state, r64 delta_time) {
 		camera_move_right(&camera, -movement_speed * delta_time);
 	if (key_state[GLFW_KEY_D])
 		camera_move_right(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_L]) {
+	if (key_state[GLFW_KEY_L])
+	{
 		static boolean wireframe = false;
 
 		if (wireframe) {
@@ -178,37 +167,13 @@ void ex_brick_wall_input_process(boolean* key_state, r64 delta_time) {
 	}
 
 	if (key_state[GLFW_KEY_SPACE]) {
-#if 1
 		examples_util_throw_object(&camera);
-#else
-		vec3 camera_z = camera_get_z_axis(&camera);
-		vec3 camera_pos = camera.position;
-		r64 distance = 5.0;
-		vec3 diff = gm_vec3_scalar_product(-distance, camera_z);
-		vec3 object_position = gm_vec3_add(camera_pos, diff);
-
-		const char* mesh_name = "./res/sphere.obj";
-		Vertex* vertices;
-		u32* indices;
-		obj_parse(mesh_name, &vertices, &indices);
-		Mesh m = graphics_mesh_create(vertices, indices);
-		vec3 scale = (vec3){0.25, 0.25, 0.25};
-		Collider collider = collider_sphere_create(0.25);
-		Collider* colliders = array_new(Collider);
-		array_push(colliders, collider);
-		eid id = entity_create(m, object_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
-			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 1.0, colliders);
-		array_free(vertices);
-		array_free(indices);
-		Entity* e = entity_get_by_id(id);
-		e->linear_velocity = gm_vec3_scalar_product(20.0, gm_vec3_scalar_product(-1.0, camera_z));
-#endif
-
 		key_state[GLFW_KEY_SPACE] = false;
 	}
 }
 
-void ex_brick_wall_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
+void ex_stack_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
+	static const r64 camera_mouse_speed = 0.1;
 	static r64 x_pos_old, y_pos_old;
 
 	r64 x_difference = x_pos - x_pos_old;
@@ -217,41 +182,42 @@ void ex_brick_wall_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 	x_pos_old = x_pos;
 	y_pos_old = y_pos;
 
-	if (reset) return;
+	if (reset) {
+		return;
+	}
 
-	static const r64 camera_mouse_speed = 0.1;
 	camera_rotate_x(&camera, camera_mouse_speed * (r64)x_difference);
 	camera_rotate_y(&camera, camera_mouse_speed * (r64)y_difference);
 }
 
-void ex_brick_wall_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
+void ex_stack_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
 
 }
 
-void ex_brick_wall_scroll_change_process(r64 x_offset, r64 y_offset) {
+void ex_stack_scroll_change_process(r64 x_offset, r64 y_offset) {
 
 }
 
-void ex_brick_wall_window_resize_process(s32 width, s32 height) {
+void ex_stack_window_resize_process(s32 width, s32 height) {
 	camera_force_matrix_recalculation(&camera);
 }
 
-void ex_brick_wall_menu_update() {
-	ImGui::Text("Brick Wall");
+void ex_stack_menu_update() {
+	ImGui::Text("Stack");
 	ImGui::Separator();
 	ImGui::TextWrapped("Press SPACE to throw objects!");
 }
 
-Example_Scene brick_wall_example_scene = (Example_Scene) {
-	.name = "Brick Wall",
-	.init = ex_brick_wall_init,
-	.destroy = ex_brick_wall_destroy,
-	.input_process = ex_brick_wall_input_process,
-	.menu_properties_update = ex_brick_wall_menu_update,
-	.mouse_change_process = ex_brick_wall_mouse_change_process,
-	.mouse_click_process = ex_brick_wall_mouse_click_process,
-	.render = ex_brick_wall_render,
-	.scroll_change_process = ex_brick_wall_scroll_change_process,
-	.update = ex_brick_wall_update,
-	.window_resize_process = ex_brick_wall_window_resize_process
+Example_Scene stack_example_scene = (Example_Scene) {
+	.name = "Stack",
+	.init = ex_stack_init,
+	.destroy = ex_stack_destroy,
+	.input_process = ex_stack_input_process,
+	.menu_properties_update = ex_stack_menu_update,
+	.mouse_change_process = ex_stack_mouse_change_process,
+	.mouse_click_process = ex_stack_mouse_click_process,
+	.render = ex_stack_render,
+	.scroll_change_process = ex_stack_scroll_change_process,
+	.update = ex_stack_update,
+	.window_resize_process = ex_stack_window_resize_process
 };

@@ -99,46 +99,24 @@ static Constraint*  create_arm() {
 	r1_lc = (vec3){0.0, -10.0, 0.0};
 	r2_lc = (vec3){0.0, 1.0, 0.0};
 	reset_joint_distance(support_entity, upper_arm_entity, r1_lc, r2_lc);
-	constraint.type = SPHERICAL_JOINT_CONSTRAINT;
-	constraint.spherical_joint_constraint.e1_id = support_id;
-	constraint.spherical_joint_constraint.e2_id = upper_arm_id;
-	constraint.spherical_joint_constraint.compliance = 0.0;
-	constraint.spherical_joint_constraint.r1_lc = r1_lc;
-	constraint.spherical_joint_constraint.r2_lc = r2_lc;
-	constraint.spherical_joint_constraint.swing_lower_limit = -PI_F;
-	constraint.spherical_joint_constraint.swing_upper_limit = PI_F;
-	constraint.spherical_joint_constraint.twist_lower_limit = -PI_F;
-	constraint.spherical_joint_constraint.twist_upper_limit = PI_F;
+	pbd_spherical_joint_constraint_init(&constraint, support_id, upper_arm_id, r1_lc, r2_lc, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
+		-PI_F, PI_F, -PI_F, PI_F);
 	array_push(constraints, constraint);
 
 	// Upper Arm - Lower Arm Joint (Elbow)
 	r1_lc = (vec3){0.0, -1.2, 0.0};
 	r2_lc = (vec3){0.0, 1.2, 0.0};
 	reset_joint_distance(upper_arm_entity, lower_arm_entity, r1_lc, r2_lc);
-	constraint.type = HINGE_JOINT_CONSTRAINT;
-	constraint.hinge_joint_constraint.e1_id = upper_arm_id;
-	constraint.hinge_joint_constraint.e2_id = lower_arm_id;
-	constraint.hinge_joint_constraint.compliance = 0.0;
-	constraint.hinge_joint_constraint.r1_lc = r1_lc;
-	constraint.hinge_joint_constraint.r2_lc = r2_lc;
-	constraint.hinge_joint_constraint.lower_limit = 0.0;
-	constraint.hinge_joint_constraint.upper_limit = 0.9 * PI_F;
+	pbd_hinge_joint_constraint_limited_init(&constraint, upper_arm_id, lower_arm_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
+		0.0, 0.9 * PI_F);
 	array_push(constraints, constraint);
 
 	// Lower Arm - Hand Arm Joint (Wrist)
 	r1_lc = (vec3){0.0, -1.2, 0.0};
 	r2_lc = (vec3){0.0, 0.5, 0.0};
 	reset_joint_distance(lower_arm_entity, hand_entity, r1_lc, r2_lc);
-	constraint.type = SPHERICAL_JOINT_CONSTRAINT;
-	constraint.spherical_joint_constraint.e1_id = lower_arm_id;
-	constraint.spherical_joint_constraint.e2_id = hand_id;
-	constraint.spherical_joint_constraint.compliance = 1.0;
-	constraint.spherical_joint_constraint.r1_lc = r1_lc;
-	constraint.spherical_joint_constraint.r2_lc = r2_lc;
-	constraint.spherical_joint_constraint.swing_lower_limit = -0.0 * PI_F;
-	constraint.spherical_joint_constraint.swing_upper_limit = 0.0 * PI_F;
-	constraint.spherical_joint_constraint.twist_lower_limit = -0.3 * PI_F;
-	constraint.spherical_joint_constraint.twist_upper_limit = 0.05 * PI_F;
+	pbd_spherical_joint_constraint_init(&constraint, lower_arm_id, hand_id, r1_lc, r2_lc, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
+		-0.0 * PI_F, 0.0 * PI_F, -0.3 * PI_F, 0.05 * PI_F);
 	array_push(constraints, constraint);
 
 	return constraints;
@@ -255,7 +233,7 @@ void ex_arm_input_process(boolean* key_state, r64 delta_time) {
 		key_state[GLFW_KEY_L] = false;
 	}
 
-	Entity* e;
+	Entity* e = NULL;
 	for (u32 i = 0; i < array_length(constraints); ++i) {
 		Constraint* c = &constraints[i];
 		if (c->type == HINGE_JOINT_CONSTRAINT) {
