@@ -97,13 +97,11 @@ static void positional_constraint_solve(Constraint* constraint, r64 h) {
 }
 
 static vec3 calculate_p_til(Entity* e, vec3 r_lc) {
-	mat3 previous_rot_matrix = quaternion_get_matrix3(&e->previous_world_rotation);
-	return gm_vec3_add(e->previous_world_position, gm_mat3_multiply_vec3(&previous_rot_matrix, r_lc));
+	return gm_vec3_add(e->previous_world_position, quaternion_apply_to_vec3(&e->previous_world_rotation, r_lc));
 }
 
 static vec3 calculate_p(Entity* e, vec3 r_lc) {
-	mat3 current_rot_matrix = quaternion_get_matrix3(&e->world_rotation);
-	return gm_vec3_add(e->world_position, gm_mat3_multiply_vec3(&current_rot_matrix, r_lc));
+	return gm_vec3_add(e->world_position, quaternion_apply_to_vec3(&e->world_rotation, r_lc));
 }
 
 static void collision_constraint_solve(Constraint* constraint, r64 h) {
@@ -141,12 +139,10 @@ static void collision_constraint_solve(Constraint* constraint, r64 h) {
 		r64 lambda_t = constraint->collision_constraint.lambda_t + delta_lambda;
 		// @NOTE(fek): This inequation shown in 3.5 was changed because the lambdas will always be negative!
 		if (lambda_t > static_friction_coefficient * lambda_n) {
-			mat3 e1_previous_rot_matrix = quaternion_get_matrix3(&e1->previous_world_rotation);
 			vec3 p1_til = gm_vec3_add(e1->previous_world_position,
-				gm_mat3_multiply_vec3(&e1_previous_rot_matrix, constraint->collision_constraint.r1_lc));
-			mat3 e2_previous_rot_matrix = quaternion_get_matrix3(&e2->previous_world_rotation);
+				quaternion_apply_to_vec3(&e1->previous_world_rotation, constraint->collision_constraint.r1_lc));
 			vec3 p2_til = gm_vec3_add(e2->previous_world_position,
-				gm_mat3_multiply_vec3(&e2_previous_rot_matrix, constraint->collision_constraint.r2_lc));
+				quaternion_apply_to_vec3(&e2->previous_world_rotation, constraint->collision_constraint.r2_lc));
 			vec3 delta_p = gm_vec3_subtract(gm_vec3_subtract(p1, p1_til), gm_vec3_subtract(p2, p2_til));
 			vec3 delta_p_t = gm_vec3_subtract(delta_p, gm_vec3_scalar_product(
 				gm_vec3_dot(delta_p, constraint->collision_constraint.normal), constraint->collision_constraint.normal));
@@ -207,10 +203,9 @@ static boolean limit_angle(vec3 n, vec3 n1, vec3 n2, r64 alpha, r64 beta, vec3* 
 
 		// create a quaternion that represents this rotation
 		Quaternion rot = quaternion_new_radians(n, phi);
-		mat3 rot_matrix = quaternion_get_matrix3(&rot);
 
 		// rotate n1 by the limit angle, so n1 will get very close to n2, except for the extra rotation that we wanna get rid of
-		n1 = gm_mat3_multiply_vec3(&rot_matrix, n1);
+		n1 = quaternion_apply_to_vec3(&rot, n1);
 
 		// calculate delta_q based on this extra rotation
 
@@ -422,12 +417,10 @@ void clipping_contact_to_collision_constraint(Entity* e1, Entity* e2, Collider_C
 	vec3 r2_wc = gm_vec3_subtract(contact->collision_point2, e2->world_position);
 
 	Quaternion q1_inv = quaternion_inverse(&e1->world_rotation);
-	mat3 q1_mat = quaternion_get_matrix3(&q1_inv);
-	constraint->collision_constraint.r1_lc = gm_mat3_multiply_vec3(&q1_mat, r1_wc);
+	constraint->collision_constraint.r1_lc = quaternion_apply_to_vec3(&q1_inv, r1_wc);
 
 	Quaternion q2_inv = quaternion_inverse(&e2->world_rotation);
-	mat3 q2_mat = quaternion_get_matrix3(&q2_inv);
-	constraint->collision_constraint.r2_lc = gm_mat3_multiply_vec3(&q2_mat, r2_wc);
+	constraint->collision_constraint.r2_lc = quaternion_apply_to_vec3(&q2_inv, r2_wc);
 }
 
 static Constraint* copy_constraints(Constraint* constraints) {
