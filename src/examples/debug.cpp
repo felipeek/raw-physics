@@ -114,7 +114,7 @@ static Constraint*  create_arm() {
 
 	// Support - Base Joint
 	r1_lc = (vec3){0.0, 0.0, 2.0};
-	r2_lc = (vec3){-1.0, 0.0, 0.0};
+	r2_lc = (vec3){0.0, 0.0, 0.0};
 	reset_joint_distance(support_entity, base_entity, r1_lc, r2_lc);
 	pbd_hinge_joint_constraint_unlimited_init(&constraint, support_id, base_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS);
 	array_push(constraints, constraint);
@@ -211,7 +211,7 @@ void ex_debug_update(r64 delta_time) {
 		array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate_with_constraints(delta_time, entities, constraints, 100, 50);
+	pbd_simulate_with_constraints(delta_time, entities, constraints, 1, 1);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);
@@ -359,7 +359,7 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		Entity* base_entity = entity_get_by_id(base_id);
 		Physics_Force f;
 		f.force = (vec3){0.0, -200.0, 0.0};
-		f.position = (vec3){0.9, 0.0, 0.0};
+		f.position = (vec3){1.0, 0.0, 0.0};
 		array_push(base_entity->forces, f);
 		entity_activate(base_entity);
 	}

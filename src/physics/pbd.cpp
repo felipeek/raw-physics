@@ -13,6 +13,7 @@
 #define LINEAR_SLEEPING_THRESHOLD 0.15
 #define ANGULAR_SLEEPING_THRESHOLD 0.15
 #define DEACTIVATION_TIME_TO_BE_INACTIVE 1.0
+#define USE_QUATERNIONS_LINEARIZED_FORMULAS
 
 void pbd_positional_constraint_init(Constraint* constraint, eid e1_id, eid e2_id, vec3 r1_lc, vec3 r2_lc, r64 compliance, vec3 distance) {
 	constraint->type = POSITIONAL_CONSTRAINT;
