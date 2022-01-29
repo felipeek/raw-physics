@@ -7,6 +7,8 @@ typedef struct {
 	Entity* e2;
 	vec3 r1_wc;
 	vec3 r2_wc;
+	vec3 r1_lc;
+	vec3 r2_lc;
 	mat3 e1_inverse_inertia_tensor;
 	mat3 e2_inverse_inertia_tensor;
 } Position_Constraint_Preprocessed_Data;

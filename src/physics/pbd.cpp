@@ -14,6 +14,7 @@
 #define ANGULAR_SLEEPING_THRESHOLD 0.15
 #define DEACTIVATION_TIME_TO_BE_INACTIVE 1.0
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
+#define CALCULATE_IN_LOCAL_COORDS
 
 void pbd_positional_constraint_init(Constraint* constraint, eid e1_id, eid e2_id, vec3 r1_lc, vec3 r2_lc, r64 compliance, vec3 distance) {
 	constraint->type = POSITIONAL_CONSTRAINT;
@@ -552,11 +553,24 @@ void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* extern
 			e->world_position = gm_vec3_add(e->world_position, gm_vec3_scalar_product(h, e->linear_velocity));
 
 			// Update the entity orientation and angular velocity based on the current velocity and applied forces
+
+#ifdef CALCULATE_IN_LOCAL_COORDS
+			vec3 angular_velocity_lc = quaternion_apply_inverse_to_vec3(&e->world_rotation, e->angular_velocity);
+			vec3 external_torque_lc = quaternion_apply_inverse_to_vec3(&e->world_rotation, external_torque);
+			mat3 e_inverse_inertia_tensor = e->inverse_inertia_tensor;
+			mat3 e_inertia_tensor = e->inertia_tensor;
+			angular_velocity_lc = gm_vec3_add(angular_velocity_lc, gm_vec3_scalar_product(h, 
+				gm_mat3_multiply_vec3(&e_inverse_inertia_tensor, gm_vec3_subtract(external_torque_lc,
+				gm_vec3_cross(angular_velocity_lc, gm_mat3_multiply_vec3(&e_inertia_tensor, angular_velocity_lc))))));
+			e->angular_velocity = quaternion_apply_to_vec3(&e->world_rotation, angular_velocity_lc);
+#else
 			mat3 e_inverse_inertia_tensor = get_dynamic_inverse_inertia_tensor(e);
 			mat3 e_inertia_tensor = get_dynamic_inertia_tensor(e);
 			e->angular_velocity = gm_vec3_add(e->angular_velocity, gm_vec3_scalar_product(h, 
 				gm_mat3_multiply_vec3(&e_inverse_inertia_tensor, gm_vec3_subtract(external_torque,
 				gm_vec3_cross(e->angular_velocity, gm_mat3_multiply_vec3(&e_inertia_tensor, e->angular_velocity))))));
+#endif
+
 #ifdef USE_QUATERNIONS_LINEARIZED_FORMULAS
 			Quaternion aux = (Quaternion){e->angular_velocity.x, e->angular_velocity.y, e->angular_velocity.z, 0.0};
 			Quaternion q = quaternion_product(&aux, &e->world_rotation);
@@ -717,21 +731,45 @@ void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* extern
 				delta_v = gm_vec3_add(delta_v, gm_vec3_scalar_product(fact, n));
 
 				// Finally, we end the solver by applying delta_v, considering the inverse masses of both entities
-				r64 _w1 = e1->inverse_mass + gm_vec3_dot(gm_vec3_cross(pcpd.r1_wc, n),
-					gm_mat3_multiply_vec3(&pcpd.e1_inverse_inertia_tensor, gm_vec3_cross(pcpd.r1_wc, n)));
-				r64 _w2 = e2->inverse_mass + gm_vec3_dot(gm_vec3_cross(pcpd.r2_wc, n),
-					gm_mat3_multiply_vec3(&pcpd.e2_inverse_inertia_tensor, gm_vec3_cross(pcpd.r2_wc, n)));
+#ifdef CALCULATE_IN_LOCAL_COORDS
+				vec3 r1_lc = constraint->collision_constraint.r1_lc;
+				vec3 r2_lc = constraint->collision_constraint.r2_lc;
+				vec3 e1_n_lc = quaternion_apply_inverse_to_vec3(&e1->world_rotation, n);
+				vec3 e2_n_lc = quaternion_apply_inverse_to_vec3(&e2->world_rotation, n);
+				vec3 e1_cross = gm_vec3_cross(r1_lc, e1_n_lc);
+				vec3 e2_cross = gm_vec3_cross(r2_lc, e2_n_lc);
+				r64 _w1 = e1->inverse_mass + gm_vec3_dot(e1_cross, gm_mat3_multiply_vec3(&e1->inverse_inertia_tensor, e1_cross));
+				r64 _w2 = e2->inverse_mass + gm_vec3_dot(e2_cross, gm_mat3_multiply_vec3(&e2->inverse_inertia_tensor, e2_cross));
+#else
+				vec3 e1_cross = gm_vec3_cross(pcpd.r1_wc, n);
+				vec3 e2_cross = gm_vec3_cross(pcpd.r2_wc, n);
+				r64 _w1 = e1->inverse_mass + gm_vec3_dot(e1_cross, gm_mat3_multiply_vec3(&pcpd.e1_inverse_inertia_tensor, e1_cross));
+				r64 _w2 = e2->inverse_mass + gm_vec3_dot(e2_cross, gm_mat3_multiply_vec3(&pcpd.e2_inverse_inertia_tensor, e2_cross));
+#endif
 				vec3 p = gm_vec3_scalar_product(1.0 / (_w1 + _w2), delta_v);
 
 				if (!e1->fixed) {
 					e1->linear_velocity = gm_vec3_add(e1->linear_velocity, gm_vec3_scalar_product(e1->inverse_mass, p));
+#ifdef CALCULATE_IN_LOCAL_COORDS
+					vec3 p_lc = quaternion_apply_inverse_to_vec3(&e1->world_rotation, p);
+					vec3 delta_angular_velocity_lc = gm_mat3_multiply_vec3(&e1->inverse_inertia_tensor, gm_vec3_cross(r1_lc, p_lc));
+					e1->angular_velocity = gm_vec3_add(e1->angular_velocity, quaternion_apply_to_vec3(&e1->world_rotation, delta_angular_velocity_lc));
+#else
 					e1->angular_velocity = gm_vec3_add(e1->angular_velocity,
 						gm_mat3_multiply_vec3(&pcpd.e1_inverse_inertia_tensor, gm_vec3_cross(pcpd.r1_wc, p)));
+#endif
 				}
 				if (!e2->fixed) {
 					e2->linear_velocity = gm_vec3_add(e2->linear_velocity, gm_vec3_invert(gm_vec3_scalar_product(e2->inverse_mass, p)));
+#ifdef CALCULATE_IN_LOCAL_COORDS
+					vec3 p_lc = quaternion_apply_inverse_to_vec3(&e2->world_rotation, p);
+					vec3 delta_angular_velocity_lc = gm_mat3_multiply_vec3(&e2->inverse_inertia_tensor, gm_vec3_cross(r2_lc, p_lc));
+					e2->angular_velocity = gm_vec3_add(e2->angular_velocity,
+						gm_vec3_invert(quaternion_apply_to_vec3(&e2->world_rotation, delta_angular_velocity_lc)));
+#else
 					e2->angular_velocity = gm_vec3_add(e2->angular_velocity,
 						gm_vec3_invert(gm_mat3_multiply_vec3(&pcpd.e2_inverse_inertia_tensor, gm_vec3_cross(pcpd.r2_wc, p))));
+#endif
 				}
 			} else if (0 && constraint->type == HINGE_JOINT_CONSTRAINT) {
 				Entity* e1 = entity_get_by_id(constraint->hinge_joint_constraint.e1_id);

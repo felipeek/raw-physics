@@ -444,6 +444,7 @@ void colliders_update(Collider* colliders, vec3 translation, const Quaternion* r
 
 // @TODO: We need to rewrite this function
 mat3 colliders_get_default_inertia_tensor(Collider* colliders, r64 mass) {
+	//return (mat3){1,0,0,0,1,0,0,0,1};
 	// For now, the center of mass is always assumed to be at 0,0,0
 	if (array_length(colliders) == 1) {
 		Collider* collider = &colliders[0];

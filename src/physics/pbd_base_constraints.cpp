@@ -2,11 +2,14 @@
 #include "physics_util.h"
 
 #define USE_QUATERNIONS_LINEARIZED_FORMULAS
+#define CALCULATE_IN_LOCAL_COORDS
 
 void calculate_positional_constraint_preprocessed_data(Entity* e1, Entity* e2, vec3 r1_lc, vec3 r2_lc, Position_Constraint_Preprocessed_Data* pcpd) {
 	pcpd->e1 = e1;
 	pcpd->e2 = e2;
 
+	pcpd->r1_lc = r1_lc;
+	pcpd->r2_lc = r2_lc;
 	pcpd->r1_wc = quaternion_apply_to_vec3(&e1->world_rotation, r1_lc);
 	pcpd->r2_wc = quaternion_apply_to_vec3(&e2->world_rotation, r2_lc);
 
@@ -34,8 +37,19 @@ r64 positional_constraint_get_delta_lambda(Position_Constraint_Preprocessed_Data
 	vec3 n = (vec3) {delta_x.x / c, delta_x.y / c, delta_x.z / c};
 
 	// calculate the inverse masses of both entities
+#ifdef CALCULATE_IN_LOCAL_COORDS
+	vec3 r1_lc = pcpd->r1_lc;
+	vec3 r2_lc = pcpd->r2_lc;
+	vec3 e1_n_lc = quaternion_apply_inverse_to_vec3(&e1->world_rotation, n);
+	vec3 e2_n_lc = quaternion_apply_inverse_to_vec3(&e2->world_rotation, n);
+	vec3 e1_cross = gm_vec3_cross(r1_lc, e1_n_lc);
+	vec3 e2_cross = gm_vec3_cross(r2_lc, e2_n_lc);
+	r64 w1 = e1->inverse_mass + gm_vec3_dot(e1_cross, gm_mat3_multiply_vec3(&e1->inverse_inertia_tensor, e1_cross));
+	r64 w2 = e2->inverse_mass + gm_vec3_dot(e2_cross, gm_mat3_multiply_vec3(&e2->inverse_inertia_tensor, e2_cross));
+#else
 	r64 w1 = e1->inverse_mass + gm_vec3_dot(gm_vec3_cross(r1_wc, n), gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1_wc, n)));
 	r64 w2 = e2->inverse_mass + gm_vec3_dot(gm_vec3_cross(r2_wc, n), gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2_wc, n)));
+#endif
 
 	assert(w1 + w2 != 0.0);
 
@@ -78,8 +92,20 @@ void positional_constraint_apply(Position_Constraint_Preprocessed_Data* pcpd, r6
 	}
 
 	// updates the rotation of the entities based on eq (8) and (9)
+#ifdef CALCULATE_IN_LOCAL_COORDS
+	vec3 r1_lc = pcpd->r1_lc;
+	vec3 r2_lc = pcpd->r2_lc;
+	vec3 aux1 = gm_mat3_multiply_vec3(&e1->inverse_inertia_tensor, gm_vec3_cross(r1_lc,
+		quaternion_apply_inverse_to_vec3(&e1->world_rotation, positional_impulse)));
+	vec3 aux2 = gm_mat3_multiply_vec3(&e2->inverse_inertia_tensor, gm_vec3_cross(r2_lc,
+		quaternion_apply_inverse_to_vec3(&e2->world_rotation, positional_impulse)));
+	aux1 = quaternion_apply_to_vec3(&e1->world_rotation, aux1);
+	aux2 = quaternion_apply_to_vec3(&e2->world_rotation, aux2);
+#else
 	vec3 aux1 = gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, gm_vec3_cross(r1_wc, positional_impulse));
 	vec3 aux2 = gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, gm_vec3_cross(r2_wc, positional_impulse));
+#endif
+
 #ifdef USE_QUATERNIONS_LINEARIZED_FORMULAS
 	Quaternion aux_q1 = (Quaternion){aux1.x, aux1.y, aux1.z, 0.0};
 	Quaternion aux_q2 = (Quaternion){aux2.x, aux2.y, aux2.z, 0.0};
@@ -148,8 +174,15 @@ r64 angular_constraint_get_delta_lambda(Angular_Constraint_Preprocessed_Data* ac
 	vec3 n = (vec3) {delta_q.x / theta, delta_q.y / theta, delta_q.z / theta};
 
 	// calculate the inverse masses of both entities
+#ifdef CALCULATE_IN_LOCAL_COORDS
+	vec3 e1_n_lc = quaternion_apply_inverse_to_vec3(&e1->world_rotation, n);
+	vec3 e2_n_lc = quaternion_apply_inverse_to_vec3(&e2->world_rotation, n);
+	r64 w1 = gm_vec3_dot(e1_n_lc, gm_mat3_multiply_vec3(&e1->inverse_inertia_tensor, e1_n_lc));
+	r64 w2 = gm_vec3_dot(e2_n_lc, gm_mat3_multiply_vec3(&e2->inverse_inertia_tensor, e2_n_lc));
+#else
 	r64 w1 = gm_vec3_dot(n, gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, n));
 	r64 w2 = gm_vec3_dot(n, gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, n));
+#endif
 
 	assert(w1 + w2 != 0.0);
 
@@ -182,8 +215,16 @@ void angular_constraint_apply(Angular_Constraint_Preprocessed_Data* acpd, r64 de
 	vec3 positional_impulse = gm_vec3_scalar_product(-delta_lambda, n);
 
 	// updates the rotation of the entities based on eq (8) and (9)
+#ifdef CALCULATE_IN_LOCAL_COORDS
+	vec3 aux1 = gm_mat3_multiply_vec3(&e1->inverse_inertia_tensor, quaternion_apply_inverse_to_vec3(&e1->world_rotation, positional_impulse));
+	vec3 aux2 = gm_mat3_multiply_vec3(&e2->inverse_inertia_tensor, quaternion_apply_inverse_to_vec3(&e2->world_rotation, positional_impulse));
+	aux1 = quaternion_apply_to_vec3(&e1->world_rotation, aux1);
+	aux2 = quaternion_apply_to_vec3(&e2->world_rotation, aux2);
+#else
 	vec3 aux1 = gm_mat3_multiply_vec3(&e1_inverse_inertia_tensor, positional_impulse);
 	vec3 aux2 = gm_mat3_multiply_vec3(&e2_inverse_inertia_tensor, positional_impulse);
+#endif
+
 #ifdef USE_QUATERNIONS_LINEARIZED_FORMULAS
 	Quaternion aux_q1 = (Quaternion){aux1.x, aux1.y, aux1.z, 0.0};
 	Quaternion aux_q2 = (Quaternion){aux2.x, aux2.y, aux2.z, 0.0};
