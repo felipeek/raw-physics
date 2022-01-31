@@ -98,8 +98,8 @@ typedef struct {
 	};
 } Constraint;
 
-void pbd_simulate(r64 dt, Entity** entities, u32 num_substeps, u32 num_pos_iters);
-void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* external_constraints, u32 num_substeps, u32 num_pos_iters);
+void pbd_simulate(r64 dt, Entity** entities, u32 num_substeps, u32 num_pos_iters, boolean enable_collisions);
+void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* external_constraints, u32 num_substeps, u32 num_pos_iters, boolean enable_collisions);
 
 void pbd_positional_constraint_init(Constraint* constraint, eid e1_id, eid e2_id, vec3 r1_lc, vec3 r2_lc, r64 compliance, vec3 distance);
 void pbd_mutual_orientation_constraint_init(Constraint* constraint, eid e1_id, eid e2_id, r64 compliance);

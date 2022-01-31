@@ -54,7 +54,7 @@ static void reset_joint_distance(Entity* e1, Entity* e2, vec3 r1_lc, vec3 r2_lc)
 	entity_set_position(e2, gm_vec3_add(e2->world_position, delta_x));
 }
 
-static eid base_id, static_piece_id, free_piece_id, third_id;
+static eid base_id, static_piece_id, free_piece_id;
 
 static Constraint* create_pendulum() {
 	Vertex* cube_vertices;
@@ -169,7 +169,7 @@ void ex_rott_pendulum_update(r64 delta_time) {
 		array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate_with_constraints(delta_time, entities, constraints, 50, 50);
+	pbd_simulate_with_constraints(delta_time, entities, constraints, 1, 1, false);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);
@@ -328,7 +328,7 @@ void ex_rott_pendulum_window_resize_process(s32 width, s32 height) {
 void ex_rott_pendulum_menu_update() {
 	ImGui::Text("Rott Pendulum");
 	ImGui::Separator();
-	ImGui::TextWrapped("Press SPACE to throw objects!");
+	ImGui::TextWrapped("Press M to apply a force!");
 }
 
 Example_Scene rott_pendulum_example_scene = (Example_Scene) {

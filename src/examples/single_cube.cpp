@@ -101,7 +101,7 @@ void ex_single_cube_update(r64 delta_time) {
 		array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate(delta_time, entities, 20, 1);
+	pbd_simulate(delta_time, entities, 20, 1, true);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);

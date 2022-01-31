@@ -461,11 +461,11 @@ static Constraint* copy_constraints(Constraint* constraints) {
 	return copied_constraints;
 }
 
-void pbd_simulate(r64 dt, Entity** entities, u32 num_substeps, u32 num_pos_iters) {
-	pbd_simulate_with_constraints(dt, entities, NULL, num_substeps, num_pos_iters);
+void pbd_simulate(r64 dt, Entity** entities, u32 num_substeps, u32 num_pos_iters, boolean enable_collisions) {
+	pbd_simulate_with_constraints(dt, entities, NULL, num_substeps, num_pos_iters, enable_collisions);
 }
 
-void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* external_constraints, u32 num_substeps, u32 num_pos_iters) {
+void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* external_constraints, u32 num_substeps, u32 num_pos_iters, boolean enable_collisions) {
 	//feenableexcept(FE_INVALID | FE_OVERFLOW);
 
 	if (dt <= 0.0) return;
@@ -580,60 +580,36 @@ void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* extern
 		Constraint* constraints = copy_constraints(external_constraints);
 
 		// As explained in sec 3.5, in each substep we need to check for collisions
-		for (u32 j = 0; j < array_length(broad_collision_pairs); ++j) {
-			Entity* e1 = entity_get_by_id(broad_collision_pairs[j].e1_id);
-			Entity* e2 = entity_get_by_id(broad_collision_pairs[j].e2_id);
+		if (enable_collisions) {
+			for (u32 j = 0; j < array_length(broad_collision_pairs); ++j) {
+				Entity* e1 = entity_get_by_id(broad_collision_pairs[j].e1_id);
+				Entity* e2 = entity_get_by_id(broad_collision_pairs[j].e2_id);
 
-			// If e1 is "colliding" with e2, they must be either both active or both inactive
-			if (!e1->fixed && !e2->fixed) {
-				assert((e1->active && e2->active) || (!e1->active && !e2->active));
-			}
-
-			// No need to solve the collision if both entities are either inactive or fixed
-			if ((e1->fixed || !e1->active) && (e2->fixed || !e2->active)) {
-				continue;
-			}
-
-			colliders_update(e1->colliders, e1->world_position, &e1->world_rotation);
-			colliders_update(e2->colliders, e2->world_position, &e2->world_rotation);
-
-			Collider_Contact* contacts = colliders_get_contacts(e1->colliders, e2->colliders);
-			if (contacts) {
-				for (u32 l = 0; l < array_length(contacts); ++l) {
-					Collider_Contact* contact = &contacts[l];
-					Constraint constraint;
-					clipping_contact_to_collision_constraint(e1, e2, contact, &constraint);
-					array_push(constraints, constraint);
+				// If e1 is "colliding" with e2, they must be either both active or both inactive
+				if (!e1->fixed && !e2->fixed) {
+					assert((e1->active && e2->active) || (!e1->active && !e2->active));
 				}
-				array_free(contacts);
-			}
-		}
 
-#if 0
-		int size = array_length(constraints);
-		u32* idxs = array_new(u32);
-		for (u32 i = 0; i < size; ++i) {
-			int idx;
-			boolean n;
-			do {
-				n = true;
-				idx = rand() % size;
-				for (u32 j = 0; j < array_length(idxs); ++j) {
-					if (idx == idxs[j]) {
-						n = false;
-						break;
+				// No need to solve the collision if both entities are either inactive or fixed
+				if ((e1->fixed || !e1->active) && (e2->fixed || !e2->active)) {
+					continue;
+				}
+
+				colliders_update(e1->colliders, e1->world_position, &e1->world_rotation);
+				colliders_update(e2->colliders, e2->world_position, &e2->world_rotation);
+
+				Collider_Contact* contacts = colliders_get_contacts(e1->colliders, e2->colliders);
+				if (contacts) {
+					for (u32 l = 0; l < array_length(contacts); ++l) {
+						Collider_Contact* contact = &contacts[l];
+						Constraint constraint;
+						clipping_contact_to_collision_constraint(e1, e2, contact, &constraint);
+						array_push(constraints, constraint);
 					}
+					array_free(contacts);
 				}
-			} while (!n);
-			array_push(idxs, idx);
+			}
 		}
-
-		Constraint* abc = array_new(Constraint);
-		for (u32 i = 0; i < array_length(idxs); ++i) {
-			array_push(abc, constraints[idxs[i]]);
-		}
-		constraints = abc;
-#endif
 
 		// Now we run the PBD solver with NUM_POS_ITERS iterations
 		for (u32 j = 0; j < num_pos_iters; ++j) {
@@ -733,31 +709,33 @@ void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* extern
 					e2->angular_velocity = gm_vec3_add(e2->angular_velocity,
 						gm_vec3_invert(gm_mat3_multiply_vec3(&pcpd.e2_inverse_inertia_tensor, gm_vec3_cross(pcpd.r2_wc, p))));
 				}
-			} else if (0 && constraint->type == HINGE_JOINT_CONSTRAINT) {
-				Entity* e1 = entity_get_by_id(constraint->hinge_joint_constraint.e1_id);
-				Entity* e2 = entity_get_by_id(constraint->hinge_joint_constraint.e2_id);
+			} else if (constraint->type == HINGE_JOINT_CONSTRAINT) {
+				// TODO: Joint damping
 
-				// angular damping
-				vec3 omega_diff = gm_vec3_subtract(e2->angular_velocity, e1->angular_velocity);
-				omega_diff = gm_vec3_scalar_product(MIN(1.0, 10.0 * h), omega_diff);
-				e1->angular_velocity = gm_vec3_add(e1->angular_velocity, omega_diff);
-				e2->angular_velocity = gm_vec3_subtract(e2->angular_velocity, omega_diff);
+				//Entity* e1 = entity_get_by_id(constraint->hinge_joint_constraint.e1_id);
+				//Entity* e2 = entity_get_by_id(constraint->hinge_joint_constraint.e2_id);
 
-				// linear damping
-				vec3 delta_v = gm_vec3_subtract(e2->linear_velocity, e1->linear_velocity);
-				delta_v = gm_vec3_scalar_product(MIN(1.0, 10.0 * h), delta_v);
+				//// angular damping
+				//vec3 omega_diff = gm_vec3_subtract(e2->angular_velocity, e1->angular_velocity);
+				//omega_diff = gm_vec3_scalar_product(MIN(1.0, 10.0 * h), omega_diff);
+				//e1->angular_velocity = gm_vec3_add(e1->angular_velocity, omega_diff);
+				//e2->angular_velocity = gm_vec3_subtract(e2->angular_velocity, omega_diff);
 
-				// Finally, we end the solver by applying delta_v, considering the inverse masses of both entities
-				r64 _w1 = e1->inverse_mass;
-				r64 _w2 = e2->inverse_mass;
-				vec3 p = gm_vec3_scalar_product(1.0 / (_w1 + _w2), delta_v);
+				//// linear damping
+				//vec3 delta_v = gm_vec3_subtract(e2->linear_velocity, e1->linear_velocity);
+				//delta_v = gm_vec3_scalar_product(MIN(1.0, 10.0 * h), delta_v);
 
-				if (!e1->fixed) {
-					e1->linear_velocity = gm_vec3_add(e1->linear_velocity, gm_vec3_scalar_product(e1->inverse_mass, p));
-				}
-				if (!e2->fixed) {
-					e2->linear_velocity = gm_vec3_add(e2->linear_velocity, gm_vec3_invert(gm_vec3_scalar_product(e2->inverse_mass, p)));
-				}
+				//// Finally, we end the solver by applying delta_v, considering the inverse masses of both entities
+				//r64 _w1 = e1->inverse_mass;
+				//r64 _w2 = e2->inverse_mass;
+				//vec3 p = gm_vec3_scalar_product(1.0 / (_w1 + _w2), delta_v);
+
+				//if (!e1->fixed) {
+				//	e1->linear_velocity = gm_vec3_add(e1->linear_velocity, gm_vec3_scalar_product(e1->inverse_mass, p));
+				//}
+				//if (!e2->fixed) {
+				//	e2->linear_velocity = gm_vec3_add(e2->linear_velocity, gm_vec3_invert(gm_vec3_scalar_product(e2->inverse_mass, p)));
+				//}
 			}
 		}
 
