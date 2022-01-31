@@ -7,7 +7,7 @@
 #include "../util.h"
 #include "physics_util.h"
 
-//#include <fenv.h> 
+//#include <fenv.h>
 
 #define ENABLE_SIMULATION_ISLANDS
 #define LINEAR_SLEEPING_THRESHOLD 0.15
