@@ -169,7 +169,7 @@ void ex_rott_pendulum_update(r64 delta_time) {
 		array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate_with_constraints(delta_time, entities, constraints, 1, 1, false);
+	pbd_simulate_with_constraints(delta_time, entities, constraints, 50, 50, false);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);
