@@ -60,17 +60,35 @@ static Hash_Map uf_collect_all(Entity** entities, Broad_Collision_Pair* collisio
 		Entity* e1 = entity_get_by_id(id1);
 		Entity* e2 = entity_get_by_id(id2);
 		if (!e1->fixed && !e2->fixed) {
-			uf_union(&entity_to_parent_map, collision_pair.e1_id, collision_pair.e2_id);
+			uf_union(&entity_to_parent_map, id1, id2);
 		}
 	}
 
 	return entity_to_parent_map;
 }
 
-eid** broad_collect_simulation_islands(Entity** entities, Broad_Collision_Pair* collision_pairs) {
+eid** broad_collect_simulation_islands(Entity** entities, Broad_Collision_Pair* collision_pairs, const Constraint* constraints) {
 	eid** simulation_islands = array_new_len(eid*, 32);
+
+	// Collect the simulation islands into an entity->parent map
 	Hash_Map entity_to_parent_map = uf_collect_all(entities, collision_pairs);
 
+	// Extra step: To avoid bugs, we need to make sure that entities that are part of a same constraint are also part of the same island!
+	if (constraints != NULL) {
+		for (u32 i = 0; i < array_length(constraints); ++i) {
+			const Constraint* c = &constraints[i];
+
+			eid id1 = c->e1_id;
+			eid id2 = c->e2_id;
+			Entity* e1 = entity_get_by_id(id1);
+			Entity* e2 = entity_get_by_id(id2);
+			if (!e1->fixed && !e2->fixed) {
+				uf_union(&entity_to_parent_map, id1, id2);
+			}
+		}
+	}
+
+	// As a last step, transform the simulation islands into a nice structure
 	Hash_Map simulation_islands_map;
 	assert(!hash_map_create(&simulation_islands_map, 2 * array_length(entities), sizeof(eid), sizeof(u32), util_eid_compare, util_eid_hash));
 

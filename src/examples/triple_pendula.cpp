@@ -192,21 +192,26 @@ void ex_triple_pendula_input_process(boolean* key_state, r64 delta_time) {
 	r64 movement_speed = 30.0;
 	r64 rotation_speed = 300.0;
 
-	if (key_state[GLFW_KEY_LEFT_SHIFT])
+	if (key_state[GLFW_KEY_LEFT_SHIFT]) {
 		movement_speed = 0.5;
-	if (key_state[GLFW_KEY_RIGHT_SHIFT])
+	}
+	if (key_state[GLFW_KEY_RIGHT_SHIFT]) {
 		movement_speed = 0.01;
+	}
 
-	if (key_state[GLFW_KEY_W])
+	if (key_state[GLFW_KEY_W]) {
 		camera_move_forward(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_S])
+	}
+	if (key_state[GLFW_KEY_S]) {
 		camera_move_forward(&camera, -movement_speed * delta_time);
-	if (key_state[GLFW_KEY_A])
+	}
+	if (key_state[GLFW_KEY_A]) {
 		camera_move_right(&camera, -movement_speed * delta_time);
-	if (key_state[GLFW_KEY_D])
+	}
+	if (key_state[GLFW_KEY_D]) {
 		camera_move_right(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_L])
-	{
+	}
+	if (key_state[GLFW_KEY_L]) {
 		static boolean wireframe = false;
 
 		if (wireframe) {
@@ -219,60 +224,6 @@ void ex_triple_pendula_input_process(boolean* key_state, r64 delta_time) {
 		key_state[GLFW_KEY_L] = false;
 	}
 
-	Entity* e = NULL;
-	for (u32 i = 0; i < array_length(constraints); ++i) {
-		Constraint* c = &constraints[i];
-		if (c->type == HINGE_JOINT_CONSTRAINT) {
-			e = entity_get_by_id(c->spherical_joint_constraint.e2_id);
-			break;
-		}
-	}
-
-	if (key_state[GLFW_KEY_X])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Y])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Z])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-
-	if (key_state[GLFW_KEY_SPACE]) {
-		examples_util_throw_object(&camera);
-		key_state[GLFW_KEY_SPACE] = false;
-	}
-
 	if (key_state[GLFW_KEY_M]) {
 		Entity* piece_3_entity = entity_get_by_id(piece_3_id);
 		Physics_Force f;
@@ -280,6 +231,39 @@ void ex_triple_pendula_input_process(boolean* key_state, r64 delta_time) {
 		f.position = (vec3){0.0, 0.0, 0.0};
 		array_push(piece_3_entity->forces, f);
 		entity_activate(piece_3_entity);
+	}
+
+	if (key_state[GLFW_KEY_N]) {
+		Entity* piece_2_entity = entity_get_by_id(piece_2_id);
+		Physics_Force f;
+		f.force = (vec3){200.0, 0.0, 0.0};
+		f.position = (vec3){0.0, -1.0, 0.0};
+		array_push(piece_2_entity->forces, f);
+		entity_activate(piece_2_entity);
+	}
+
+	if (key_state[GLFW_KEY_B]) {
+		Entity* piece_1_entity = entity_get_by_id(base_id);
+		Entity* piece_2_entity = entity_get_by_id(piece_2_id);
+		Entity* piece_3_entity = entity_get_by_id(piece_3_id);
+		Physics_Force f;
+		f.force = (vec3){200.0, 0.0, 0.0};
+		f.position = (vec3){0.0, -1.0, 0.0};
+		array_push(piece_1_entity->forces, f);
+		entity_activate(piece_1_entity);
+	}
+
+	if (key_state[GLFW_KEY_V]) {
+		Entity* base_entity = entity_get_by_id(base_id);
+		Entity* piece_2_entity = entity_get_by_id(piece_2_id);
+		Entity* piece_3_entity = entity_get_by_id(piece_3_id);
+		base_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+		base_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+		piece_2_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+		piece_2_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+		piece_3_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+		piece_3_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+		key_state[GLFW_KEY_V] = false;
 	}
 }
 
@@ -314,7 +298,8 @@ void ex_triple_pendula_window_resize_process(s32 width, s32 height) {
 void ex_triple_pendula_menu_update() {
 	ImGui::Text("Triple Pendula");
 	ImGui::Separator();
-	ImGui::TextWrapped("Press M to apply a force!");
+	ImGui::TextWrapped("Press B, N or M to apply a force to the first, second or third pendula, respectively!");
+	ImGui::TextWrapped("Press V to zero velocities!");
 }
 
 Example_Scene triple_pendula_example_scene = (Example_Scene) {

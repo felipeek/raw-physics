@@ -206,21 +206,26 @@ void ex_arm_input_process(boolean* key_state, r64 delta_time) {
 	r64 movement_speed = 30.0;
 	r64 rotation_speed = 300.0;
 
-	if (key_state[GLFW_KEY_LEFT_SHIFT])
+	if (key_state[GLFW_KEY_LEFT_SHIFT]) {
 		movement_speed = 0.5;
-	if (key_state[GLFW_KEY_RIGHT_SHIFT])
+	}
+	if (key_state[GLFW_KEY_RIGHT_SHIFT]) {
 		movement_speed = 0.01;
+	}
 
-	if (key_state[GLFW_KEY_W])
+	if (key_state[GLFW_KEY_W]) {
 		camera_move_forward(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_S])
+	}
+	if (key_state[GLFW_KEY_S]) {
 		camera_move_forward(&camera, -movement_speed * delta_time);
-	if (key_state[GLFW_KEY_A])
+	}
+	if (key_state[GLFW_KEY_A]) {
 		camera_move_right(&camera, -movement_speed * delta_time);
-	if (key_state[GLFW_KEY_D])
+	}
+	if (key_state[GLFW_KEY_D]) {
 		camera_move_right(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_L])
-	{
+	}
+	if (key_state[GLFW_KEY_L]) {
 		static boolean wireframe = false;
 
 		if (wireframe) {
@@ -231,55 +236,6 @@ void ex_arm_input_process(boolean* key_state, r64 delta_time) {
 
 		wireframe = !wireframe;
 		key_state[GLFW_KEY_L] = false;
-	}
-
-	Entity* e = NULL;
-	for (u32 i = 0; i < array_length(constraints); ++i) {
-		Constraint* c = &constraints[i];
-		if (c->type == HINGE_JOINT_CONSTRAINT) {
-			e = entity_get_by_id(c->spherical_joint_constraint.e2_id);
-			break;
-		}
-	}
-
-	if (key_state[GLFW_KEY_X])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Y])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Z])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
 	}
 
 	if (key_state[GLFW_KEY_SPACE]) {

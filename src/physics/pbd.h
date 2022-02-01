@@ -20,8 +20,6 @@ typedef enum {
 } Constraint_Type;
 
 typedef struct {
-	eid e1_id;
-	eid e2_id;
 	vec3 r1_lc;
 	vec3 r2_lc;
 	r64 compliance;
@@ -30,8 +28,6 @@ typedef struct {
 } Positional_Constraint;
 
 typedef struct {
-	eid e1_id;
-	eid e2_id;
 	vec3 r1_lc;
 	vec3 r2_lc;
 	vec3 normal;
@@ -40,15 +36,11 @@ typedef struct {
 } Collision_Constraint;
 
 typedef struct {
-	eid e1_id;
-	eid e2_id;
 	r64 compliance;
 	r64 lambda;
 } Mutual_Orientation_Constraint;
 
 typedef struct {
-	eid e1_id;
-	eid e2_id;
 	vec3 r1_lc;
 	vec3 r2_lc;
 	r64 compliance;
@@ -67,8 +59,6 @@ typedef struct {
 } Hinge_Joint_Constraint;
 
 typedef struct {
-	eid e1_id;
-	eid e2_id;
 	vec3 r1_lc;
 	vec3 r2_lc;
 	r64 lambda_pos;
@@ -88,6 +78,8 @@ typedef struct {
 
 typedef struct {
 	Constraint_Type type;
+	eid e1_id;
+	eid e2_id;
 
 	union {
 		Positional_Constraint positional_constraint;

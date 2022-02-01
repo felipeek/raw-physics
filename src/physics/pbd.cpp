@@ -17,8 +17,8 @@
 
 void pbd_positional_constraint_init(Constraint* constraint, eid e1_id, eid e2_id, vec3 r1_lc, vec3 r2_lc, r64 compliance, vec3 distance) {
 	constraint->type = POSITIONAL_CONSTRAINT;
-	constraint->positional_constraint.e1_id = e1_id;
-	constraint->positional_constraint.e2_id = e2_id;
+	constraint->e1_id = e1_id;
+	constraint->e2_id = e2_id;
 	constraint->positional_constraint.r1_lc = r1_lc;
 	constraint->positional_constraint.r2_lc = r2_lc;
 	constraint->positional_constraint.compliance = compliance;
@@ -27,15 +27,15 @@ void pbd_positional_constraint_init(Constraint* constraint, eid e1_id, eid e2_id
 
 void pbd_mutual_orientation_constraint_init(Constraint* constraint, eid e1_id, eid e2_id, r64 compliance) {
 	constraint->type = MUTUAL_ORIENTATION_CONSTRAINT;
-	constraint->mutual_orientation_constraint.e1_id = e1_id;
-	constraint->mutual_orientation_constraint.e2_id = e2_id;
+	constraint->e1_id = e1_id;
+	constraint->e2_id = e2_id;
 	constraint->mutual_orientation_constraint.compliance = compliance;
 }
 
 void pbd_hinge_joint_constraint_unlimited_init(Constraint* constraint, eid e1_id, eid e2_id, vec3 r1_lc, vec3 r2_lc, r64 compliance, PBD_Axis_Type e1_aligned_axis, PBD_Axis_Type e2_aligned_axis) {
 	constraint->type = HINGE_JOINT_CONSTRAINT;
-	constraint->hinge_joint_constraint.e1_id = e1_id;
-	constraint->hinge_joint_constraint.e2_id = e2_id;
+	constraint->e1_id = e1_id;
+	constraint->e2_id = e2_id;
 	constraint->hinge_joint_constraint.r1_lc = r1_lc;
 	constraint->hinge_joint_constraint.r2_lc = r2_lc;
 	constraint->hinge_joint_constraint.compliance = compliance;
@@ -47,8 +47,8 @@ void pbd_hinge_joint_constraint_unlimited_init(Constraint* constraint, eid e1_id
 void pbd_hinge_joint_constraint_limited_init(Constraint* constraint, eid e1_id, eid e2_id, vec3 r1_lc, vec3 r2_lc, r64 compliance, PBD_Axis_Type e1_aligned_axis, PBD_Axis_Type e2_aligned_axis,
 	PBD_Axis_Type e1_limit_axis, PBD_Axis_Type e2_limit_axis, r64 lower_limit, r64 upper_limit) {
 	constraint->type = HINGE_JOINT_CONSTRAINT;
-	constraint->hinge_joint_constraint.e1_id = e1_id;
-	constraint->hinge_joint_constraint.e2_id = e2_id;
+	constraint->e1_id = e1_id;
+	constraint->e2_id = e2_id;
 	constraint->hinge_joint_constraint.r1_lc = r1_lc;
 	constraint->hinge_joint_constraint.r2_lc = r2_lc;
 	constraint->hinge_joint_constraint.compliance = compliance;
@@ -64,8 +64,8 @@ void pbd_hinge_joint_constraint_limited_init(Constraint* constraint, eid e1_id, 
 void pbd_spherical_joint_constraint_init(Constraint* constraint, eid e1_id, eid e2_id, vec3 r1_lc, vec3 r2_lc, PBD_Axis_Type e1_swing_axis, PBD_Axis_Type e2_swing_axis,
 	PBD_Axis_Type e1_twist_axis, PBD_Axis_Type e2_twist_axis, r64 swing_lower_limit, r64 swing_upper_limit, r64 twist_lower_limit, r64 twist_upper_limit) {
 	constraint->type = SPHERICAL_JOINT_CONSTRAINT;
-	constraint->spherical_joint_constraint.e1_id = e1_id;
-	constraint->spherical_joint_constraint.e2_id = e2_id;
+	constraint->e1_id = e1_id;
+	constraint->e2_id = e2_id;
 	constraint->spherical_joint_constraint.r1_lc = r1_lc;
 	constraint->spherical_joint_constraint.r2_lc = r2_lc;
 	constraint->spherical_joint_constraint.e1_swing_axis = e1_swing_axis;
@@ -81,8 +81,8 @@ void pbd_spherical_joint_constraint_init(Constraint* constraint, eid e1_id, eid 
 static void positional_constraint_solve(Constraint* constraint, r64 h) {
 	assert(constraint->type == POSITIONAL_CONSTRAINT);
 
-	Entity* e1 = entity_get_by_id(constraint->positional_constraint.e1_id);
-	Entity* e2 = entity_get_by_id(constraint->positional_constraint.e2_id);
+	Entity* e1 = entity_get_by_id(constraint->e1_id);
+	Entity* e2 = entity_get_by_id(constraint->e2_id);
 
 	vec3 attachment_distance = gm_vec3_subtract(e1->world_position, e2->world_position);
 	vec3 delta_x = gm_vec3_subtract(attachment_distance, constraint->positional_constraint.distance);
@@ -107,8 +107,8 @@ static vec3 calculate_p(Entity* e, vec3 r_lc) {
 static void collision_constraint_solve(Constraint* constraint, r64 h) {
 	assert(constraint->type == COLLISION_CONSTRAINT);
 
-	Entity* e1 = entity_get_by_id(constraint->collision_constraint.e1_id);
-	Entity* e2 = entity_get_by_id(constraint->collision_constraint.e2_id);
+	Entity* e1 = entity_get_by_id(constraint->e1_id);
+	Entity* e2 = entity_get_by_id(constraint->e2_id);
 
 	Position_Constraint_Preprocessed_Data pcpd;
 	calculate_positional_constraint_preprocessed_data(e1, e2, constraint->collision_constraint.r1_lc, constraint->collision_constraint.r2_lc, &pcpd);
@@ -156,8 +156,8 @@ static void collision_constraint_solve(Constraint* constraint, r64 h) {
 static void mutual_orientation_constraint_solve(Constraint* constraint, r64 h) {
 	assert(constraint->type == MUTUAL_ORIENTATION_CONSTRAINT);
 
-	Entity* e1 = entity_get_by_id(constraint->mutual_orientation_constraint.e1_id);
-	Entity* e2 = entity_get_by_id(constraint->mutual_orientation_constraint.e2_id);
+	Entity* e1 = entity_get_by_id(constraint->e1_id);
+	Entity* e2 = entity_get_by_id(constraint->e2_id);
 
 	Angular_Constraint_Preprocessed_Data acpd;
 	calculate_angular_constraint_preprocessed_data(e1, e2, &acpd);
@@ -245,8 +245,8 @@ static vec3 get_axis_in_world_coords(const Quaternion* entity_rotation, PBD_Axis
 static void hinge_joint_constraint_solve(Constraint* constraint, r64 h) {
 	assert(constraint->type == HINGE_JOINT_CONSTRAINT);
 
-	Entity* e1 = entity_get_by_id(constraint->hinge_joint_constraint.e1_id);
-	Entity* e2 = entity_get_by_id(constraint->hinge_joint_constraint.e2_id);
+	Entity* e1 = entity_get_by_id(constraint->e1_id);
+	Entity* e2 = entity_get_by_id(constraint->e2_id);
 
 	// Angular Constraint to make sure the aligned axis are kept aligned
 	Angular_Constraint_Preprocessed_Data acpd;
@@ -303,8 +303,8 @@ static void spherical_joint_constraint_solve(Constraint* constraint, r64 h) {
 
 	const r64 EPSILON = 1e-50;
 
-	Entity* e1 = entity_get_by_id(constraint->spherical_joint_constraint.e1_id);
-	Entity* e2 = entity_get_by_id(constraint->spherical_joint_constraint.e2_id);
+	Entity* e1 = entity_get_by_id(constraint->e1_id);
+	Entity* e2 = entity_get_by_id(constraint->e2_id);
 
 	// Positional constraint to ensure that the distance between both entities are correct
 	Position_Constraint_Preprocessed_Data pcpd;
@@ -407,8 +407,8 @@ static void solve_constraint(Constraint* constraint, r64 h) {
 
 void clipping_contact_to_collision_constraint(Entity* e1, Entity* e2, Collider_Contact* contact, Constraint* constraint) {
 	constraint->type = COLLISION_CONSTRAINT;
-	constraint->collision_constraint.e1_id = e1->id;
-	constraint->collision_constraint.e2_id = e2->id;
+	constraint->e1_id = e1->id;
+	constraint->e2_id = e2->id;
 	constraint->collision_constraint.normal = contact->normal;
 	constraint->collision_constraint.lambda_n = 0.0;
 	constraint->collision_constraint.lambda_t = 0.0;
@@ -474,7 +474,7 @@ void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* extern
 	Broad_Collision_Pair* broad_collision_pairs = broad_get_collision_pairs(entities);
 
 #ifdef ENABLE_SIMULATION_ISLANDS
-	eid** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs);
+	eid** simulation_islands = broad_collect_simulation_islands(entities, broad_collision_pairs, external_constraints);
 
 	// All entities will be contained in the simulation islands.
 	// Update deactivation time and also, at the same time, its active status
@@ -646,8 +646,8 @@ void pbd_simulate_with_constraints(r64 dt, Entity** entities, Constraint* extern
 		for (u32 j = 0; j < array_length(constraints); ++j) {
 			Constraint* constraint = &constraints[j];
 			if (constraint->type == COLLISION_CONSTRAINT) {
-				Entity* e1 = entity_get_by_id(constraint->collision_constraint.e1_id);
-				Entity* e2 = entity_get_by_id(constraint->collision_constraint.e2_id);
+				Entity* e1 = entity_get_by_id(constraint->e1_id);
+				Entity* e2 = entity_get_by_id(constraint->e2_id);
 				vec3 n = constraint->collision_constraint.normal;
 				r64 lambda_n = constraint->collision_constraint.lambda_n;
 				r64 lambda_t = constraint->collision_constraint.lambda_t;

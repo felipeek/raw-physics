@@ -193,21 +193,26 @@ void ex_rott_pendulum_input_process(boolean* key_state, r64 delta_time) {
 	r64 movement_speed = 30.0;
 	r64 rotation_speed = 300.0;
 
-	if (key_state[GLFW_KEY_LEFT_SHIFT])
+	if (key_state[GLFW_KEY_LEFT_SHIFT]) {
 		movement_speed = 0.5;
-	if (key_state[GLFW_KEY_RIGHT_SHIFT])
+	}
+	if (key_state[GLFW_KEY_RIGHT_SHIFT]) {
 		movement_speed = 0.01;
+	}
 
-	if (key_state[GLFW_KEY_W])
+	if (key_state[GLFW_KEY_W]) {
 		camera_move_forward(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_S])
+	}
+	if (key_state[GLFW_KEY_S]) {
 		camera_move_forward(&camera, -movement_speed * delta_time);
-	if (key_state[GLFW_KEY_A])
+	}
+	if (key_state[GLFW_KEY_A]) {
 		camera_move_right(&camera, -movement_speed * delta_time);
-	if (key_state[GLFW_KEY_D])
+	}
+	if (key_state[GLFW_KEY_D]) {
 		camera_move_right(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_L])
-	{
+	}
+	if (key_state[GLFW_KEY_L]) {
 		static boolean wireframe = false;
 
 		if (wireframe) {
@@ -220,61 +225,7 @@ void ex_rott_pendulum_input_process(boolean* key_state, r64 delta_time) {
 		key_state[GLFW_KEY_L] = false;
 	}
 
-	Entity* e = NULL;
-	for (u32 i = 0; i < array_length(constraints); ++i) {
-		Constraint* c = &constraints[i];
-		if (c->type == HINGE_JOINT_CONSTRAINT) {
-			e = entity_get_by_id(c->spherical_joint_constraint.e2_id);
-			break;
-		}
-	}
-
-	if (key_state[GLFW_KEY_X])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Y])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Z])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-
-	if (key_state[GLFW_KEY_SPACE]) {
-		examples_util_throw_object(&camera);
-		key_state[GLFW_KEY_SPACE] = false;
-	}
-
-	if (key_state[GLFW_KEY_M]) {
+	if (key_state[GLFW_KEY_B]) {
 		Entity* base_entity = entity_get_by_id(base_id);
 		Physics_Force f;
 		f.force = (vec3){0.0, -200.0, 0.0};
@@ -283,7 +234,7 @@ void ex_rott_pendulum_input_process(boolean* key_state, r64 delta_time) {
 		entity_activate(base_entity);
 	}
 
-	if (key_state[GLFW_KEY_N]) {
+	if (key_state[GLFW_KEY_V]) {
 		Entity* base_entity = entity_get_by_id(base_id);
 		Entity* static_piece_entity = entity_get_by_id(static_piece_id);
 		Entity* free_piece_entity = entity_get_by_id(free_piece_id);
@@ -293,7 +244,7 @@ void ex_rott_pendulum_input_process(boolean* key_state, r64 delta_time) {
 		static_piece_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
 		free_piece_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
 		free_piece_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
-		key_state[GLFW_KEY_N] = false;
+		key_state[GLFW_KEY_V] = false;
 	}
 }
 
@@ -328,7 +279,8 @@ void ex_rott_pendulum_window_resize_process(s32 width, s32 height) {
 void ex_rott_pendulum_menu_update() {
 	ImGui::Text("Rott Pendulum");
 	ImGui::Separator();
-	ImGui::TextWrapped("Press M to apply a force!");
+	ImGui::TextWrapped("Press B to apply a force!");
+	ImGui::TextWrapped("Press V to zero velocities!");
 }
 
 Example_Scene rott_pendulum_example_scene = (Example_Scene) {

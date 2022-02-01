@@ -137,21 +137,26 @@ void ex_spring_input_process(boolean* key_state, r64 delta_time) {
 	r64 movement_speed = 3.0;
 	r64 rotation_speed = 300.0;
 
-	if (key_state[GLFW_KEY_LEFT_SHIFT])
+	if (key_state[GLFW_KEY_LEFT_SHIFT]) {
 		movement_speed = 0.5;
-	if (key_state[GLFW_KEY_RIGHT_SHIFT])
+	}
+	if (key_state[GLFW_KEY_RIGHT_SHIFT]) {
 		movement_speed = 0.01;
+	}
 
-	if (key_state[GLFW_KEY_W])
+	if (key_state[GLFW_KEY_W]) {
 		camera_move_forward(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_S])
+	}
+	if (key_state[GLFW_KEY_S]) {
 		camera_move_forward(&camera, -movement_speed * delta_time);
-	if (key_state[GLFW_KEY_A])
+	}
+	if (key_state[GLFW_KEY_A]) {
 		camera_move_right(&camera, -movement_speed * delta_time);
-	if (key_state[GLFW_KEY_D])
+	}
+	if (key_state[GLFW_KEY_D]) {
 		camera_move_right(&camera, movement_speed * delta_time);
-	if (key_state[GLFW_KEY_L])
-	{
+	}
+	if (key_state[GLFW_KEY_L]) {
 		static boolean wireframe = false;
 
 		if (wireframe) {
