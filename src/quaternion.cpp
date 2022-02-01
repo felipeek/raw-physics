@@ -253,3 +253,21 @@ Quaternion quaternion_from_matrix(const mat4* m) {
 
 	return q;
 }
+
+vec3 quaternion_apply_to_vec3(const Quaternion* q, vec3 v) {
+	r64 ix = q->w * v.x + q->y * v.z - q->z * v.y;
+	r64 iy = q->w * v.y + q->z * v.x - q->x * v.z;
+	r64 iz = q->w * v.z + q->x * v.y - q->y * v.x;
+	r64 iw = - q->x * v.x - q->y * v.y - q->z * v.z;
+
+	return (vec3) {
+		(ix * q->w) + (iw * -q->x) + (iy * -q->z) - (iz * -q->y),
+		(iy * q->w) + (iw * -q->y) + (iz * -q->x) - (ix * -q->z),
+		(iz * q->w) + (iw * -q->z) + (ix * -q->y) - (iy * -q->x)
+	};
+}
+
+vec3 quaternion_apply_inverse_to_vec3(const Quaternion* q, vec3 v) {
+	Quaternion inv = quaternion_inverse(q);
+	return quaternion_apply_to_vec3(&inv, v);
+}

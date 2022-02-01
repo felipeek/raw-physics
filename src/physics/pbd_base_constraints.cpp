@@ -7,10 +7,8 @@ void calculate_positional_constraint_preprocessed_data(Entity* e1, Entity* e2, v
 	pcpd->e1 = e1;
 	pcpd->e2 = e2;
 
-	mat3 e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
-	mat3 e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
-	pcpd->r1_wc = gm_mat3_multiply_vec3(&e1_rot_matrix, r1_lc);
-	pcpd->r2_wc = gm_mat3_multiply_vec3(&e2_rot_matrix, r2_lc);
+	pcpd->r1_wc = quaternion_apply_to_vec3(&e1->world_rotation, r1_lc);
+	pcpd->r2_wc = quaternion_apply_to_vec3(&e2->world_rotation, r2_lc);
 
 	pcpd->e1_inverse_inertia_tensor = get_dynamic_inverse_inertia_tensor(e1);
 	pcpd->e2_inverse_inertia_tensor = get_dynamic_inverse_inertia_tensor(e2);

@@ -54,7 +54,7 @@ static void reset_joint_distance(Entity* e1, Entity* e2, vec3 r1_lc, vec3 r2_lc)
 	entity_set_position(e2, gm_vec3_add(e2->world_position, delta_x));
 }
 
-static Constraint*  create_arm() {
+static Constraint* create_arm() {
 	Vertex* cube_vertices;
 	u32* cube_indices;
 
@@ -181,7 +181,7 @@ void ex_arm_update(r64 delta_time) {
 		//array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate_with_constraints(delta_time, entities, constraints);
+	pbd_simulate_with_constraints(delta_time, entities, constraints, 20, 1, true);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);

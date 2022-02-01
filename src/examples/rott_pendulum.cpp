@@ -1,4 +1,4 @@
-#include "debug.h"
+#include "rott_pendulum.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -17,9 +17,6 @@
 static Perspective_Camera camera;
 static Light* lights;
 static Constraint* constraints;
-
-// Mouse binding to target positions
-static boolean is_mouse_bound_to_entity_movement;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -57,29 +54,88 @@ static void reset_joint_distance(Entity* e1, Entity* e2, vec3 r1_lc, vec3 r2_lc)
 	entity_set_position(e2, gm_vec3_add(e2->world_position, delta_x));
 }
 
-int ex_debug_init() {
+static eid base_id, static_piece_id, free_piece_id;
+
+static Constraint* create_pendulum() {
+	Vertex* cube_vertices;
+	u32* cube_indices;
+
+	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
+	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
+
+	vec3 support_position = (vec3){0.0, 0.0, -2.0};
+	vec3 support_collider_scale = (vec3){0.1, 0.1, 0.1};
+	Collider* support_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, support_collider_scale);
+	eid support_id = entity_create_fixed(cube_mesh, support_position, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), support_collider_scale,
+		(vec4){0.0, 1.0, 0.0, 1.0}, support_colliders);
+
+	vec3 base_collider_scale = (vec3){1.0, 0.1, 0.1};
+	Collider* base_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, base_collider_scale);
+	base_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), base_collider_scale,
+		(vec4){0x77 / 255.0, 0xc3 / 255.0, 0xec / 255.0}, 1.0, base_colliders);
+
+	vec3 free_piece_collider_scale = (vec3){0.1, 1.0, 0.1};
+	Collider* free_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, free_piece_collider_scale);
+	free_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), free_piece_collider_scale,
+		(vec4){1.0, 0.0, 0.0, 1.0}, 1.0, free_piece_colliders);
+
+	vec3 static_piece_collider_scale = (vec3){0.1, 1.0, 0.1};
+	Collider* static_piece_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, static_piece_collider_scale);
+	static_piece_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), static_piece_collider_scale,
+		(vec4){0x77 / 255.0, 0xc3 / 255.0, 0xec / 255.0}, 1.0, static_piece_colliders);
+
+	array_free(cube_vertices);
+	array_free(cube_indices);
+
+	Constraint* constraints = array_new(Constraint);
+	Constraint constraint;
+
+	Entity* support_entity = entity_get_by_id(support_id);
+	Entity* base_entity = entity_get_by_id(base_id);
+	Entity* free_piece_entity = entity_get_by_id(free_piece_id);
+	Entity* static_piece_entity = entity_get_by_id(static_piece_id);
+
+	vec3 r1_lc, r2_lc;
+
+	// Support - Base Joint
+	r1_lc = (vec3){0.0, 0.0, 2.0};
+	r2_lc = (vec3){0.0, 0.0, 0.0};
+	reset_joint_distance(support_entity, base_entity, r1_lc, r2_lc);
+	pbd_hinge_joint_constraint_unlimited_init(&constraint, support_id, base_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS);
+	array_push(constraints, constraint);
+
+	// Base - Free Piece Joint
+	r1_lc = (vec3){ 0.9, 0.0, 0.0 };
+	r2_lc = (vec3){ 0.0, 1.1, -0.25 };
+	reset_joint_distance(base_entity, free_piece_entity, r1_lc, r2_lc);
+	pbd_hinge_joint_constraint_unlimited_init(&constraint, base_id, free_piece_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS);
+	array_push(constraints, constraint);
+
+	// Base - Static Piece Joint
+	r1_lc = (vec3){ -0.9, 0.0, 0.0 };
+	r2_lc = (vec3){ 0.0, 1.1, 0.0 };
+	reset_joint_distance(base_entity, static_piece_entity, r1_lc, r2_lc);
+	pbd_hinge_joint_constraint_limited_init(&constraint, base_id, static_piece_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Z_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
+		0.0, 0.0);
+	array_push(constraints, constraint);
+
+	return constraints;
+}
+
+int ex_rott_pendulum_init() {
 	entity_module_init();
 
 	// Create camera
 	camera = create_camera();
 	// Create light
 	lights = create_lights();
-	
-	Vertex* floor_vertices;
-	u32* floor_indices;
-	obj_parse("./res/floor.obj", &floor_vertices, &floor_indices);
-	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
-	vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
-	Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(floor_vertices, floor_indices, floor_scale);
-	entity_create_fixed(floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders);
-	array_free(floor_vertices);
-	array_free(floor_indices);
+
+	constraints = create_pendulum();
 
 	return 0;
 }
 
-void ex_debug_destroy() {
+void ex_rott_pendulum_destroy() {
 	array_free(lights);
 
 	Entity** entities = entity_get_all();
@@ -94,9 +150,7 @@ void ex_debug_destroy() {
 	entity_module_destroy();
 }
 
-boolean paused = false;
-
-void ex_debug_update(r64 delta_time) {
+void ex_rott_pendulum_update(r64 delta_time) {
 	delta_time = 0.016666667; // ~60fps
 
 	Entity** entities = entity_get_all();
@@ -107,11 +161,6 @@ void ex_debug_update(r64 delta_time) {
 		//printf("e%d: rot: <%.50f, %.50f, %.50f, %.50f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
 	}
 
-	if (paused) {
-		return;
-	}
-
-#if 1
 	const r64 GRAVITY = 10.0;
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Physics_Force pf;
@@ -120,50 +169,17 @@ void ex_debug_update(r64 delta_time) {
 		array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate_with_constraints(delta_time, entities, constraints, 1, 1, true);
+	pbd_simulate_with_constraints(delta_time, entities, constraints, 1, 1, false);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);
 	}
-#endif
 
 	array_free(entities);
 }
 
-void ex_debug_render() {
+void ex_rott_pendulum_render() {
 	Entity** entities = entity_get_all();
-
-	#if 0
-	for (u32 i = 0; i < array_length(entities); ++i) {
-		for (u32 j = i + 1; j < array_length(entities); ++j) {
-			Entity* e1 = entities[i];
-			Entity* e2 = entities[j];
-			GJK_Simplex simplex;
-			vec3 normal;
-			boolean collision = false;
-			Collider_Contact* contacts = collider_get_contacts(&e1->collider, &e2->collider, &normal);
-
-			if (contacts && array_length(contacts) > 0) {
-				for (u32 i = 0; i < array_length(contacts); ++i) {
-					Collider_Contact* contact = &contacts[i];
-
-					vec3 cp1 = contact->collision_point1;
-					vec3 cp2 = contact->collision_point2;
-					graphics_renderer_debug_points(&cp1, 1, (vec4){1.0, 1.0, 1.0, 1.0});
-					graphics_renderer_debug_points(&cp2, 1, (vec4){1.0, 1.0, 1.0, 1.0});
-					graphics_renderer_debug_vector(cp1, gm_vec3_add(cp1, normal), (vec4){1.0, 1.0, 1.0, 1.0});
-					graphics_renderer_debug_vector(cp2, gm_vec3_add(cp2, normal), (vec4){1.0, 1.0, 1.0, 1.0});
-				}
-
-				e1->color = (vec4){0.0, 1.0, 0.0, 1.0};
-				e2->color = (vec4){0.0, 1.0, 0.0, 1.0};
-			} else {
-				e1->color = (vec4){1.0, 0.0, 0.0, 1.0};
-				e2->color = (vec4){1.0, 0.0, 0.0, 1.0};
-			}
-		}
-	}
-	#endif
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, entities[i], lights);
@@ -173,7 +189,7 @@ void ex_debug_render() {
 	array_free(entities);
 }
 
-void ex_debug_input_process(boolean* key_state, r64 delta_time) {
+void ex_rott_pendulum_input_process(boolean* key_state, r64 delta_time) {
 	r64 movement_speed = 30.0;
 	r64 rotation_speed = 300.0;
 
@@ -253,19 +269,36 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		}
 	}
 
-	if (key_state[GLFW_KEY_1]) {
-		is_mouse_bound_to_entity_movement = true;
-	} else {
-		is_mouse_bound_to_entity_movement = false;
-	}
-
 	if (key_state[GLFW_KEY_SPACE]) {
 		examples_util_throw_object(&camera);
 		key_state[GLFW_KEY_SPACE] = false;
 	}
+
+	if (key_state[GLFW_KEY_M]) {
+		Entity* base_entity = entity_get_by_id(base_id);
+		Physics_Force f;
+		f.force = (vec3){0.0, -200.0, 0.0};
+		f.position = (vec3){1.0, 0.0, 0.0};
+		array_push(base_entity->forces, f);
+		entity_activate(base_entity);
+	}
+
+	if (key_state[GLFW_KEY_N]) {
+		Entity* base_entity = entity_get_by_id(base_id);
+		Entity* static_piece_entity = entity_get_by_id(static_piece_id);
+		Entity* free_piece_entity = entity_get_by_id(free_piece_id);
+		base_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+		base_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+		static_piece_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+		static_piece_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+		free_piece_entity->linear_velocity = (vec3){0.0, 0.0, 0.0};
+		free_piece_entity->angular_velocity = (vec3){0.0, 0.0, 0.0};
+		key_state[GLFW_KEY_N] = false;
+	}
 }
 
-void ex_debug_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
+void ex_rott_pendulum_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
+	static const r64 camera_mouse_speed = 0.1;
 	static r64 x_pos_old, y_pos_old;
 
 	r64 x_difference = x_pos - x_pos_old;
@@ -276,57 +309,38 @@ void ex_debug_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 
 	if (reset) return;
 
-	if (is_mouse_bound_to_entity_movement) {
-		// MOVE TARGET POSITIONS!
-		vec3 camera_y = camera_get_y_axis(&camera);
-		vec3 camera_x = camera_get_x_axis(&camera);
-
-		static const r64 target_point_move_speed = 0.001;
-		vec3 y_diff = gm_vec3_scalar_product(-target_point_move_speed * (r64)y_difference, camera_y);
-		vec3 x_diff = gm_vec3_scalar_product(target_point_move_speed * (r64)x_difference, camera_x);
-
-		Entity** entities = entity_get_all();
-		vec3 position = entities[1]->world_position;
-		position = gm_vec3_add(position, y_diff);
-		position = gm_vec3_add(position, x_diff);
-		entity_set_position(entities[1], position);
-		array_free(entities);
-	} else {
-		// NORMAL CAMERA MOVEMENT!
-		static const r64 camera_mouse_speed = 0.1;
-		camera_rotate_x(&camera, camera_mouse_speed * (r64)x_difference);
-		camera_rotate_y(&camera, camera_mouse_speed * (r64)y_difference);
-	}
+	camera_rotate_x(&camera, camera_mouse_speed * (r64)x_difference);
+	camera_rotate_y(&camera, camera_mouse_speed * (r64)y_difference);
 }
 
-void ex_debug_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
+void ex_rott_pendulum_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
 
 }
 
-void ex_debug_scroll_change_process(r64 x_offset, r64 y_offset) {
+void ex_rott_pendulum_scroll_change_process(r64 x_offset, r64 y_offset) {
 
 }
 
-void ex_debug_window_resize_process(s32 width, s32 height) {
+void ex_rott_pendulum_window_resize_process(s32 width, s32 height) {
 	camera_force_matrix_recalculation(&camera);
 }
 
-void ex_debug_menu_update() {
-	ImGui::Text("Debug");
+void ex_rott_pendulum_menu_update() {
+	ImGui::Text("Rott Pendulum");
 	ImGui::Separator();
-	ImGui::TextWrapped("Press SPACE to throw objects!");
+	ImGui::TextWrapped("Press M to apply a force!");
 }
 
-Example_Scene debug_example_scene = (Example_Scene) {
-	.name = "Debug",
-	.init = ex_debug_init,
-	.destroy = ex_debug_destroy,
-	.input_process = ex_debug_input_process,
-	.menu_properties_update = ex_debug_menu_update,
-	.mouse_change_process = ex_debug_mouse_change_process,
-	.mouse_click_process = ex_debug_mouse_click_process,
-	.render = ex_debug_render,
-	.scroll_change_process = ex_debug_scroll_change_process,
-	.update = ex_debug_update,
-	.window_resize_process = ex_debug_window_resize_process
+Example_Scene rott_pendulum_example_scene = (Example_Scene) {
+	.name = "Rott Pendulum",
+	.init = ex_rott_pendulum_init,
+	.destroy = ex_rott_pendulum_destroy,
+	.input_process = ex_rott_pendulum_input_process,
+	.menu_properties_update = ex_rott_pendulum_menu_update,
+	.mouse_change_process = ex_rott_pendulum_mouse_change_process,
+	.mouse_click_process = ex_rott_pendulum_mouse_click_process,
+	.render = ex_rott_pendulum_render,
+	.scroll_change_process = ex_rott_pendulum_scroll_change_process,
+	.update = ex_rott_pendulum_update,
+	.window_resize_process = ex_rott_pendulum_window_resize_process
 };

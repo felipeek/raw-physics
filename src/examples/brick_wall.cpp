@@ -81,7 +81,7 @@ int ex_brick_wall_init() {
 				(vec4) { 188.0 / 255.0, 74.0 / 255.0, 60.0 / 255.0, 1.0 } :
 				(vec4) { 168.0 / 255.0, 64.0 / 255.0, 50.0 / 255.0, 1.0 };
 			entity_create(cube_mesh, (vec3){x, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-				cube_scale, color, 1.0, cube_colliders);
+				cube_scale, color, 0.5, cube_colliders);
 			x += 2 * brick_width + 0.01;
 		}
 		x = -2.0;
@@ -128,7 +128,7 @@ void ex_brick_wall_update(r64 delta_time) {
 		array_push(entities[i]->forces, pf);
 	}
 
-	pbd_simulate(delta_time, entities);
+	pbd_simulate(delta_time, entities, 20, 1, true);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		array_clear(entities[i]->forces);
