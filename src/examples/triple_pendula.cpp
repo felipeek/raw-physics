@@ -162,18 +162,14 @@ void ex_triple_pendula_update(r64 delta_time) {
 
 	const r64 GRAVITY = 10.0;
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		Physics_Force pf;
-		pf.force = (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0};
-		pf.position = (vec3){0.0, 0.0, 0.0};
-		array_push(entities[i]->forces, pf);
+		entity_add_force(entities[i], (vec3){0.0, 0.0, 0.0}, (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0}, false);
 	}
 
-	pbd_simulate_with_constraints(delta_time, entities, constraints, 50, 5, false);
+	pbd_simulate_with_constraints(delta_time, entities, constraints, 50, 50, false);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		array_clear(entities[i]->forces);
+		entity_clear_forces(entities[i]);
 	}
-
 	array_free(entities);
 }
 
@@ -226,30 +222,19 @@ void ex_triple_pendula_input_process(boolean* key_state, r64 delta_time) {
 
 	if (key_state[GLFW_KEY_M]) {
 		Entity* piece_3_entity = entity_get_by_id(piece_3_id);
-		Physics_Force f;
-		f.force = (vec3){200.0, 0.0, 0.0};
-		f.position = (vec3){0.0, 0.0, 0.0};
-		array_push(piece_3_entity->forces, f);
+		entity_add_force(piece_3_entity, (vec3){0.0, 0.0, 0.0}, (vec3){200.0, 0.0, 0.0}, true);
 		entity_activate(piece_3_entity);
 	}
 
 	if (key_state[GLFW_KEY_N]) {
 		Entity* piece_2_entity = entity_get_by_id(piece_2_id);
-		Physics_Force f;
-		f.force = (vec3){200.0, 0.0, 0.0};
-		f.position = (vec3){0.0, -1.0, 0.0};
-		array_push(piece_2_entity->forces, f);
+		entity_add_force(piece_2_entity, (vec3){0.0, -1.0, 0.0}, (vec3){200.0, 0.0, 0.0}, true);
 		entity_activate(piece_2_entity);
 	}
 
 	if (key_state[GLFW_KEY_B]) {
 		Entity* piece_1_entity = entity_get_by_id(base_id);
-		Entity* piece_2_entity = entity_get_by_id(piece_2_id);
-		Entity* piece_3_entity = entity_get_by_id(piece_3_id);
-		Physics_Force f;
-		f.force = (vec3){200.0, 0.0, 0.0};
-		f.position = (vec3){0.0, -1.0, 0.0};
-		array_push(piece_1_entity->forces, f);
+		entity_add_force(piece_1_entity, (vec3){0.0, -1.0, 0.0}, (vec3){200.0, 0.0, 0.0}, true);
 		entity_activate(piece_1_entity);
 	}
 

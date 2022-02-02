@@ -11,6 +11,7 @@ typedef u64 eid;
 typedef struct {
 	vec3 position;
 	vec3 force;
+    boolean local_coords;
 } Physics_Force;
 
 typedef struct {
@@ -59,5 +60,7 @@ void entity_set_position(Entity* entity, vec3 world_position);
 void entity_set_rotation(Entity* entity, Quaternion world_rotation);
 void entity_set_scale(Entity* entity, vec3 world_scale);
 void entity_activate(Entity* entity);
+void entity_add_force(Entity* entity, vec3 position, vec3 force, boolean local_coords);
+void entity_clear_forces(Entity* entity);
 
 #endif

@@ -163,3 +163,20 @@ void entity_activate(Entity* entity) {
 	entity->active = true;
 	entity->deactivation_time = 0.0;
 }
+
+void entity_add_force(Entity* entity, vec3 position, vec3 force, boolean local_coords) {
+    if (local_coords) {
+        // If the force is in local cords, we first convert it to world coords
+        position = quaternion_apply_to_vec3(&entity->world_rotation, position);
+        force = quaternion_apply_to_vec3(&entity->world_rotation, force);
+    }
+
+    Physics_Force pf;
+    pf.force = force;
+    pf.position = position;
+    array_push(entity->forces, pf);
+}
+
+void entity_clear_forces(Entity* entity) {
+    array_clear(entity->forces);
+}

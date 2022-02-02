@@ -106,22 +106,18 @@ void ex_stack_update(r64 delta_time) {
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];
 		colliders_update(e->colliders, e->world_position, &e->world_rotation);
-		}
+	}
 
 	const r64 GRAVITY = 10.0;
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		Physics_Force pf;
-		pf.force = (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0};
-		pf.position = (vec3){0.0, 0.0, 0.0};
-		array_push(entities[i]->forces, pf);
+		entity_add_force(entities[i], (vec3){0.0, 0.0, 0.0}, (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0}, false);
 	}
 
 	pbd_simulate(delta_time, entities, 20, 1, true);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
-		array_clear(entities[i]->forces);
+		entity_clear_forces(entities[i]);
 	}
-
 	array_free(entities);
 }
 
