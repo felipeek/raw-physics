@@ -73,7 +73,7 @@ void physics_simulate(Entity** entities, r64 delta_time) {
 
 		e->world_position = gm_vec3_add(e->world_position, gm_vec3_scalar_product(delta_time, e->linear_velocity));
 
-		r64 rotation_angle = gm_vec3_length(e->angular_velocity);
+		r64 rotation_angle = gm_vec3_length(e->angular_velocity) * delta_time;
 		vec3 rotation_axis = gm_vec3_normalize(e->angular_velocity);
 		Quaternion rotation = quaternion_new_radians(rotation_axis, rotation_angle);
 		e->world_rotation = quaternion_product(&rotation, &e->world_rotation);
