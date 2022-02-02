@@ -95,7 +95,7 @@ void core_render() {
 }
 
 void core_input_process(boolean* key_state, r64 delta_time) {
-	r64 movement_speed = 3.0;
+	r64 movement_speed = 15.0;
 	r64 rotation_speed = 300.0;
 
 	if (key_state[GLFW_KEY_LEFT_SHIFT]) {
