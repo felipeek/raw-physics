@@ -6,6 +6,8 @@ Welcome to raw-physics, a real-time rigid body physics simulator.
 
 ![example2](doc1/../doc/example2.gif)
 
+![example3](doc1/../doc/example3.gif)
+
 Build and run to see more examples!
 
 ## Building

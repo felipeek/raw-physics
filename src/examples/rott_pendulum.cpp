@@ -151,7 +151,9 @@ void ex_rott_pendulum_destroy() {
 }
 
 void ex_rott_pendulum_update(r64 delta_time) {
+#ifdef LIMIT_60FPS
 	delta_time = 0.016666667; // ~60fps
+#endif
 
 	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
