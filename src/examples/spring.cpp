@@ -99,9 +99,6 @@ void ex_spring_destroy() {
 
 void ex_spring_update(r64 delta_time) {
 	Entity** entities = entity_get_all();
-#ifdef LIMIT_60FPS
-	delta_time = 0.016666667; // ~60fps
-#endif
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];

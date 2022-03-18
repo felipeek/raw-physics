@@ -18,9 +18,15 @@
 #include "vendor/imgui.h"
 
 #define MENU_TITLE "Examples"
+#define FPS_MAX 144
+#define FPS_MIN 30
 
 static Example_Scene example_scenes[END_EXAMPLE_SCENE];
 static Example_Scene_Type selected_scene;
+
+// Used when fps is fixed
+static bool fix_fps = true;
+static int fps = 60;
 
 static int load_selected_scene() {
 	return example_scenes[selected_scene].init();
@@ -53,6 +59,10 @@ void core_destroy() {
 }
 
 void core_update(r64 delta_time) {
+    if (fix_fps) {
+        fps = CLAMP(fps, FPS_MIN, FPS_MAX);
+        delta_time = 1.0 / fps;
+    }
 	example_scenes[selected_scene].update(delta_time);
 }
 
@@ -88,6 +98,16 @@ void core_window_resize_process(s32 width, s32 height) {
 
 void core_menu_render() {
     if (ImGui::Begin(MENU_TITLE, NULL, 0)) {
+        ImGui::Text("Press [ESC] to open/close the menu");
+
+        ImGui::Checkbox("Fix timestep for FPS", &fix_fps);
+        if (fix_fps) {
+            ImGui::DragInt("FPS", &fps, 0.1f, FPS_MIN, FPS_MAX);
+        } else {
+            ImGui::Text("Timestep will be calculated per frame");
+            ImGui::Text("Simulation might become a bit unstable.");
+        }
+
         // left
         static Example_Scene_Type selected = EXAMPLE_SCENE_INITIAL;
         ImGui::BeginChild("left pane", ImVec2(150, 0), true);
@@ -106,6 +126,7 @@ void core_menu_render() {
         ImGui::BeginGroup();
 		ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
 		example_scenes[selected_scene].menu_properties_update();
+
 		ImGui::EndChild();
 		//if (ImGui::Button("Revert")) {}
 		//ImGui::SameLine();

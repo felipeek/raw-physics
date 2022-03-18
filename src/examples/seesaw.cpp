@@ -110,9 +110,6 @@ void ex_seesaw_update(r64 delta_time) {
 	//printf("(Quaternion){%f, %f, %f, %f}\n", camera.rotation.x, camera.rotation.y, camera.rotation.z, camera.rotation.w);
 	//printf("(Quaternion){%f, %f, %f, %f}\n", camera.yrotation.x, camera.yrotation.y, camera.yrotation.z, camera.yrotation.w);
 	//printf("(vec3){%f, %f, %f}\n", camera.position.x, camera.position.y, camera.position.z);
-#ifdef LIMIT_60FPS
-	delta_time = 0.016666667; // ~60fps
-#endif
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];

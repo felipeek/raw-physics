@@ -22,7 +22,7 @@ s32 window_height = 768;
 GLFWwindow* main_window;
 
 static boolean key_state[1024];	// @TODO: Check range.
-static boolean is_menu_visible = false;
+static boolean is_menu_visible = true;
 
 static void glfw_key_callback(GLFWwindow* window, s32 key, s32 scanCode, s32 action, s32 mods) {
 	if (action == GLFW_PRESS) {
