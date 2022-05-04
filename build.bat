@@ -7,6 +7,6 @@ set FILES=../src/*.cpp ../src/examples/*.cpp ../src/physics/*.cpp ../src/render/
 mkdir bin
 pushd bin
 call cl %COMPILER_FLAGS% %FILES% /link %LIBRARIES%
-cp ../lib/win64/glew32.dll .
-cp ../lib/win64/glfw3.dll .
+copy ..\lib\win64\glew32.dll .\glew32.dll
+copy ..\lib\win64\glfw3.dll .\glfw3.dll
 popd
