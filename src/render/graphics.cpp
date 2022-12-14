@@ -160,21 +160,21 @@ void graphics_light_create(Light* light, vec3 position, vec4 ambient_color, vec4
 // Render primitives
 
 typedef struct {
-  u32 shader;
-  // Vector rendering
-  u32 vector_vao;
-  u32 vector_vbo;
+	u32 shader;
+	// Vector rendering
+	u32 vector_vao;
+	u32 vector_vbo;
 
-  void* data_ptr;
-  int vertex_count;
+	void* data_ptr;
+	int vertex_count;
 
-  // Point rendering
-  u32 point_vao;
-  u32 point_vbo;
-  void* point_data_ptr;
-  int point_count;
+	// Point rendering
+	u32 point_vao;
+	u32 point_vbo;
+	void* point_data_ptr;
+int point_count;
 
-  int initialized;
+int initialized;
 } Render_Primitives_Context;
 
 typedef struct {

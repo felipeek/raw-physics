@@ -3,7 +3,7 @@
 #include <gm.h>
 
 typedef struct {
-  r64 x, y, z, w;
+	r64 x, y, z, w;
 } Quaternion;
 
 Quaternion quaternion_new_radians(vec3 axis, r64 angle);

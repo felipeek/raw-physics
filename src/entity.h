@@ -11,7 +11,7 @@ typedef u64 eid;
 typedef struct {
 	vec3 position;
 	vec3 force;
-    boolean local_coords;
+	boolean local_coords;
 } Physics_Force;
 
 typedef struct {

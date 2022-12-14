@@ -44,9 +44,9 @@ void menu_init(GLFWwindow* window) {
 }
 
 static void draw_main_window() {
-    ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_FirstUseEver);
-	core_menu_render();
-    ImGui::End();
+ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_FirstUseEver);
+core_menu_render();
+ImGui::End();
 }
 
 void menu_render() {

@@ -59,10 +59,10 @@ void core_destroy() {
 }
 
 void core_update(r64 delta_time) {
-    if (fix_fps) {
-        fps = CLAMP(fps, FPS_MIN, FPS_MAX);
-        delta_time = 1.0 / fps;
-    }
+	if (fix_fps) {
+		fps = CLAMP(fps, FPS_MIN, FPS_MAX);
+		delta_time = 1.0 / fps;
+	}
 	example_scenes[selected_scene].update(delta_time);
 }
 

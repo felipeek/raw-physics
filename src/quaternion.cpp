@@ -221,7 +221,7 @@ Quaternion quaternion_from_matrix(const mat4* m) {
 	Quaternion q = { 0 };
 	mat4 a = *m;
 
-	r64 trace = a.data[0][0] + a.data[1][1] + a.data[2][2];       // I removed + 1.0; see discussion with Ethan
+	r64 trace = a.data[0][0] + a.data[1][1] + a.data[2][2];	// I removed + 1.0; see discussion with Ethan
 
 	if (trace > 0) { // I changed M_EPSILON to 0
 		r64 s = 0.5 / sqrt(trace + 1.0);
