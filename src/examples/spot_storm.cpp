@@ -270,7 +270,7 @@ void ex_spot_storm_window_resize_process(s32 width, s32 height) {
 }
 
 void ex_spot_storm_menu_update() {
-	ImGui::Text("Cube Storm");
+	ImGui::Text("Spot Storm");
 	ImGui::Separator();
 
 	ImGui::TextWrapped("Press SPACE to throw objects!");

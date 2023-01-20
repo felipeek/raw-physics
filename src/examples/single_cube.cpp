@@ -197,7 +197,7 @@ void ex_single_cube_menu_update() {
 	ImGui::Text("Single Cube");
 	ImGui::Separator();
 
-	ImGui::TextWrapped("Tweak the friction coefficients to see how the cube slide in the ramp.");
+	ImGui::TextWrapped("Tweak the friction coefficients to see how the cube slide on the ramp.");
 	ImGui::TextWrapped("Cube and ramp static friction coefficient:");
 	if (ImGui::SliderFloat("fs", &static_friction_coefficient, 0.0f, 1.0f, "%.3f")) {
 		cube_entity->static_friction_coefficient = (r64)static_friction_coefficient;

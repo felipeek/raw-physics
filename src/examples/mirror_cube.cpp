@@ -197,7 +197,7 @@ void ex_mirror_cube_window_resize_process(s32 width, s32 height) {
 }
 
 void ex_mirror_cube_menu_update() {
-	ImGui::Text("Single Cube");
+	ImGui::Text("Mirror Cube");
 	ImGui::Separator();
 
 	ImGui::TextWrapped("Press SPACE to throw objects!");
