@@ -28,20 +28,6 @@ static Perspective_Camera create_camera() {
 	return camera;
 }
 
-static Light* create_lights() {
-	Light light;
-	Light* lights = array_new(Light);
-
-	vec3 light_position = (vec3) {0.0, 0.0, 15.0};
-	vec4 ambient_color = (vec4) {0.1, 0.1, 0.1, 1.0};
-	vec4 diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0};
-	vec4 specular_color = (vec4) {0.5, 0.5, 0.5, 1.0};
-	graphics_light_create(&light, light_position, ambient_color, diffuse_color, specular_color);
-	array_push(lights, light);
-
-	return lights;
-}
-
 static void reset_joint_distance(Entity* e1, Entity* e2, vec3 r1_lc, vec3 r2_lc) {
 	mat3 e1_rot_matrix = quaternion_get_matrix3(&e1->world_rotation);
 	mat3 e2_rot_matrix = quaternion_get_matrix3(&e2->world_rotation);
@@ -67,22 +53,22 @@ static Constraint* create_pendulum() {
 	vec3 support_collider_scale = (vec3){0.1, 0.1, 0.1};
 	Collider* support_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, support_collider_scale);
 	eid support_id = entity_create_fixed(cube_mesh, support_position, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), support_collider_scale,
-		(vec4){0.0, 1.0, 0.0, 1.0}, support_colliders);
+		(vec4){0.0, 1.0, 0.0, 1.0}, support_colliders, 0.5, 0.5, 0.0);
 
 	vec3 base_collider_scale = (vec3){0.1, 1.0, 0.1};
 	Collider* base_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, base_collider_scale);
 	base_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), base_collider_scale,
-		(vec4){0x77 / 255.0, 0xc3 / 255.0, 0xec / 255.0}, 1.0, base_colliders);
+		(vec4){0x77 / 255.0, 0xc3 / 255.0, 0xec / 255.0}, 1.0, base_colliders, 0.6, 0.6, 0.0);
 
 	vec3 piece_2_collider_scale = (vec3){0.1, 1.0, 0.1};
 	Collider* piece_2_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, piece_2_collider_scale);
 	piece_2_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), piece_2_collider_scale,
-		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, piece_2_colliders);
+		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, piece_2_colliders, 0.6, 0.6, 0.0);
 
 	vec3 piece_3_collider_scale = (vec3){0.1, 0.5, 0.1};
 	Collider* piece_3_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, piece_3_collider_scale);
 	piece_3_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){0.0, 0.0, 0.0}, 0.0), piece_3_collider_scale,
-		(vec4){1.0, 1.0, 1.0, 1.0}, 1.0, piece_3_colliders);
+		(vec4){1.0, 1.0, 1.0, 1.0}, 1.0, piece_3_colliders, 0.6, 0.6, 0.0);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -127,7 +113,7 @@ int ex_triple_pendula_init() {
 	// Create camera
 	camera = create_camera();
 	// Create light
-	lights = create_lights();
+	lights = examples_util_create_lights();
 
 	constraints = create_pendulum();
 
@@ -146,6 +132,7 @@ void ex_triple_pendula_destroy() {
 		entity_destroy(e);
 	}
 	array_free(entities);
+	array_free(constraints);
 	entity_module_destroy();
 }
 
@@ -281,6 +268,7 @@ void ex_triple_pendula_window_resize_process(s32 width, s32 height) {
 void ex_triple_pendula_menu_update() {
 	ImGui::Text("Triple Pendula");
 	ImGui::Separator();
+
 	ImGui::TextWrapped("Press B, N or M to apply a force to the first, second or third pendula, respectively!");
 	ImGui::TextWrapped("Press V to zero velocities!");
 }

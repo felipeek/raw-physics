@@ -99,20 +99,20 @@ static boolean is_color_palette_initialized;
 
 vec4 util_pallete(u32 n) {
 	if (!is_color_palette_initialized) {
-		color_palette[0] = (vec4){1.0, 0.0, 0.0, 1.0};
-		color_palette[1] = (vec4){0.0, 1.0, 0.0, 1.0};
-		color_palette[2] = (vec4){0.0, 0.0, 1.0, 1.0};
-		color_palette[3] = (vec4){1.0, 1.0, 0.0, 1.0};
-		color_palette[4] = (vec4){0.0, 1.0, 1.0, 1.0};
-		color_palette[5] = (vec4){1.0, 0.0, 1.0, 1.0};
+		color_palette[0] = (vec4){1.0, 0.4, 0.4, 1.0};
+		color_palette[1] = (vec4){0.4, 1.0, 0.4, 1.0};
+		color_palette[2] = (vec4){0.4, 0.4, 1.0, 1.0};
+		color_palette[3] = (vec4){1.0, 1.0, 0.4, 1.0};
+		color_palette[4] = (vec4){0.4, 1.0, 1.0, 1.0};
+		color_palette[5] = (vec4){1.0, 0.4, 1.0, 1.0};
 		color_palette[6] = (vec4){1.0, 1.0, 1.0, 1.0};
-		color_palette[7] = (vec4){0.0, 0.0, 0.0, 1.0};
-		color_palette[8] = (vec4){1.0, 0.5, 0.0, 1.0};
-		color_palette[9] = (vec4){0.0, 1.0, 0.5, 1.0};
-		color_palette[10] = (vec4){0.5, 0.0, 1.0, 1.0};
-		color_palette[11] = (vec4){0.5, 1.0, 0.0, 1.0};
-		color_palette[12] = (vec4){0.0, 0.5, 1.0, 1.0};
-		color_palette[13] = (vec4){1.0, 0.0, 0.5, 1.0};
+		color_palette[7] = (vec4){0.4, 0.4, 0.4, 1.0};
+		color_palette[8] = (vec4){1.0, 0.5, 0.4, 1.0};
+		color_palette[9] = (vec4){0.4, 1.0, 0.5, 1.0};
+		color_palette[10] = (vec4){0.5, 0.4, 1.0, 1.0};
+		color_palette[11] = (vec4){0.5, 1.0, 0.4, 1.0};
+		color_palette[12] = (vec4){0.4, 0.5, 1.0, 1.0};
+		color_palette[13] = (vec4){1.0, 0.4, 0.5, 1.0};
 		color_palette[14] = (vec4){1.0, 1.0, 0.5, 1.0};
 		color_palette[15] = (vec4){1.0, 0.5, 1.0, 1.0};
 		color_palette[16] = (vec4){0.5, 1.0, 1.0, 1.0};

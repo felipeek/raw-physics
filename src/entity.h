@@ -49,8 +49,10 @@ typedef struct {
 void entity_module_init();
 void entity_module_destroy();
 
-eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider* colliders);
-eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider* colliders);
+eid entity_create(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, r64 mass, Collider* colliders,
+		r64 static_friction_coefficient, r64 dynamic_friction_coefficient, r64 restitution_coefficient);
+eid entity_create_fixed(Mesh mesh, vec3 world_position, Quaternion world_rotation, vec3 world_scale, vec4 color, Collider* colliders,
+		r64 static_friction_coefficient, r64 dynamic_friction_coefficient, r64 restitution_coefficient);
 Entity* entity_get_by_id(eid id);
 Entity** entity_get_all();
 void entity_destroy(Entity* entity);

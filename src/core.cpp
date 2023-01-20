@@ -14,6 +14,7 @@
 #include "examples/stack.h"
 #include "examples/rott_pendulum.h"
 #include "examples/triple_pendula.h"
+#include "examples/spot_storm.h"
 #include "render/menu.h"
 #include "vendor/imgui.h"
 
@@ -49,6 +50,7 @@ int core_init() {
 	example_scenes[STACK_EXAMPLE_SCENE] = stack_example_scene;
 	example_scenes[ROTT_PENDULUM_EXAMPLE_SCENE] = rott_pendulum_example_scene;
 	example_scenes[TRIPLE_PENDULA_EXAMPLE_SCENE] = triple_pendula_example_scene;
+	example_scenes[SPOT_STORM_EXAMPLE_SCENE] = spot_storm_example_scene;
 
 	selected_scene = EXAMPLE_SCENE_INITIAL;
 	return load_selected_scene();

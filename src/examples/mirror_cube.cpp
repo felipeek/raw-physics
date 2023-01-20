@@ -15,6 +15,7 @@
 
 static Perspective_Camera camera;
 static Light* lights;
+static r64 thrown_objects_initial_linear_velocity_norm = 15.0;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -26,27 +27,13 @@ static Perspective_Camera create_camera() {
 	return camera;
 }
 
-static Light* create_lights() {
-	Light light;
-	Light* lights = array_new(Light);
-
-	vec3 light_position = (vec3) {0.0, 0.0, 15.0};
-	vec4 ambient_color = (vec4) {0.1, 0.1, 0.1, 1.0};
-	vec4 diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0};
-	vec4 specular_color = (vec4) {0.5, 0.5, 0.5, 1.0};
-	graphics_light_create(&light, light_position, ambient_color, diffuse_color, specular_color);
-	array_push(lights, light);
-
-	return lights;
-}
-
 int ex_mirror_cube_init() {
 	entity_module_init();
 
 	// Create camera
 	camera = create_camera();
 	// Create light
-	lights = create_lights();
+	lights = examples_util_create_lights();
 	
 	Vertex* cube_vertices;
 	u32* cube_indices;
@@ -61,17 +48,15 @@ int ex_mirror_cube_init() {
 	Vertex* mirror_cube_collider1_vertices;
 	u32* mirror_cube_collider1_indices;
 	obj_parse("./res/mirror_cube_collider1.obj", &mirror_cube_collider1_vertices, &mirror_cube_collider1_indices);
-	Mesh mirror_cube_collider1_mesh = graphics_mesh_create(mirror_cube_collider1_vertices, mirror_cube_collider1_indices);
 
 	Vertex* mirror_cube_collider2_vertices;
 	u32* mirror_cube_collider2_indices;
 	obj_parse("./res/mirror_cube_collider2.obj", &mirror_cube_collider2_vertices, &mirror_cube_collider2_indices);
-	Mesh mirror_cube_collider2_mesh = graphics_mesh_create(mirror_cube_collider2_vertices, mirror_cube_collider2_indices);
 
 	vec3 floor_scale = (vec3){50.0, 1.0, 50.0};
 	Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, floor_scale);
 	entity_create_fixed(cube_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders);
+		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders, 0.5, 0.5, 0.0);
 
 	vec3 mirror_cube_scale = (vec3){1.0, 1.0, 1.0};
 	Collider mirror_cube_collider1 = examples_util_create_convex_hull_collider(mirror_cube_collider1_vertices, mirror_cube_collider1_indices, mirror_cube_scale);
@@ -80,7 +65,7 @@ int ex_mirror_cube_init() {
 	array_push(mirror_cube_colliders, mirror_cube_collider1);
 	array_push(mirror_cube_colliders, mirror_cube_collider2);
 	entity_create(mirror_cube_mesh, (vec3){0.0, 2.0, 0.0}, quaternion_new((vec3){1.0, 1.0, 1.0}, 33.0),
-		mirror_cube_scale, (vec4){1.0, 1.0, 1.0, 1.0}, 1.0, mirror_cube_colliders);
+		mirror_cube_scale, (vec4){1.0, 1.0, 1.0, 1.0}, 1.0, mirror_cube_colliders, 0.8, 0.8, 0.0);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -178,7 +163,7 @@ void ex_mirror_cube_input_process(boolean* key_state, r64 delta_time) {
 	}
 
 	if (key_state[GLFW_KEY_SPACE]) {
-		examples_util_throw_object(&camera);
+		examples_util_throw_object(&camera, thrown_objects_initial_linear_velocity_norm);
 		key_state[GLFW_KEY_SPACE] = false;
 	}
 }
@@ -214,7 +199,12 @@ void ex_mirror_cube_window_resize_process(s32 width, s32 height) {
 void ex_mirror_cube_menu_update() {
 	ImGui::Text("Single Cube");
 	ImGui::Separator();
+
 	ImGui::TextWrapped("Press SPACE to throw objects!");
+	ImGui::TextWrapped("Thrown objects initial linear velocity norm:");
+	r32 vel = (r32)thrown_objects_initial_linear_velocity_norm;
+	ImGui::SliderFloat("Vel", &vel, 1.0f, 30.0f, "%.2f");
+	thrown_objects_initial_linear_velocity_norm = vel;
 }
 
 Example_Scene mirror_cube_example_scene = (Example_Scene) {

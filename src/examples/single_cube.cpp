@@ -15,6 +15,10 @@
 
 static Perspective_Camera camera;
 static Light* lights;
+static eid cube_eid;
+static r32 static_friction_coefficient = 1.0;
+static r32 dynamic_friction_coefficient = 0.7;
+static r32 restitution_coefficient = 0.0;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -22,22 +26,15 @@ static Perspective_Camera create_camera() {
 	r64 camera_near_plane = -0.01;
 	r64 camera_far_plane = -1000.0;
 	r64 camera_fov = 45.0;
+
 	camera_init(&camera, camera_position, camera_near_plane, camera_far_plane, camera_fov);
+
+	camera.rotation = (Quaternion){0.240228, 0.000000, 0.000000, 0.970716};
+	camera.yrotation = (Quaternion){0.000000, -0.298208, 0.000000, 0.954501};
+	camera.position = (vec3){12.162289, 8.025262, 15.310513};
+	camera_force_matrix_recalculation(&camera);
+
 	return camera;
-}
-
-static Light* create_lights() {
-	Light light;
-	Light* lights = array_new(Light);
-
-	vec3 light_position = (vec3) {0.0, 0.0, 15.0};
-	vec4 ambient_color = (vec4) {0.1, 0.1, 0.1, 1.0};
-	vec4 diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0};
-	vec4 specular_color = (vec4) {0.5, 0.5, 0.5, 1.0};
-	graphics_light_create(&light, light_position, ambient_color, diffuse_color, specular_color);
-	array_push(lights, light);
-
-	return lights;
 }
 
 int ex_single_cube_init() {
@@ -46,25 +43,33 @@ int ex_single_cube_init() {
 	// Create camera
 	camera = create_camera();
 	// Create light
-	lights = create_lights();
+	lights = examples_util_create_lights();
 	
+	Vertex* ramp_vertices;
+	u32* ramp_indices;
+	obj_parse("./res/ramp.obj", &ramp_vertices, &ramp_indices);
+	Mesh ramp_mesh = graphics_mesh_create(ramp_vertices, ramp_indices);
+
+	vec3 ramp_scale = (vec3){2.0, 4.0, 10.0};
+	Collider* ramp_colliders = examples_util_create_single_convex_hull_collider_array(ramp_vertices, ramp_indices, ramp_scale);
+	entity_create_fixed(ramp_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, -90.0),
+		ramp_scale, (vec4){1.0, 1.0, 1.0, 1.0}, ramp_colliders, static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
+	printf("Using %.3f, %.3f, %.3f\n", static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
+
 	Vertex* cube_vertices;
 	u32* cube_indices;
 	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
 	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
 
-	vec3 floor_scale = (vec3){50.0, 1.0, 50.0};
-	Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, floor_scale);
-	entity_create_fixed(cube_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders);
-
 	vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
 	Collider* cube_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, cube_scale);
-	entity_create(cube_mesh, (vec3){0.0, 2.0, 0.0}, quaternion_new((vec3){1.0, 1.0, 1.0}, 33.0),
-		cube_scale, (vec4){1.0, 1.0, 1.0, 1.0}, 1.0, cube_colliders);
+	cube_eid = entity_create(cube_mesh, (vec3){-5.0, 4.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0),
+		cube_scale, (vec4){0.8, 0.8, 1.0, 1.0}, 1.0, cube_colliders, static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
+	array_free(ramp_vertices);
+	array_free(ramp_indices);
 
 	return 0;
 }
@@ -76,6 +81,7 @@ void ex_single_cube_destroy() {
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		Entity* e = entities[i];
 		colliders_destroy(e->colliders);
+		array_free(e->colliders);
 		mesh_destroy(&e->mesh);
 		entity_destroy(e);
 	}
@@ -150,10 +156,10 @@ void ex_single_cube_input_process(boolean* key_state, r64 delta_time) {
 		wireframe = !wireframe;
 		key_state[GLFW_KEY_L] = false;
 	}
-
-	if (key_state[GLFW_KEY_SPACE]) {
-		examples_util_throw_object(&camera);
-		key_state[GLFW_KEY_SPACE] = false;
+	if (key_state[GLFW_KEY_P]) {
+		Entity* cube_entity = entity_get_by_id(cube_eid);
+		entity_add_force(cube_entity, (vec3){0.0, 1.0, 0.0}, (vec3){10.0, 0.0, 0.0}, false);
+		entity_activate(cube_entity);
 	}
 }
 
@@ -186,9 +192,35 @@ void ex_single_cube_window_resize_process(s32 width, s32 height) {
 }
 
 void ex_single_cube_menu_update() {
+	Entity* cube_entity = entity_get_by_id(cube_eid);
+
 	ImGui::Text("Single Cube");
 	ImGui::Separator();
-	ImGui::TextWrapped("Press SPACE to throw objects!");
+
+	ImGui::TextWrapped("Tweak the friction coefficients to see how the cube slide in the ramp.");
+	ImGui::TextWrapped("Cube and ramp static friction coefficient:");
+	if (ImGui::SliderFloat("fs", &static_friction_coefficient, 0.0f, 1.0f, "%.3f")) {
+		cube_entity->static_friction_coefficient = (r64)static_friction_coefficient;
+		entity_activate(cube_entity);
+	}
+
+	ImGui::TextWrapped("Cube and ramp dynamic friction coefficient:");
+	bool changed = ImGui::SliderFloat("fd", &dynamic_friction_coefficient, 0.0f, 1.0f, "%.3f");
+	if (changed || dynamic_friction_coefficient > static_friction_coefficient) {
+		// clamp dynamic friction if it was set to be greater than static friction (to be 'physically' more accurate)
+		dynamic_friction_coefficient = CLAMP(dynamic_friction_coefficient, 0.0, static_friction_coefficient);
+		cube_entity->dynamic_friction_coefficient = (r64)dynamic_friction_coefficient;
+		entity_activate(cube_entity);
+	}
+
+	ImGui::TextWrapped("Cube restitution coefficient:");
+	if (ImGui::SliderFloat("rc", &restitution_coefficient, 0.0f, 1.0f, "%.3f")) {
+		cube_entity->restitution_coefficient = (r64)restitution_coefficient;
+		entity_activate(cube_entity);
+	}
+	ImGui::Separator();
+
+	ImGui::TextWrapped("Press [P] to create an horizontal force (->) at the top of the cube.");
 }
 
 Example_Scene single_cube_example_scene = (Example_Scene) {

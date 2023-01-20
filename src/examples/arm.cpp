@@ -17,6 +17,7 @@
 static Perspective_Camera camera;
 static Light* lights;
 static Constraint* constraints;
+static r64 thrown_objects_initial_linear_velocity_norm = 15.0;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -26,20 +27,6 @@ static Perspective_Camera create_camera() {
 	r64 camera_fov = 45.0;
 	camera_init(&camera, camera_position, camera_near_plane, camera_far_plane, camera_fov);
 	return camera;
-}
-
-static Light* create_lights() {
-	Light light;
-	Light* lights = array_new(Light);
-
-	vec3 light_position = (vec3) {0.0, 0.0, 15.0};
-	vec4 ambient_color = (vec4) {0.1, 0.1, 0.1, 1.0};
-	vec4 diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0};
-	vec4 specular_color = (vec4) {0.5, 0.5, 0.5, 1.0};
-	graphics_light_create(&light, light_position, ambient_color, diffuse_color, specular_color);
-	array_push(lights, light);
-
-	return lights;
 }
 
 static void reset_joint_distance(Entity* e1, Entity* e2, vec3 r1_lc, vec3 r2_lc) {
@@ -65,22 +52,22 @@ static Constraint* create_arm() {
 	vec3 support_collider_scale = (vec3){0.2, 0.1, 0.1};
 	Collider* support_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, support_collider_scale);
 	eid support_id = entity_create_fixed(cube_mesh, support_position, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), support_collider_scale,
-		(vec4){0.0, 1.0, 0.0, 1.0}, support_colliders);
+		(vec4){0.0, 1.0, 0.0, 1.0}, support_colliders, 0.5, 0.5, 0.0);
 
 	vec3 upper_arm_collider_scale = (vec3){0.2, 1.0, 0.1};
 	Collider* upper_arm_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, upper_arm_collider_scale);
 	eid upper_arm_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), upper_arm_collider_scale,
-		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, upper_arm_colliders);
+		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, upper_arm_colliders, 0.6, 0.6, 0.0);
 
 	vec3 lower_arm_collider_scale = (vec3){0.15, 1.0, 0.1};
 	Collider* lower_arm_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, lower_arm_collider_scale);
 	eid lower_arm_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), lower_arm_collider_scale,
-		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, lower_arm_colliders);
+		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, lower_arm_colliders, 0.6, 0.6, 0.0);
 
 	vec3 hand_collider_scale = (vec3){0.3, 0.3, 0.1};
 	Collider* hand_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, hand_collider_scale);
 	eid hand_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), hand_collider_scale,
-		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, hand_colliders);
+		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, hand_colliders, 0.6, 0.6, 0.0);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -128,18 +115,7 @@ int ex_arm_init() {
 	// Create camera
 	camera = create_camera();
 	// Create light
-	lights = create_lights();
-	
-	//Vertex* floor_vertices;
-	//u32* floor_indices;
-	//obj_parse("./res/floor.obj", &floor_vertices, &floor_indices);
-	//Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
-	//vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
-	//Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(floor_vertices, floor_indices, floor_scale);
-	//entity_create_fixed(floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-	//	floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_collider);
-	//array_free(floor_vertices);
-	//array_free(floor_indices);
+	lights = examples_util_create_lights();
 
 	constraints = create_arm();
 
@@ -158,6 +134,7 @@ void ex_arm_destroy() {
 		entity_destroy(e);
 	}
 	array_free(entities);
+	array_free(constraints);
 	entity_module_destroy();
 }
 
@@ -231,7 +208,7 @@ void ex_arm_input_process(boolean* key_state, r64 delta_time) {
 	}
 
 	if (key_state[GLFW_KEY_SPACE]) {
-		examples_util_throw_object(&camera);
+		examples_util_throw_object(&camera, thrown_objects_initial_linear_velocity_norm);
 		key_state[GLFW_KEY_SPACE] = false;
 	}
 }
@@ -267,7 +244,12 @@ void ex_arm_window_resize_process(s32 width, s32 height) {
 void ex_arm_menu_update() {
 	ImGui::Text("Arm");
 	ImGui::Separator();
+
 	ImGui::TextWrapped("Press SPACE to throw objects!");
+	ImGui::TextWrapped("Thrown objects initial linear velocity norm:");
+	r32 vel = (r32)thrown_objects_initial_linear_velocity_norm;
+	ImGui::SliderFloat("Vel", &vel, 1.0f, 30.0f, "%.2f");
+	thrown_objects_initial_linear_velocity_norm = vel;
 }
 
 Example_Scene arm_example_scene = (Example_Scene) {

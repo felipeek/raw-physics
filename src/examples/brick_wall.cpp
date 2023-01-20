@@ -16,6 +16,11 @@
 
 static Perspective_Camera camera;
 static Light* lights;
+static r32 static_friction_coefficient = 0.5;
+static r32 dynamic_friction_coefficient = 0.4;
+static r32 restitution_coefficient = 0.0;
+static r64 thrown_objects_initial_linear_velocity_norm = 15.0;
+static eid* brick_eids;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -31,27 +36,13 @@ static Perspective_Camera create_camera() {
 	return camera;
 }
 
-static Light* create_lights() {
-	Light light;
-	Light* lights = array_new(Light);
-
-	vec3 light_position = (vec3) {0.0, 0.0, 15.0};
-	vec4 ambient_color = (vec4) {0.1, 0.1, 0.1, 1.0};
-	vec4 diffuse_color = (vec4) {0.8, 0.8, 0.8, 1.0};
-	vec4 specular_color = (vec4) {0.5, 0.5, 0.5, 1.0};
-	graphics_light_create(&light, light_position, ambient_color, diffuse_color, specular_color);
-	array_push(lights, light);
-
-	return lights;
-}
-
 int ex_brick_wall_init() {
 	entity_module_init();
 
 	// Create camera
 	camera = create_camera();
 	// Create light
-	lights = create_lights();
+	lights = examples_util_create_lights();
 	
 	Vertex* cube_vertices;
 	u32* cube_indices;
@@ -61,8 +52,9 @@ int ex_brick_wall_init() {
 	vec3 floor_scale = (vec3){50.0, 1.0, 50.0};
 	Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, floor_scale);
 	entity_create_fixed(cube_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders);
+		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders, 0.5, 0.5, 0.0);
 
+	brick_eids = array_new(eid);
 	const r64 brick_height = 0.35;
 	const r64 brick_width = 0.8;
 	r64 y = -1.0;
@@ -80,8 +72,9 @@ int ex_brick_wall_init() {
 			vec4 color = ((i + j) % 2 == 0) ?
 				(vec4) { 188.0 / 255.0, 74.0 / 255.0, 60.0 / 255.0, 1.0 } :
 				(vec4) { 168.0 / 255.0, 64.0 / 255.0, 50.0 / 255.0, 1.0 };
-			entity_create(cube_mesh, (vec3){x, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-				cube_scale, color, 0.5, cube_colliders);
+			eid brick_eid = entity_create(cube_mesh, (vec3){x, y, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+				cube_scale, color, 0.5, cube_colliders, static_friction_coefficient, dynamic_friction_coefficient, 0.0);
+			array_push(brick_eids, brick_eid);
 			x += 2 * brick_width + 0.01;
 		}
 		x = -2.0;
@@ -105,6 +98,7 @@ void ex_brick_wall_destroy() {
 		entity_destroy(e);
 	}
 	array_free(entities);
+	array_free(brick_eids);
 	entity_module_destroy();
 }
 
@@ -179,32 +173,7 @@ void ex_brick_wall_input_process(boolean* key_state, r64 delta_time) {
 	}
 
 	if (key_state[GLFW_KEY_SPACE]) {
-#if 1
-		examples_util_throw_object(&camera);
-#else
-		vec3 camera_z = camera_get_z_axis(&camera);
-		vec3 camera_pos = camera.position;
-		r64 distance = 5.0;
-		vec3 diff = gm_vec3_scalar_product(-distance, camera_z);
-		vec3 object_position = gm_vec3_add(camera_pos, diff);
-
-		const char* mesh_name = "./res/sphere.obj";
-		Vertex* vertices;
-		u32* indices;
-		obj_parse(mesh_name, &vertices, &indices);
-		Mesh m = graphics_mesh_create(vertices, indices);
-		vec3 scale = (vec3){0.25, 0.25, 0.25};
-		Collider collider = collider_sphere_create(0.25);
-		Collider* colliders = array_new(Collider);
-		array_push(colliders, collider);
-		eid id = entity_create(m, object_position, quaternion_new((vec3){0.35, 0.44, 0.12}, 0.0),
-			scale, (vec4){rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, rand() / (r64)RAND_MAX, 1.0}, 1.0, colliders);
-		array_free(vertices);
-		array_free(indices);
-		Entity* e = entity_get_by_id(id);
-		e->linear_velocity = gm_vec3_scalar_product(20.0, gm_vec3_scalar_product(-1.0, camera_z));
-#endif
-
+		examples_util_throw_object(&camera, thrown_objects_initial_linear_velocity_norm);
 		key_state[GLFW_KEY_SPACE] = false;
 	}
 }
@@ -240,7 +209,35 @@ void ex_brick_wall_window_resize_process(s32 width, s32 height) {
 void ex_brick_wall_menu_update() {
 	ImGui::Text("Brick Wall");
 	ImGui::Separator();
+
+	ImGui::TextWrapped("Tweak the friction coefficients of the bricks that compose the wall.");
+	ImGui::TextWrapped("Bricks static friction coefficient:");
+	if (ImGui::SliderFloat("fs", &static_friction_coefficient, 0.0f, 1.0f, "%.3f")) {
+		for (u32 i = 0; i < array_length(brick_eids); ++i) {
+			Entity* brick_entity = entity_get_by_id(brick_eids[i]);
+			brick_entity->static_friction_coefficient = (r64)static_friction_coefficient;
+			entity_activate(brick_entity);
+		}
+	}
+
+	ImGui::TextWrapped("Cube and ramp dynamic friction coefficient:");
+	bool changed = ImGui::SliderFloat("fd", &dynamic_friction_coefficient, 0.0f, 1.0f, "%.3f");
+	if (changed || dynamic_friction_coefficient > static_friction_coefficient) {
+		// clamp dynamic friction if it was set to be greater than static friction (to be 'physically' more accurate)
+		dynamic_friction_coefficient = CLAMP(dynamic_friction_coefficient, 0.0, static_friction_coefficient);
+		for (u32 i = 0; i < array_length(brick_eids); ++i) {
+			Entity* brick_entity = entity_get_by_id(brick_eids[i]);
+			brick_entity->dynamic_friction_coefficient = (r64)dynamic_friction_coefficient;
+			entity_activate(brick_entity);
+		}
+	}
+	ImGui::Separator();
+
 	ImGui::TextWrapped("Press SPACE to throw objects!");
+	ImGui::TextWrapped("Thrown objects initial linear velocity norm:");
+	r32 vel = (r32)thrown_objects_initial_linear_velocity_norm;
+	ImGui::SliderFloat("Vel", &vel, 1.0f, 30.0f, "%.2f");
+	thrown_objects_initial_linear_velocity_norm = vel;
 }
 
 Example_Scene brick_wall_example_scene = (Example_Scene) {
