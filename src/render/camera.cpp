@@ -74,7 +74,7 @@ void camera_set_far_plane(Perspective_Camera* camera, r64 far_plane) {
 void camera_rotate_x(Perspective_Camera* camera, r64 x_difference) {
 	Quaternion y_axis = quaternion_new((vec3) { 0.0, 1.0, 0.0 }, x_difference);
 	camera->yrotation = quaternion_product(&y_axis, &camera->yrotation);
-	quaternion_normalize(&camera->yrotation);
+	camera->yrotation = quaternion_normalize(&camera->yrotation);
 	recalculate_view_matrix(camera);
 }
 
@@ -83,7 +83,7 @@ void camera_rotate_y(Perspective_Camera* camera, r64 y_difference) {
 	right = gm_vec3_normalize(right);
 	Quaternion x_axis = quaternion_new(right, y_difference);
 	camera->rotation = quaternion_product(&camera->rotation, &x_axis);
-	quaternion_normalize(&camera->rotation);
+	camera->rotation = quaternion_normalize(&camera->rotation);
 	recalculate_view_matrix(camera);
 }
 
