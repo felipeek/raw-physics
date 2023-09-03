@@ -220,7 +220,7 @@ void ex_brick_wall_menu_update() {
 		}
 	}
 
-	ImGui::TextWrapped("Cube and ramp dynamic friction coefficient:");
+	ImGui::TextWrapped("Bricks dynamic friction coefficient:");
 	bool changed = ImGui::SliderFloat("fd", &dynamic_friction_coefficient, 0.0f, 1.0f, "%.3f");
 	if (changed || dynamic_friction_coefficient > static_friction_coefficient) {
 		// clamp dynamic friction if it was set to be greater than static friction (to be 'physically' more accurate)
