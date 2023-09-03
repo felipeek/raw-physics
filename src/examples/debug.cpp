@@ -14,6 +14,7 @@
 #include "../util.h"
 #include "examples_util.h"
 
+static eid cube_eid, cube2_eid;
 static Perspective_Camera camera;
 static Light* lights;
 static Constraint* constraints;
@@ -52,16 +53,25 @@ int ex_debug_init() {
 	// Create light
 	lights = examples_util_create_lights();
 	
-	Vertex* floor_vertices;
-	u32* floor_indices;
-	obj_parse("./res/floor.obj", &floor_vertices, &floor_indices);
-	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
-	vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
-	Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(floor_vertices, floor_indices, floor_scale);
-	entity_create_fixed(floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders, 0.5, 0.5, 0.0);
-	array_free(floor_vertices);
-	array_free(floor_indices);
+	Vertex* cube_vertices;
+	u32* cube_indices;
+	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
+	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
+
+	vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
+	Collider* cube_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, cube_scale);
+	cube_eid = entity_create(cube_mesh, (vec3){0.0, 2.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0),
+		cube_scale, (vec4){1.0, 0.3, 0.3, 1.0}, 1.0, cube_colliders, 0.5, 0.5, 0.0);
+
+	Mesh cube2_mesh = graphics_mesh_create(cube_vertices, cube_indices);
+
+	vec3 cube2_scale = (vec3){1.0, 1.0, 1.0};
+	Collider* cube2_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, cube2_scale);
+	cube2_eid = entity_create(cube2_mesh, (vec3){0.0, 3.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0),
+		cube2_scale, (vec4){0.3, 1.0, 0.3, 1.0}, 1.0, cube2_colliders, 0.5, 0.5, 0.0);
+
+	array_free(cube_vertices);
+	array_free(cube_indices);
 
 	return 0;
 }
@@ -81,75 +91,40 @@ void ex_debug_destroy() {
 	entity_module_destroy();
 }
 
-boolean paused = false;
+Collider_Contact* contacts = NULL;
 
 void ex_debug_update(r64 delta_time) {
-	Entity** entities = entity_get_all();
-	for (u32 i = 0; i < array_length(entities); ++i) {
-		Entity* e = entities[i];
-		colliders_update(e->colliders, e->world_position, &e->world_rotation);
-		//printf("e%d: <%.50f, %.50f, %.50f>\n", i, e->world_position.x, e->world_position.y, e->world_position.z);
-		//printf("e%d: rot: <%.50f, %.50f, %.50f, %.50f>\n", i, e->world_rotation.x, e->world_rotation.y, e->world_rotation.z, e->world_rotation.w);
-	}
+	Entity* cube_entity = entity_get_by_id(cube_eid);
+	Entity* cube2_entity = entity_get_by_id(cube2_eid);
+	colliders_update(cube_entity->colliders, cube_entity->world_position, &cube_entity->world_rotation);
+	colliders_update(cube2_entity->colliders, cube2_entity->world_position, &cube2_entity->world_rotation);
 
-	if (paused) {
-		return;
-	}
-
-	const r64 GRAVITY = 10.0;
-	for (u32 i = 0; i < array_length(entities); ++i) {
-		entity_add_force(entities[i], (vec3){0.0, 0.0, 0.0}, (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0}, false);
-	}
-
-	pbd_simulate(delta_time, entities, 20, 1, true);
-
-	for (u32 i = 0; i < array_length(entities); ++i) {
-		entity_clear_forces(entities[i]);
-	}
-	array_free(entities);
+	contacts = colliders_get_contacts(cube_entity->colliders, cube2_entity->colliders);
 }
 
 void ex_debug_render() {
-	Entity** entities = entity_get_all();
+	Entity* cube_entity = entity_get_by_id(cube_eid);
+	Entity* cube2_entity = entity_get_by_id(cube2_eid);
 
-	#if 0
-	for (u32 i = 0; i < array_length(entities); ++i) {
-		for (u32 j = i + 1; j < array_length(entities); ++j) {
-			Entity* e1 = entities[i];
-			Entity* e2 = entities[j];
-			GJK_Simplex simplex;
-			vec3 normal;
-			boolean collision = false;
-			Collider_Contact* contacts = collider_get_contacts(&e1->collider, &e2->collider, &normal);
+	graphics_entity_render_phong_shader(&camera, cube_entity, lights);
+	graphics_entity_render_phong_shader(&camera, cube2_entity, lights);
 
-			if (contacts && array_length(contacts) > 0) {
-				for (u32 i = 0; i < array_length(contacts); ++i) {
-					Collider_Contact* contact = &contacts[i];
+	if (!contacts) {
+		return;
+	}	
 
-					vec3 cp1 = contact->collision_point1;
-					vec3 cp2 = contact->collision_point2;
-					graphics_renderer_debug_points(&cp1, 1, (vec4){1.0, 1.0, 1.0, 1.0});
-					graphics_renderer_debug_points(&cp2, 1, (vec4){1.0, 1.0, 1.0, 1.0});
-					graphics_renderer_debug_vector(cp1, gm_vec3_add(cp1, normal), (vec4){1.0, 1.0, 1.0, 1.0});
-					graphics_renderer_debug_vector(cp2, gm_vec3_add(cp2, normal), (vec4){1.0, 1.0, 1.0, 1.0});
-				}
-
-				e1->color = (vec4){0.0, 1.0, 0.0, 1.0};
-				e2->color = (vec4){0.0, 1.0, 0.0, 1.0};
-			} else {
-				e1->color = (vec4){1.0, 0.0, 0.0, 1.0};
-				e2->color = (vec4){1.0, 0.0, 0.0, 1.0};
-			}
-		}
-	}
-	#endif
-
-	for (u32 i = 0; i < array_length(entities); ++i) {
-		graphics_entity_render_phong_shader(&camera, entities[i], lights);
+	for (u32 i = 0; i < array_length(contacts); ++i) {
+		Collider_Contact* contact = &contacts[i];
+		vec3 cp1 = contact->collision_point1;
+		vec3 cp2 = contact->collision_point2;
+		vec3 normal = contact->normal;
+		graphics_renderer_debug_points(&cp1, 1, (vec4){1.0, 1.0, 1.0, 1.0});
+		graphics_renderer_debug_points(&cp2, 1, (vec4){1.0, 1.0, 1.0, 1.0});
+		graphics_renderer_debug_vector(cp1, gm_vec3_add(cp1, normal), (vec4){1.0, 1.0, 1.0, 1.0});
+		graphics_renderer_debug_vector(cp2, gm_vec3_add(cp2, normal), (vec4){1.0, 1.0, 1.0, 1.0});
 	}
 
 	graphics_renderer_primitives_flush(&camera);
-	array_free(entities);
 }
 
 void ex_debug_input_process(boolean* key_state, r64 delta_time) {
@@ -187,48 +162,6 @@ void ex_debug_input_process(boolean* key_state, r64 delta_time) {
 		wireframe = !wireframe;
 		key_state[GLFW_KEY_L] = false;
 	}
-
-/*
-	if (key_state[GLFW_KEY_X])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){1.0f, 0.0f, 0.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Y])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 1.0f, 0.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-	if (key_state[GLFW_KEY_Z])
-	{
-		if (key_state[GLFW_KEY_LEFT_SHIFT] || key_state[GLFW_KEY_RIGHT_SHIFT])
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-		else
-		{
-			Quaternion rotation = quaternion_new((vec3){0.0f, 0.0f, 1.0f}, -rotation_speed * delta_time);
-			entity_set_rotation(e, quaternion_product(&rotation, &e->world_rotation));
-		}
-	}
-*/
 
 	if (key_state[GLFW_KEY_1]) {
 		is_mouse_bound_to_entity_movement = true;
