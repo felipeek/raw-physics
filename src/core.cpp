@@ -2,7 +2,7 @@
 #include <math.h>
 #include <assert.h>
 #include "core.h"
-#include "examples/single_cube.h"
+#include "examples/cube_and_ramp.h"
 #include "examples/debug.h"
 #include "examples/cube_storm.h"
 #include "examples/seesaw.h"
@@ -15,6 +15,7 @@
 #include "examples/rott_pendulum.h"
 #include "examples/triple_pendula.h"
 #include "examples/spot_storm.h"
+#include "examples/coin.h"
 #include "render/menu.h"
 #include "vendor/imgui.h"
 
@@ -39,7 +40,7 @@ static void core_destroy_selected_scene() {
 
 int core_init() {
 	example_scenes[DEBUG_EXAMPLE_SCENE] = debug_example_scene;
-	example_scenes[SINGLE_CUBE_EXAMPLE_SCENE] = single_cube_example_scene;
+	example_scenes[CUBE_AND_RAMP_EXAMPLE_SCENE] = cube_and_ramp_example_scene;
 	example_scenes[CUBE_STORM_EXAMPLE_SCENE] = cube_storm_example_scene;
 	example_scenes[SEESAW_EXAMPLE_SCENE] = seesaw_example_scene;
 	example_scenes[SPRING_EXAMPLE_SCENE] = spring_example_scene;
@@ -51,6 +52,7 @@ int core_init() {
 	example_scenes[ROTT_PENDULUM_EXAMPLE_SCENE] = rott_pendulum_example_scene;
 	example_scenes[TRIPLE_PENDULA_EXAMPLE_SCENE] = triple_pendula_example_scene;
 	example_scenes[SPOT_STORM_EXAMPLE_SCENE] = spot_storm_example_scene;
+	example_scenes[COIN_EXAMPLE_SCENE] = coin_example_scene;
 
 	selected_scene = EXAMPLE_SCENE_INITIAL;
 	return load_selected_scene();
@@ -74,7 +76,7 @@ void core_render() {
 
 void core_input_process(boolean* key_state, r64 delta_time) {
 	if (key_state[GLFW_KEY_2]) {
-		core_switch_scene(SINGLE_CUBE_EXAMPLE_SCENE);
+		core_switch_scene(CUBE_AND_RAMP_EXAMPLE_SCENE);
 		key_state[GLFW_KEY_2] = 0;
 	}
 	else {

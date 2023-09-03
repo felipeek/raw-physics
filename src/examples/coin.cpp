@@ -1,4 +1,4 @@
-#include "single_cube.h"
+#include "coin.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -15,10 +15,10 @@
 
 static Perspective_Camera camera;
 static Light* lights;
-static eid cube_eid;
+static eid coin_eid, floor_eid;
 static r32 static_friction_coefficient = 1.0;
 static r32 dynamic_friction_coefficient = 0.7;
-static r32 restitution_coefficient = 0.0;
+static r32 restitution_coefficient = 0.5;
 
 static Perspective_Camera create_camera() {
 	Perspective_Camera camera;
@@ -37,44 +37,46 @@ static Perspective_Camera create_camera() {
 	return camera;
 }
 
-int ex_single_cube_init() {
+int ex_coin_init() {
 	entity_module_init();
 
 	// Create camera
 	camera = create_camera();
 	// Create light
 	lights = examples_util_create_lights();
-	
-	Vertex* ramp_vertices;
-	u32* ramp_indices;
-	obj_parse("./res/ramp.obj", &ramp_vertices, &ramp_indices);
-	Mesh ramp_mesh = graphics_mesh_create(ramp_vertices, ramp_indices);
 
-	vec3 ramp_scale = (vec3){2.0, 4.0, 10.0};
-	Collider* ramp_colliders = examples_util_create_single_convex_hull_collider_array(ramp_vertices, ramp_indices, ramp_scale);
-	entity_create_fixed(ramp_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, -90.0),
-		ramp_scale, (vec4){1.0, 1.0, 1.0, 1.0}, ramp_colliders, static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
-	printf("Using %.3f, %.3f, %.3f\n", static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
+	// TODO: We don't have a collider of type CYLINDER yet, hence we are using a complex convex hull to represent the cylinder here.
+	// Once that is added to the engine we should use the cylinder collider here.
+	Vertex* coin_vertices;
+	u32* coin_indices;
+	obj_parse("./res/cylinder.obj", &coin_vertices, &coin_indices);
+	Mesh coin_mesh = graphics_mesh_create(coin_vertices, coin_indices);
 
-	Vertex* cube_vertices;
-	u32* cube_indices;
-	obj_parse("./res/cube.obj", &cube_vertices, &cube_indices);
-	Mesh cube_mesh = graphics_mesh_create(cube_vertices, cube_indices);
+	vec3 coin_scale = (vec3){3.0, 0.1, 3.0};
+	//vec3 coin_scale = (vec3){1.0, 1.0, 1.0}; // for debug
+	Collider* coin_colliders = examples_util_create_single_convex_hull_collider_array(coin_vertices, coin_indices, coin_scale);
+	coin_eid = entity_create(coin_mesh, (vec3){0.0, 4.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 1.0}, 30.0),
+		coin_scale, (vec4){205.0 / 255.0, 127.0 / 255.0, 50.0 / 255.0, 1.0}, 1.0,
+		coin_colliders, static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
 
-	vec3 cube_scale = (vec3){1.0, 1.0, 1.0};
-	Collider* cube_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, cube_scale);
-	cube_eid = entity_create(cube_mesh, (vec3){-5.0, 4.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0),
-		cube_scale, (vec4){0.8, 0.8, 1.0, 1.0}, 1.0, cube_colliders, static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
+	Vertex* floor_vertices;
+	u32* floor_indices;
+	obj_parse("./res/floor.obj", &floor_vertices, &floor_indices);
+	Mesh floor_mesh = graphics_mesh_create(floor_vertices, floor_indices);
+	vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
+	Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(floor_vertices, floor_indices, floor_scale);
+	floor_eid = entity_create_fixed(floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
+		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders, static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
+	array_free(floor_vertices);
+	array_free(floor_indices);
 
-	array_free(cube_vertices);
-	array_free(cube_indices);
-	array_free(ramp_vertices);
-	array_free(ramp_indices);
+	array_free(coin_vertices);
+	array_free(coin_indices);
 
 	return 0;
 }
 
-void ex_single_cube_destroy() {
+void ex_coin_destroy() {
 	array_free(lights);
 
 	Entity** entities = entity_get_all();
@@ -90,7 +92,7 @@ void ex_single_cube_destroy() {
 	entity_module_destroy();
 }
 
-void ex_single_cube_update(r64 delta_time) {
+void ex_coin_update(r64 delta_time) {
 	Entity** entities = entity_get_all();
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
@@ -111,7 +113,7 @@ void ex_single_cube_update(r64 delta_time) {
 	array_free(entities);
 }
 
-void ex_single_cube_render() {
+void ex_coin_render() {
 	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, entities[i], lights);
@@ -121,7 +123,7 @@ void ex_single_cube_render() {
 	array_free(entities);
 }
 
-void ex_single_cube_input_process(boolean* key_state, r64 delta_time) {
+void ex_coin_input_process(boolean* key_state, r64 delta_time) {
 	r64 movement_speed = 3.0;
 	r64 rotation_speed = 300.0;
 
@@ -156,14 +158,9 @@ void ex_single_cube_input_process(boolean* key_state, r64 delta_time) {
 		wireframe = !wireframe;
 		key_state[GLFW_KEY_L] = false;
 	}
-	if (key_state[GLFW_KEY_P]) {
-		Entity* cube_entity = entity_get_by_id(cube_eid);
-		entity_add_force(cube_entity, (vec3){0.0, 1.0, 0.0}, (vec3){10.0, 0.0, 0.0}, false);
-		entity_activate(cube_entity);
-	}
 }
 
-void ex_single_cube_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
+void ex_coin_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 	static const r64 camera_mouse_speed = 0.1;
 	static r64 x_pos_old, y_pos_old;
 
@@ -179,60 +176,62 @@ void ex_single_cube_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 	camera_rotate_y(&camera, camera_mouse_speed * (r64)y_difference);
 }
 
-void ex_single_cube_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
+void ex_coin_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
 
 }
 
-void ex_single_cube_scroll_change_process(r64 x_offset, r64 y_offset) {
+void ex_coin_scroll_change_process(r64 x_offset, r64 y_offset) {
 
 }
 
-void ex_single_cube_window_resize_process(s32 width, s32 height) {
+void ex_coin_window_resize_process(s32 width, s32 height) {
 	camera_force_matrix_recalculation(&camera);
 }
 
-void ex_single_cube_menu_update() {
-	Entity* cube_entity = entity_get_by_id(cube_eid);
+void ex_coin_menu_update() {
+	Entity* coin_entity = entity_get_by_id(coin_eid);
+	Entity* floor_entity = entity_get_by_id(floor_eid);
 
-	ImGui::Text("Single Cube");
+	ImGui::Text("Coin");
 	ImGui::Separator();
 
-	ImGui::TextWrapped("Tweak the friction coefficients to see how the cube slide on the ramp.");
-	ImGui::TextWrapped("Cube and ramp static friction coefficient:");
-	if (ImGui::SliderFloat("fs", &static_friction_coefficient, 0.0f, 1.0f, "%.3f")) {
-		cube_entity->static_friction_coefficient = (r64)static_friction_coefficient;
-		entity_activate(cube_entity);
+	ImGui::TextWrapped("Coin and floor restitution coefficient:");
+	if (ImGui::SliderFloat("rc", &restitution_coefficient, 0.0f, 0.8f, "%.3f")) {
+		coin_entity->restitution_coefficient = (r64)restitution_coefficient;
+		floor_entity->restitution_coefficient = (r64)restitution_coefficient;
+		entity_activate(coin_entity);
 	}
 
-	ImGui::TextWrapped("Cube and ramp dynamic friction coefficient:");
+	ImGui::TextWrapped("Coin and floor static friction coefficient:");
+	if (ImGui::SliderFloat("fs", &static_friction_coefficient, 0.0f, 1.0f, "%.3f")) {
+		coin_entity->static_friction_coefficient = (r64)static_friction_coefficient;
+		floor_entity->static_friction_coefficient = (r64)static_friction_coefficient;
+		entity_activate(coin_entity);
+	}
+
+	ImGui::TextWrapped("Coin and floor dynamic friction coefficient:");
 	bool changed = ImGui::SliderFloat("fd", &dynamic_friction_coefficient, 0.0f, 1.0f, "%.3f");
 	if (changed || dynamic_friction_coefficient > static_friction_coefficient) {
 		// clamp dynamic friction if it was set to be greater than static friction (to be 'physically' more accurate)
 		dynamic_friction_coefficient = CLAMP(dynamic_friction_coefficient, 0.0, static_friction_coefficient);
-		cube_entity->dynamic_friction_coefficient = (r64)dynamic_friction_coefficient;
-		entity_activate(cube_entity);
+		coin_entity->dynamic_friction_coefficient = (r64)dynamic_friction_coefficient;
+		floor_entity->dynamic_friction_coefficient = (r64)dynamic_friction_coefficient;
+		entity_activate(coin_entity);
 	}
 
-	ImGui::TextWrapped("Cube restitution coefficient:");
-	if (ImGui::SliderFloat("rc", &restitution_coefficient, 0.0f, 1.0f, "%.3f")) {
-		cube_entity->restitution_coefficient = (r64)restitution_coefficient;
-		entity_activate(cube_entity);
-	}
 	ImGui::Separator();
-
-	ImGui::TextWrapped("Press [P] to create an horizontal force (->) at the top of the cube.");
 }
 
-Example_Scene single_cube_example_scene = (Example_Scene) {
-	.name = "Single Cube",
-	.init = ex_single_cube_init,
-	.destroy = ex_single_cube_destroy,
-	.input_process = ex_single_cube_input_process,
-	.menu_properties_update = ex_single_cube_menu_update,
-	.mouse_change_process = ex_single_cube_mouse_change_process,
-	.mouse_click_process = ex_single_cube_mouse_click_process,
-	.render = ex_single_cube_render,
-	.scroll_change_process = ex_single_cube_scroll_change_process,
-	.update = ex_single_cube_update,
-	.window_resize_process = ex_single_cube_window_resize_process
+Example_Scene coin_example_scene = (Example_Scene) {
+	.name = "Coin",
+	.init = ex_coin_init,
+	.destroy = ex_coin_destroy,
+	.input_process = ex_coin_input_process,
+	.menu_properties_update = ex_coin_menu_update,
+	.mouse_change_process = ex_coin_mouse_change_process,
+	.mouse_click_process = ex_coin_mouse_click_process,
+	.render = ex_coin_render,
+	.scroll_change_process = ex_coin_scroll_change_process,
+	.update = ex_coin_update,
+	.window_resize_process = ex_coin_window_resize_process
 };
