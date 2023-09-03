@@ -16,8 +16,6 @@
 static Perspective_Camera camera;
 static Light* lights;
 static eid coin_eid, floor_eid;
-static r32 static_friction_coefficient = 1.0;
-static r32 dynamic_friction_coefficient = 0.7;
 static r32 restitution_coefficient = 0.5;
 
 static Perspective_Camera create_camera() {
@@ -57,7 +55,7 @@ int ex_coin_init() {
 	Collider* coin_colliders = examples_util_create_single_convex_hull_collider_array(coin_vertices, coin_indices, coin_scale);
 	coin_eid = entity_create(coin_mesh, (vec3){0.0, 4.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 1.0}, 30.0),
 		coin_scale, (vec4){205.0 / 255.0, 127.0 / 255.0, 50.0 / 255.0, 1.0}, 1.0,
-		coin_colliders, static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
+		coin_colliders, 0.5, 0.5, restitution_coefficient);
 
 	Vertex* floor_vertices;
 	u32* floor_indices;
@@ -66,7 +64,7 @@ int ex_coin_init() {
 	vec3 floor_scale = (vec3){1.0, 1.0, 1.0};
 	Collider* floor_colliders = examples_util_create_single_convex_hull_collider_array(floor_vertices, floor_indices, floor_scale);
 	floor_eid = entity_create_fixed(floor_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, 0.0),
-		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders, static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
+		floor_scale, (vec4){1.0, 1.0, 1.0, 1.0}, floor_colliders, 0.5, 0.5, restitution_coefficient);
 	array_free(floor_vertices);
 	array_free(floor_indices);
 
@@ -195,27 +193,12 @@ void ex_coin_menu_update() {
 	ImGui::Text("Coin");
 	ImGui::Separator();
 
+	ImGui::TextWrapped("The engine does not have a cylinder collider yet. The coin collider is being created as a generic convex hull. This is just an experiment :)");
+
 	ImGui::TextWrapped("Coin and floor restitution coefficient:");
 	if (ImGui::SliderFloat("rc", &restitution_coefficient, 0.0f, 0.8f, "%.3f")) {
 		coin_entity->restitution_coefficient = (r64)restitution_coefficient;
 		floor_entity->restitution_coefficient = (r64)restitution_coefficient;
-		entity_activate(coin_entity);
-	}
-
-	ImGui::TextWrapped("Coin and floor static friction coefficient:");
-	if (ImGui::SliderFloat("fs", &static_friction_coefficient, 0.0f, 1.0f, "%.3f")) {
-		coin_entity->static_friction_coefficient = (r64)static_friction_coefficient;
-		floor_entity->static_friction_coefficient = (r64)static_friction_coefficient;
-		entity_activate(coin_entity);
-	}
-
-	ImGui::TextWrapped("Coin and floor dynamic friction coefficient:");
-	bool changed = ImGui::SliderFloat("fd", &dynamic_friction_coefficient, 0.0f, 1.0f, "%.3f");
-	if (changed || dynamic_friction_coefficient > static_friction_coefficient) {
-		// clamp dynamic friction if it was set to be greater than static friction (to be 'physically' more accurate)
-		dynamic_friction_coefficient = CLAMP(dynamic_friction_coefficient, 0.0, static_friction_coefficient);
-		coin_entity->dynamic_friction_coefficient = (r64)dynamic_friction_coefficient;
-		floor_entity->dynamic_friction_coefficient = (r64)dynamic_friction_coefficient;
 		entity_activate(coin_entity);
 	}
 
