@@ -102,8 +102,6 @@ static Collider_Convex_Hull_Face create_convex_hull_face(dvec3* triangles, vec3 
 		dvec2 edge3 = (dvec2){triangle.z, triangle.x};
 
 		s32 edge1_idx = get_edge_index(edges, edge1);
-		s32 edge2_idx = get_edge_index(edges, edge2);
-		s32 edge3_idx = get_edge_index(edges, edge3);
 
 		if (edge1_idx >= 0) {
 			array_remove(edges, edge1_idx);
@@ -111,11 +109,15 @@ static Collider_Convex_Hull_Face create_convex_hull_face(dvec3* triangles, vec3 
 			array_push(edges, edge1);
 		}
 
+		s32 edge2_idx = get_edge_index(edges, edge2);
+
 		if (edge2_idx >= 0) {
 			array_remove(edges, edge2_idx);
 		} else {
 			array_push(edges, edge2);
 		}
+
+		s32 edge3_idx = get_edge_index(edges, edge3);
 
 		if (edge3_idx >= 0) {
 			array_remove(edges, edge3_idx);

@@ -1,4 +1,4 @@
-#include "single_cube.h"
+#include "cube_and_ramp.h"
 #include <GLFW/glfw3.h>
 #include <light_array.h>
 #include <stdio.h>
@@ -15,7 +15,7 @@
 
 static Perspective_Camera camera;
 static Light* lights;
-static eid cube_eid;
+static eid cube_eid, ramp_eid;
 static r32 static_friction_coefficient = 1.0;
 static r32 dynamic_friction_coefficient = 0.7;
 static r32 restitution_coefficient = 0.0;
@@ -37,7 +37,7 @@ static Perspective_Camera create_camera() {
 	return camera;
 }
 
-int ex_single_cube_init() {
+int ex_cube_and_ramp_init() {
 	entity_module_init();
 
 	// Create camera
@@ -52,9 +52,8 @@ int ex_single_cube_init() {
 
 	vec3 ramp_scale = (vec3){2.0, 4.0, 10.0};
 	Collider* ramp_colliders = examples_util_create_single_convex_hull_collider_array(ramp_vertices, ramp_indices, ramp_scale);
-	entity_create_fixed(ramp_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, -90.0),
+	ramp_eid = entity_create_fixed(ramp_mesh, (vec3){0.0, -2.0, 0.0}, quaternion_new((vec3){0.0, 1.0, 0.0}, -90.0),
 		ramp_scale, (vec4){1.0, 1.0, 1.0, 1.0}, ramp_colliders, static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
-	printf("Using %.3f, %.3f, %.3f\n", static_friction_coefficient, dynamic_friction_coefficient, restitution_coefficient);
 
 	Vertex* cube_vertices;
 	u32* cube_indices;
@@ -74,7 +73,7 @@ int ex_single_cube_init() {
 	return 0;
 }
 
-void ex_single_cube_destroy() {
+void ex_cube_and_ramp_destroy() {
 	array_free(lights);
 
 	Entity** entities = entity_get_all();
@@ -90,7 +89,7 @@ void ex_single_cube_destroy() {
 	entity_module_destroy();
 }
 
-void ex_single_cube_update(r64 delta_time) {
+void ex_cube_and_ramp_update(r64 delta_time) {
 	Entity** entities = entity_get_all();
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
@@ -111,7 +110,7 @@ void ex_single_cube_update(r64 delta_time) {
 	array_free(entities);
 }
 
-void ex_single_cube_render() {
+void ex_cube_and_ramp_render() {
 	Entity** entities = entity_get_all();
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		graphics_entity_render_phong_shader(&camera, entities[i], lights);
@@ -121,7 +120,7 @@ void ex_single_cube_render() {
 	array_free(entities);
 }
 
-void ex_single_cube_input_process(boolean* key_state, r64 delta_time) {
+void ex_cube_and_ramp_input_process(boolean* key_state, r64 delta_time) {
 	r64 movement_speed = 3.0;
 	r64 rotation_speed = 300.0;
 
@@ -163,7 +162,7 @@ void ex_single_cube_input_process(boolean* key_state, r64 delta_time) {
 	}
 }
 
-void ex_single_cube_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
+void ex_cube_and_ramp_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 	static const r64 camera_mouse_speed = 0.1;
 	static r64 x_pos_old, y_pos_old;
 
@@ -179,42 +178,56 @@ void ex_single_cube_mouse_change_process(boolean reset, r64 x_pos, r64 y_pos) {
 	camera_rotate_y(&camera, camera_mouse_speed * (r64)y_difference);
 }
 
-void ex_single_cube_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
+void ex_cube_and_ramp_mouse_click_process(s32 button, s32 action, r64 x_pos, r64 y_pos) {
 
 }
 
-void ex_single_cube_scroll_change_process(r64 x_offset, r64 y_offset) {
+void ex_cube_and_ramp_scroll_change_process(r64 x_offset, r64 y_offset) {
 
 }
 
-void ex_single_cube_window_resize_process(s32 width, s32 height) {
+void ex_cube_and_ramp_window_resize_process(s32 width, s32 height) {
 	camera_force_matrix_recalculation(&camera);
 }
 
-void ex_single_cube_menu_update() {
+void ex_cube_and_ramp_menu_update() {
 	Entity* cube_entity = entity_get_by_id(cube_eid);
+	Entity* ramp_entity = entity_get_by_id(ramp_eid);
 
-	ImGui::Text("Single Cube");
+	ImGui::Text("Cube and Ramp");
 	ImGui::Separator();
 
 	ImGui::TextWrapped("Tweak the friction coefficients to see how the cube slide on the ramp.");
 	ImGui::TextWrapped("Cube and ramp static friction coefficient:");
 	if (ImGui::SliderFloat("fs", &static_friction_coefficient, 0.0f, 1.0f, "%.3f")) {
+		// if static friction was set to be less than static friction, make sure they are the same (to be 'physically' more accurate)
+		if (dynamic_friction_coefficient > static_friction_coefficient) {
+			cube_entity->dynamic_friction_coefficient = (r64)static_friction_coefficient;
+			ramp_entity->dynamic_friction_coefficient = (r64)static_friction_coefficient;
+			dynamic_friction_coefficient = (r64)static_friction_coefficient;
+		}
+
 		cube_entity->static_friction_coefficient = (r64)static_friction_coefficient;
+		ramp_entity->static_friction_coefficient = (r64)static_friction_coefficient;
 		entity_activate(cube_entity);
 	}
 
 	ImGui::TextWrapped("Cube and ramp dynamic friction coefficient:");
-	bool changed = ImGui::SliderFloat("fd", &dynamic_friction_coefficient, 0.0f, 1.0f, "%.3f");
-	if (changed || dynamic_friction_coefficient > static_friction_coefficient) {
-		// clamp dynamic friction if it was set to be greater than static friction (to be 'physically' more accurate)
-		dynamic_friction_coefficient = CLAMP(dynamic_friction_coefficient, 0.0, static_friction_coefficient);
+	if (ImGui::SliderFloat("fd", &dynamic_friction_coefficient, 0.0f, 1.0f, "%.3f")) {
+		// if dynamic friction was set to be greater than static friction, make sure they are the same (to be 'physically' more accurate)
+		if (dynamic_friction_coefficient > static_friction_coefficient) {
+			cube_entity->static_friction_coefficient = (r64)dynamic_friction_coefficient;
+			ramp_entity->static_friction_coefficient = (r64)dynamic_friction_coefficient;
+			static_friction_coefficient = (r64)dynamic_friction_coefficient;
+		}
+
 		cube_entity->dynamic_friction_coefficient = (r64)dynamic_friction_coefficient;
+		ramp_entity->dynamic_friction_coefficient = (r64)dynamic_friction_coefficient;
 		entity_activate(cube_entity);
 	}
 
 	ImGui::TextWrapped("Cube restitution coefficient:");
-	if (ImGui::SliderFloat("rc", &restitution_coefficient, 0.0f, 1.0f, "%.3f")) {
+	if (ImGui::SliderFloat("rc", &restitution_coefficient, 0.0f, 0.8f, "%.3f")) {
 		cube_entity->restitution_coefficient = (r64)restitution_coefficient;
 		entity_activate(cube_entity);
 	}
@@ -223,16 +236,16 @@ void ex_single_cube_menu_update() {
 	ImGui::TextWrapped("Press [P] to create an horizontal force (->) at the top of the cube.");
 }
 
-Example_Scene single_cube_example_scene = (Example_Scene) {
-	.name = "Single Cube",
-	.init = ex_single_cube_init,
-	.destroy = ex_single_cube_destroy,
-	.input_process = ex_single_cube_input_process,
-	.menu_properties_update = ex_single_cube_menu_update,
-	.mouse_change_process = ex_single_cube_mouse_change_process,
-	.mouse_click_process = ex_single_cube_mouse_click_process,
-	.render = ex_single_cube_render,
-	.scroll_change_process = ex_single_cube_scroll_change_process,
-	.update = ex_single_cube_update,
-	.window_resize_process = ex_single_cube_window_resize_process
+Example_Scene cube_and_ramp_example_scene = (Example_Scene) {
+	.name = "Cube and Ramp",
+	.init = ex_cube_and_ramp_init,
+	.destroy = ex_cube_and_ramp_destroy,
+	.input_process = ex_cube_and_ramp_input_process,
+	.menu_properties_update = ex_cube_and_ramp_menu_update,
+	.mouse_change_process = ex_cube_and_ramp_mouse_change_process,
+	.mouse_click_process = ex_cube_and_ramp_mouse_click_process,
+	.render = ex_cube_and_ramp_render,
+	.scroll_change_process = ex_cube_and_ramp_scroll_change_process,
+	.update = ex_cube_and_ramp_update,
+	.window_resize_process = ex_cube_and_ramp_window_resize_process
 };
