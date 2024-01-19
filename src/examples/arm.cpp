@@ -54,20 +54,10 @@ static Constraint* create_arm() {
 	eid support_id = entity_create_fixed(cube_mesh, support_position, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), support_collider_scale,
 		(vec4){0.0, 1.0, 0.0, 1.0}, support_colliders, 0.5, 0.5, 0.0);
 
-	vec3 upper_arm_collider_scale = (vec3){0.2, 1.0, 0.1};
+	vec3 upper_arm_collider_scale = (vec3){0.1, 1.0, 0.1};
 	Collider* upper_arm_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, upper_arm_collider_scale);
 	eid upper_arm_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), upper_arm_collider_scale,
 		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, upper_arm_colliders, 0.6, 0.6, 0.0);
-
-	vec3 lower_arm_collider_scale = (vec3){0.15, 1.0, 0.1};
-	Collider* lower_arm_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, lower_arm_collider_scale);
-	eid lower_arm_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), lower_arm_collider_scale,
-		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, lower_arm_colliders, 0.6, 0.6, 0.0);
-
-	vec3 hand_collider_scale = (vec3){0.3, 0.3, 0.1};
-	Collider* hand_colliders = examples_util_create_single_convex_hull_collider_array(cube_vertices, cube_indices, hand_collider_scale);
-	eid hand_id = entity_create(cube_mesh, (vec3){0.0, 0.0, 0.0}, quaternion_new((vec3){1.0, 0.0, 0.0}, 0.0), hand_collider_scale,
-		(vec4){1.0, 1.0, 0.0, 1.0}, 1.0, hand_colliders, 0.6, 0.6, 0.0);
 
 	array_free(cube_vertices);
 	array_free(cube_indices);
@@ -77,8 +67,8 @@ static Constraint* create_arm() {
 
 	Entity* support_entity = entity_get_by_id(support_id);
 	Entity* upper_arm_entity = entity_get_by_id(upper_arm_id);
-	Entity* lower_arm_entity = entity_get_by_id(lower_arm_id);
-	Entity* hand_entity = entity_get_by_id(hand_id);
+	//Entity* lower_arm_entity = entity_get_by_id(lower_arm_id);
+	//Entity* hand_entity = entity_get_by_id(hand_id);
 
 	vec3 r1_lc, r2_lc;
 
@@ -87,23 +77,7 @@ static Constraint* create_arm() {
 	r2_lc = (vec3){0.0, 1.0, 0.0};
 	reset_joint_distance(support_entity, upper_arm_entity, r1_lc, r2_lc);
 	pbd_spherical_joint_constraint_init(&constraint, support_id, upper_arm_id, r1_lc, r2_lc, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
-		-PI_F, PI_F, -PI_F, PI_F);
-	array_push(constraints, constraint);
-
-	// Upper Arm - Lower Arm Joint (Elbow)
-	r1_lc = (vec3){0.0, -1.2, 0.0};
-	r2_lc = (vec3){0.0, 1.2, 0.0};
-	reset_joint_distance(upper_arm_entity, lower_arm_entity, r1_lc, r2_lc);
-	pbd_hinge_joint_constraint_limited_init(&constraint, upper_arm_id, lower_arm_id, r1_lc, r2_lc, 0.0, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
-		0.0, 0.9 * PI_F);
-	array_push(constraints, constraint);
-
-	// Lower Arm - Hand Arm Joint (Wrist)
-	r1_lc = (vec3){0.0, -1.2, 0.0};
-	r2_lc = (vec3){0.0, 0.5, 0.0};
-	reset_joint_distance(lower_arm_entity, hand_entity, r1_lc, r2_lc);
-	pbd_spherical_joint_constraint_init(&constraint, lower_arm_id, hand_id, r1_lc, r2_lc, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_X_AXIS, PBD_POSITIVE_Y_AXIS, PBD_POSITIVE_Y_AXIS,
-		-0.0 * PI_F, 0.0 * PI_F, -0.3 * PI_F, 0.05 * PI_F);
+		-0.25 * PI_F, 0.25 * PI_F, -0.25 * PI_F, 0.25 * PI_F);
 	array_push(constraints, constraint);
 
 	return constraints;
@@ -152,7 +126,7 @@ void ex_arm_update(r64 delta_time) {
 		entity_add_force(entities[i], (vec3){0.0, 0.0, 0.0}, (vec3){0.0, -GRAVITY * 1.0 / entities[i]->inverse_mass, 0.0}, false);
 	}
 
-	pbd_simulate_with_constraints(delta_time, entities, constraints, 20, 1, true);
+	pbd_simulate_with_constraints(delta_time, entities, constraints, 50, 50, true);
 
 	for (u32 i = 0; i < array_length(entities); ++i) {
 		entity_clear_forces(entities[i]);
